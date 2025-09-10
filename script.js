@@ -180,4 +180,80 @@ form?.addEventListener('submit', async (e) => {
 updateFieldRequirements();
 updatePreview();
 
+// Pop-up des partenaires
+const partnerData = {
+  'clean-team': {
+    logo: 'images/clean team service_logo.png',
+    title: 'Clean Team Service',
+    text: 'Nous avons sollicité Enixis Corp pour l\'optimisation de nos procédures internes, incluant la mise en place d\'un système de devis et de facturation, ainsi que l\'amélioration de la gestion des demandes clients et avis de satisfaction. Leur intervention a permis de rendre nos processus plus fluides, fiables et efficaces. Nous recommandons vivement Enixis Corp à toute entreprise souhaitant professionnaliser et simplifier sa gestion.'
+  },
+  'dadavi': {
+    logo: 'images/dadavi ma nounou_logo.png',
+    title: 'Dadavi Ma Nounou',
+    text: 'Enixis Corp nous a accompagné dans l\'amélioration de notre organisation interne en prenant en charge le processus de recrutement, ce qui nous a permis de sélectionner efficacement les meilleurs candidats. L\'équipe a également géré nos réseaux sociaux avec des contenus éducatifs et valorisants, renforçant ainsi notre image auprès des parents et partenaires. Leur professionnalisme et leur efficacité font toute la différence.'
+  },
+  'engage-toi': {
+    logo: 'images/engage-toi_logo.png',
+    title: 'Engage-Toi',
+    text: 'Enixis Corp valorise la culture africaine auprès des jeunes à travers des quiz interactifs, tout en renforçant notre visibilité et en soutenant nos actions sociales. Grâce à leurs partenariats stratégiques, nos lauréats bénéficient aussi de formations en coaching emploi, productivité et entrepreneuriat. Un partenaire fiable et visionnaire.'
+  }
+};
+
+const popup = document.getElementById('partner-popup');
+const popupLogo = document.getElementById('popup-logo');
+const popupTitle = document.getElementById('popup-title');
+const popupText = document.getElementById('popup-text');
+const popupClose = document.querySelector('.popup-close');
+
+function showPartnerPopup(partnerId) {
+  const data = partnerData[partnerId];
+  if (!data) return;
+  
+  popupLogo.src = data.logo;
+  popupLogo.alt = `Logo ${data.title}`;
+  popupTitle.textContent = data.title;
+  popupText.textContent = data.text;
+  
+  popup.style.display = 'flex';
+  document.body.style.overflow = 'hidden'; // Empêcher le scroll
+}
+
+function hidePartnerPopup() {
+  popup.style.display = 'none';
+  document.body.style.overflow = ''; // Restaurer le scroll
+}
+
+// Événements pour les logos cliquables
+document.querySelectorAll('.clickable-logo').forEach(logo => {
+  logo.addEventListener('click', () => {
+    const partnerId = logo.getAttribute('data-partner');
+    showPartnerPopup(partnerId);
+  });
+});
+
+// Événements pour les boutons "Voir plus..."
+document.querySelectorAll('.btn-see-more').forEach(button => {
+  button.addEventListener('click', () => {
+    const partnerId = button.getAttribute('data-partner');
+    showPartnerPopup(partnerId);
+  });
+});
+
+// Fermer le pop-up
+popupClose.addEventListener('click', hidePartnerPopup);
+
+// Fermer le pop-up en cliquant sur l'overlay
+popup.addEventListener('click', (e) => {
+  if (e.target === popup) {
+    hidePartnerPopup();
+  }
+});
+
+// Fermer le pop-up avec la touche Escape
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && popup.style.display === 'flex') {
+    hidePartnerPopup();
+  }
+});
+
 
