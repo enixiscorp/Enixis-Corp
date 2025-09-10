@@ -119,25 +119,28 @@
             <!-- IMAGE PROJET: insérez une image 1200x800px (.webp) ici -->
             <!-- <img src="images/clean-team-service.webp" alt="Clean Team Service" width="1200" height="800" loading="lazy"> -->
             <!-- LOGO PARTENAIRE -->
-            <img src="images/clean team service_logo.png" alt="Logo Clean Team Service" class="partner-logo" width="80" height="80" loading="lazy">
+            <img src="images/clean team service_logo.png" alt="Logo Clean Team Service" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="clean-team">
             <h3 class="card-title">Clean Team Service</h3>
-            <p>Nous avons sollicité Enixis Corp pour l'optimisation de nos procédures internes, incluant la mise en place d'un système de devis et de facturation, ainsi que l'amélioration de la gestion des demandes clients et avis de satisfaction. Leur intervention a permis de rendre nos processus plus fluides, fiables et efficaces. Nous recommandons vivement Enixis Corp à toute entreprise souhaitant professionnaliser et simplifier sa gestion.</p>
+            <p class="card-preview">Nous avons sollicité Enixis Corp pour l'optimisation de nos procédures internes...</p>
+            <button class="btn-see-more" data-partner="clean-team">Voir plus...</button>
           </article>
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: 1200x800px .webp -->
             <!-- <img src="images/dadavi-ma-nounou.webp" alt="Dadavi Ma Nounou" width="1200" height="800" loading="lazy"> -->
             <!-- LOGO PARTENAIRE -->
-            <img src="images/dadavi ma nounou_logo.png" alt="Logo Dadavi Ma Nounou" class="partner-logo" width="80" height="80" loading="lazy">
+            <img src="images/dadavi ma nounou_logo.png" alt="Logo Dadavi Ma Nounou" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="dadavi">
             <h3 class="card-title">Dadavi Ma Nounou</h3>
-            <p>Enixis Corp nous a accompagné dans l'amélioration de notre organisation interne en prenant en charge le processus de recrutement, ce qui nous a permis de sélectionner efficacement les meilleurs candidats. L'équipe a également géré nos réseaux sociaux avec des contenus éducatifs et valorisants, renforçant ainsi notre image auprès des parents et partenaires. Leur professionnalisme et leur efficacité font toute la différence.</p>
+            <p class="card-preview">Enixis Corp nous a accompagné dans l'amélioration de notre organisation interne...</p>
+            <button class="btn-see-more" data-partner="dadavi">Voir plus...</button>
           </article>
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: 1200x800px .webp -->
             <!-- <img src="images/engage-toi.webp" alt="Engage-Toi" width="1200" height="800" loading="lazy"> -->
             <!-- LOGO PARTENAIRE -->
-            <img src="images/engage-toi_logo.png" alt="Logo Engage-Toi" class="partner-logo" width="80" height="80" loading="lazy">
+            <img src="images/engage-toi_logo.png" alt="Logo Engage-Toi" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="engage-toi">
             <h3 class="card-title">Engage-Toi</h3>
-            <p>Enixis Corp valorise la culture africaine auprès des jeunes à travers des quiz interactifs, tout en renforçant notre visibilité et en soutenant nos actions sociales. Grâce à leurs partenariats stratégiques, nos lauréats bénéficient aussi de formations en coaching emploi, productivité et entrepreneuriat. Un partenaire fiable et visionnaire.</p>
+            <p class="card-preview">Enixis Corp valorise la culture africaine auprès des jeunes à travers des quiz interactifs...</p>
+            <button class="btn-see-more" data-partner="engage-toi">Voir plus...</button>
           </article>
         </div>
         <!-- AJOUTER UN NOUVEAU PARTENAIRE (modèle prêt à copier)
@@ -263,6 +266,20 @@
   </footer>
 
   <button class="to-top" aria-label="Revenir en haut">↑</button>
+
+  <!-- Pop-ups des partenaires -->
+  <div id="partner-popup" class="popup-overlay" style="display: none;">
+    <div class="popup-content">
+      <button class="popup-close" aria-label="Fermer">&times;</button>
+      <div class="popup-header">
+        <img id="popup-logo" src="" alt="" class="popup-logo">
+        <h3 id="popup-title"></h3>
+      </div>
+      <div class="popup-body">
+        <p id="popup-text"></p>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js" defer></script>
 </body>
