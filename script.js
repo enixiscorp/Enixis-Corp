@@ -256,4 +256,81 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// Carrousel des partenaires
+const partnersCarousel = document.getElementById('partners-carousel');
+const partnersPrev = document.getElementById('partners-prev');
+const partnersNext = document.getElementById('partners-next');
+let partnersCurrentIndex = 0;
+const partnersItems = partnersCarousel?.querySelectorAll('.card');
+const partnersTotalItems = partnersItems?.length || 0;
+
+function updatePartnersCarousel() {
+  if (!partnersCarousel || !partnersItems) return;
+  const itemWidth = 100 / Math.min(partnersTotalItems, window.innerWidth >= 1000 ? 3 : window.innerWidth >= 700 ? 2 : 1);
+  const translateX = -partnersCurrentIndex * itemWidth;
+  partnersCarousel.style.transform = `translateX(${translateX}%)`;
+  
+  // Désactiver les boutons si nécessaire
+  partnersPrev.style.opacity = partnersCurrentIndex === 0 ? '0.5' : '1';
+  partnersNext.style.opacity = partnersCurrentIndex >= partnersTotalItems - (window.innerWidth >= 1000 ? 3 : window.innerWidth >= 700 ? 2 : 1) ? '0.5' : '1';
+}
+
+partnersPrev?.addEventListener('click', () => {
+  if (partnersCurrentIndex > 0) {
+    partnersCurrentIndex--;
+    updatePartnersCarousel();
+  }
+});
+
+partnersNext?.addEventListener('click', () => {
+  const maxIndex = partnersTotalItems - (window.innerWidth >= 1000 ? 3 : window.innerWidth >= 700 ? 2 : 1);
+  if (partnersCurrentIndex < maxIndex) {
+    partnersCurrentIndex++;
+    updatePartnersCarousel();
+  }
+});
+
+// Carrousel des témoignages
+const testimonialsCarousel = document.getElementById('testimonials-carousel');
+const testimonialsPrev = document.getElementById('testimonials-prev');
+const testimonialsNext = document.getElementById('testimonials-next');
+let testimonialsCurrentIndex = 0;
+const testimonialsItems = testimonialsCarousel?.querySelectorAll('.testimonial-category');
+const testimonialsTotalItems = testimonialsItems?.length || 0;
+
+function updateTestimonialsCarousel() {
+  if (!testimonialsCarousel || !testimonialsItems) return;
+  const itemWidth = 100 / Math.min(testimonialsTotalItems, 1);
+  const translateX = -testimonialsCurrentIndex * itemWidth;
+  testimonialsCarousel.style.transform = `translateX(${translateX}%)`;
+  
+  // Désactiver les boutons si nécessaire
+  testimonialsPrev.style.opacity = testimonialsCurrentIndex === 0 ? '0.5' : '1';
+  testimonialsNext.style.opacity = testimonialsCurrentIndex >= testimonialsTotalItems - 1 ? '0.5' : '1';
+}
+
+testimonialsPrev?.addEventListener('click', () => {
+  if (testimonialsCurrentIndex > 0) {
+    testimonialsCurrentIndex--;
+    updateTestimonialsCarousel();
+  }
+});
+
+testimonialsNext?.addEventListener('click', () => {
+  if (testimonialsCurrentIndex < testimonialsTotalItems - 1) {
+    testimonialsCurrentIndex++;
+    updateTestimonialsCarousel();
+  }
+});
+
+// Initialiser les carrousels
+window.addEventListener('resize', () => {
+  updatePartnersCarousel();
+  updateTestimonialsCarousel();
+});
+
+// Initialisation
+updatePartnersCarousel();
+updateTestimonialsCarousel();
+
 

@@ -84,6 +84,18 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 @media (min-width: 700px) { .cards { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 1000px) { .cards { grid-template-columns: repeat(3, 1fr); } .cards.three { grid-template-columns: repeat(3, 1fr); } }
 
+/* Carousel styles */
+.carousel-container { position: relative; overflow: hidden; }
+.carousel-wrapper { overflow: hidden; }
+.carousel-track { display: flex; transition: transform 0.3s ease; }
+.carousel-track .card { flex: 0 0 100%; min-width: 0; }
+@media (min-width: 700px) { .carousel-track .card { flex: 0 0 50%; } }
+@media (min-width: 1000px) { .carousel-track .card { flex: 0 0 33.333%; } }
+.carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: var(--text); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s ease; z-index: 10; }
+.carousel-btn:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.3); }
+.carousel-prev { left: 10px; }
+.carousel-next { right: 10px; }
+
 .card { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); transform: translateY(0); transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease; position: relative; }
 .card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.45); border-color: rgba(255,255,255,0.18); }
 .card-icon { font-size: 28px; line-height: 1; margin-bottom: 10px; }
@@ -117,7 +129,7 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 .popup-close { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
 .popup-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
 .popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.popup-logo { width: 50px; height: 50px; border-radius: 8px; object-fit: contain; }
+.popup-logo { width: 50px; height: 50px; border-radius: 8px; object-fit: contain; background: #ffffff; padding: 4px; border: 1px solid rgba(255,255,255,0.3); }
 .popup-header h3 { margin: 0; font-size: 1.1rem; color: var(--text); }
 .popup-body p { margin: 0; color: var(--muted); line-height: 1.6; font-size: 0.95rem; }
 
@@ -156,6 +168,12 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 .contact { display: grid; gap: 24px; grid-template-columns: 1fr; }
 @media (min-width: 900px) { .contact { grid-template-columns: 1.1fr 0.9fr; align-items: start; } }
 .contact .socials { display: none; }
+.contact-info { display: flex; flex-direction: column; gap: 12px; }
+.contact-item { display: flex; align-items: center; gap: 8px; }
+.contact-icon { font-size: 1.2rem; }
+.contact-label { font-weight: 600; color: var(--text); }
+.contact-item a { color: var(--primary); text-decoration: none; }
+.contact-item a:hover { text-decoration: underline; }
 .contact-form { background: rgba(255,255,255,0.95); padding: 22px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.2); box-shadow: var(--shadow); color: #333; }
 .field { display: grid; gap: 6px; margin-bottom: 12px; }
 .contact-form label { font-size: .9rem; color: #555; font-weight: 600; }
@@ -172,6 +190,9 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 .btn.primary:hover { transform: translateY(-2px); filter: saturate(110%); }
 .btn.ghost { background: transparent; border-color: rgba(255,255,255,0.16); }
 .btn.ghost:hover { background: rgba(255,255,255,0.06); }
+.btn.cancel { background: #dc3545; color: white; margin-left: auto; }
+.btn.cancel:hover { background: #c82333; transform: translateY(-2px); }
+.actions { display: flex; gap: 12px; align-items: center; }
 .btn.small { padding: 8px 12px; border-radius: 10px; }
 
 /* Footer */

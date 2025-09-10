@@ -114,7 +114,9 @@
              - Utilisez de préférence .webp, < 50KB, fond transparent si possible
              - Dimensions suggérées: largeur 220–320px, hauteur 80–140px
              - Gardez des alt descriptifs (ex: "Logo Clean Team Service") -->
-        <div class="cards three" role="list">
+        <div class="carousel-container">
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="partners-carousel">
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: insérez une image 1200x800px (.webp) ici -->
             <!-- <img src="images/clean-team-service.webp" alt="Clean Team Service" width="1200" height="800" loading="lazy"> -->
@@ -142,12 +144,16 @@
             <p class="card-preview">Enixis Corp valorise la culture africaine auprès des jeunes à travers des quiz interactifs...</p>
             <button class="btn-see-more" data-partner="engage-toi">Voir plus...</button>
           </article>
+            </div>
+          </div>
+          <button class="carousel-btn carousel-prev" id="partners-prev" aria-label="Partenaire précédent">‹</button>
+          <button class="carousel-btn carousel-next" id="partners-next" aria-label="Partenaire suivant">›</button>
         </div>
         <!-- AJOUTER UN NOUVEAU PARTENAIRE (modèle prêt à copier)
              <article class="card" role="listitem" data-animate="rise">
                <!-- LOGO PARTENAIRE -->
                <!-- <img src="images/nom-partenaire-logo.webp" alt="Logo Nom du partenaire" width="260" height="100" loading="lazy"> -->
-               <h3 class="card-title">Nom du partenaire</h3>
+             <!--h3 class="card-title">Nom du partenaire</h3>
                <p>Brève description de la collaboration ou de la valeur apportée.</p>
              </article>
         -->
@@ -157,7 +163,9 @@
     <section id="testimonials" class="section" aria-labelledby="testimonials-title">
       <div class="container">
         <h2 id="testimonials-title" class="section-title">Témoignages</h2>
-        <div class="testimonials" role="list">
+        <div class="carousel-container">
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="testimonials-carousel">
           
           <!-- Création de CV sur mesure -->
           <div class="testimonial-category" data-animate="fade-up">
@@ -203,7 +211,10 @@
               </figure>
             </div>
           </div>
-
+            </div>
+          </div>
+          <button class="carousel-btn carousel-prev" id="testimonials-prev" aria-label="Témoignage précédent">‹</button>
+          <button class="carousel-btn carousel-next" id="testimonials-next" aria-label="Témoignage suivant">›</button>
         </div>
       </div>
     </section>
@@ -214,10 +225,23 @@
       <div class="container contact">
         <div class="contact-copy" data-animate="fade-up">
           <h2 id="contact-title" class="section-title">Contactez-nous</h2>
-          <p>Gmail : <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a><br>
-             Téléphone : <a href="tel:+22897572346">+228 97 57 23 46</a><br>
-             WhatsApp : <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97 57 23 46</a>
-          </p>
+          <div class="contact-info">
+            <div class="contact-item">
+              <span class="contact-icon">📧</span>
+              <span class="contact-label">Gmail :</span>
+              <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">📞</span>
+              <span class="contact-label">Téléphone :</span>
+              <a href="tel:+22897572346">+228 97 57 23 46</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">💬</span>
+              <span class="contact-label">WhatsApp :</span>
+              <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97 57 23 46</a>
+            </div>
+          </div>
         </div>
         <form class="contact-form" data-animate="fade-in" aria-label="Formulaire de contact" onsubmit="return false;">
           <!-- CONSEIL IMAGE FORM HEADER (optionnel): bannière 1200x300px .webp, < 150KB -->
@@ -251,7 +275,7 @@
           </div>
           <div class="actions">
             <button class="btn primary" type="submit">Envoyer</button>
-            <button class="btn ghost" type="button" id="cancel-form">Annulez</button>
+            <button class="btn cancel" type="button" id="cancel-form">Annuler</button>
           </div>
           <p class="form-note" aria-live="polite"></p>
         </form>
