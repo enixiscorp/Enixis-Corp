@@ -73,6 +73,7 @@ const phoneInput = document.getElementById('phone');
 const messageInput = document.getElementById('message');
 const preview = document.getElementById('preview');
 const copyOnlyBtn = document.getElementById('copy-only');
+const cancelBtn = document.getElementById('cancel-form');
 
 const COMPANY_EMAIL = 'contacteccorp@gmail.com';
 const COMPANY_WHATSAPP = '22897572346'; // format international sans +
@@ -104,6 +105,32 @@ function updateFieldRequirements() {
   phoneInput.required = !isEmail; // whatsapp
 }
 
+function clearForm() {
+  // Réinitialiser tous les champs
+  nameInput.value = '';
+  emailInput.value = '';
+  phoneInput.value = '';
+  messageInput.value = '';
+  preview.value = '';
+  
+  // Réinitialiser le canal à email par défaut
+  channel.value = 'email';
+  
+  // Mettre à jour les exigences des champs
+  updateFieldRequirements();
+  
+  // Mettre à jour l'aperçu
+  updatePreview();
+  
+  // Afficher un message de confirmation
+  note.textContent = 'Formulaire effacé. Vous pouvez recommencer.';
+  
+  // Effacer le message après 3 secondes
+  setTimeout(() => {
+    note.textContent = '';
+  }, 3000);
+}
+
 ['input','change','keyup'].forEach(evt => {
   form?.addEventListener(evt, updatePreview);
 });
@@ -117,6 +144,10 @@ copyOnlyBtn?.addEventListener('click', async () => {
   } catch {
     note.textContent = 'Impossible de copier automatiquement. Sélectionnez et copiez manuellement.';
   }
+});
+
+cancelBtn?.addEventListener('click', () => {
+  clearForm();
 });
 
 form?.addEventListener('submit', async (e) => {
