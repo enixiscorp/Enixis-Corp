@@ -86,9 +86,22 @@ a { color: inherit; text-decoration: none; }
 .card-icon { font-size: 28px; line-height: 1; margin-bottom: 10px; }
 .card-title { margin: 0 0 8px; font-size: 1.125rem; }
 .card:has(.partner-logo) .card-title { padding-left: 100px; margin-top: 8px; }
-.card:has(.partner-logo) p { padding-left: 100px; }
+.card:has(.partner-logo) .card-preview { padding-left: 100px; }
 .partner-logo { position: absolute; top: 16px; left: 16px; width: 80px; height: 80px; border-radius: 12px; background: rgba(255,255,255,0.12); padding: 8px; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.2); filter: brightness(1.15) contrast(1.1) saturate(1.1); transition: all 0.3s ease; object-fit: contain; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
 .partner-logo:hover { transform: scale(1.05) translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.25); background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.3); }
+.clickable-logo { cursor: pointer; }
+.btn-see-more { background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; margin-top: 12px; margin-left: 100px; }
+.btn-see-more:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 4px 12px rgba(0,70,204,0.3); }
+
+/* Pop-up styles */
+.popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.popup-content { background: var(--card); border-radius: var(--radius); padding: 24px; max-width: 500px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); }
+.popup-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease; }
+.popup-close:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+.popup-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+.popup-logo { width: 60px; height: 60px; border-radius: 8px; object-fit: contain; }
+.popup-header h3 { margin: 0; font-size: 1.25rem; color: var(--text); }
+.popup-body p { margin: 0; color: var(--muted); line-height: 1.6; }
 
 /* Testimonials */
 .testimonials { display: grid; gap: 32px; }
