@@ -5,6 +5,9 @@ body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubunt
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 
+/* Favicon arrondi */
+link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
+
 :root {
   --bg: #0A0F2C;
   --bg-alt: rgba(255,255,255,0.06);
