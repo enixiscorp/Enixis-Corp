@@ -1,0 +1,10 @@
+name = "enixis-corp"
+pages_build_output_dir = "."  # le site est statique à la racine
+
+[vars]
+# Renseignez ces variables côté Cloudflare Dashboard > Pages > Settings > Environment Variables
+# SLACK_WEBHOOK_URL = ""
+# ALLOWED_ORIGINS = "https://handock-max.github.io,https://<votre-domaine>"
+# SLACK_AUTH_TOKEN = "" # optionnel
+
+

@@ -204,6 +204,10 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 #order .contact-form .actions { justify-content: flex-end; }
 #order .contact-form input[type="file"] { padding: 10px; }
 
+/* Styles page demande */
+#request .contact-form { background: rgba(255,255,255,0.98); }
+#request .price-box { background: #f8f9fa; border: 1px dashed #ccc; padding: 12px 14px; border-radius: var(--radius-sm); color: #333; min-height: 44px; display: flex; align-items: center; font-weight: 700; }
+
 /* Buttons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; transition: transform .2s ease, background .2s ease, border-color .2s ease; cursor: pointer; }
 .btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); }
