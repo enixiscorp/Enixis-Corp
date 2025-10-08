@@ -104,30 +104,21 @@ async function submitToSlack(payload) {
         mode: 'no-cors',
         keepalive: true
       });
-      return; // considérer comme envoyé
+      return; // considérer comme envoyé (pas de lecture de réponse en no-cors)
     } catch (e) {
       // Fallback sendBeacon si fetch échoue
       try {
         const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
         const ok = navigator.sendBeacon(directUrl, blob);
-        if (ok) return;
+        if (ok) return; // considérer comme envoyé
       } catch {}
-      // En dernier recours, tenter le proxy si disponible
+      // En mode GitHub Pages (statique), ne pas tenter de proxy inexistant
+      throw e;
     }
   }
 
-  // Mode A: proxy
-  try {
-    const res = await fetch(SLACK_PROXY_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-  } catch (e) {
-    console.warn('Erreur envoi Slack:', e);
-    throw e;
-  }
+  // Si aucune URL directe n'est fournie, lever une erreur explicite
+  throw new Error('SLACK_WEBHOOK_URL manquant dans window.env');
 }
 
 function buildSlackText(data) {
