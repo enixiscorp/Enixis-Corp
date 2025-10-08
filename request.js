@@ -262,8 +262,16 @@ formEl?.addEventListener('submit', async (e) => {
 
 // Génération automatique des options
 function populateServiceOptions() {
-  // Garder l'option par défaut
-  serviceEl.innerHTML = '<option value="" disabled selected>Choisissez une prestation…</option>';
+  // Vider le select
+  serviceEl.innerHTML = '';
+  
+  // Ajouter l'option par défaut (non sélectionnable)
+  const defaultOption = document.createElement('option');
+  defaultOption.value = '';
+  defaultOption.disabled = true;
+  defaultOption.selected = true;
+  defaultOption.textContent = 'Choisissez une prestation…';
+  serviceEl.appendChild(defaultOption);
 
   // Ajouter toutes les options depuis SERVICES
   Object.keys(SERVICES).forEach(key => {
