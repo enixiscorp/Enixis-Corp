@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Soumettre ma demande – Enixis Corp</title>
-  <meta name="description" content="Soumettre une demande de prestation Enixis Corp avec estimation de prix et envoi Slack.">
+  <meta name="description"
+    content="Soumettre une demande de prestation Enixis Corp avec estimation de prix et envoi Slack.">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <main id="request" class="section" tabindex="-1">
     <div class="container">
@@ -30,24 +33,24 @@
           <label for="service">Prestation souhaitée</label>
           <select id="service" name="service" required>
             <option value="" disabled selected>Choisissez une prestation…</option>
-            <option value="cv_creation" data-price="7000">✍️ Création de CV sur mesure + Lettre – 7 000 FCFA</option>
-            <option value="cv_optimisation" data-price="3500">✍️ Optimisation de CV sur mesure – 3 500 FCFA</option>
-            <option value="partnership_letters" data-price="10000">🤝 Rédaction Demandes Partenariat/Sponsoring – 10 000 FCFA</option>
-            <option value="linkedin_branding" data-price="">🧑‍💼 Personal Branding & LinkedIn – tarif à définir</option>
-            <option value="coaching_emploi" data-price="15000">🎓 Formation Coaching Emploi – 15 000 FCFA</option>
-            <option value="productivity" data-price="10000">🚀 Formation Booster la productivité – 10 000 FCFA</option>
-            <option value="excel_analytics" data-price="25000">📊 Formation Analyse de données via Excel – 25 000 FCFA</option>
-            <option value="ai_training" data-price="5000">🤖 Formation IA – 5 000 FCFA</option>
-            <option value="office_suite" data-price="30000">💼 Formation Optimisée Suite Office – 30 000 FCFA</option>
-            <option value="marketing_strategy" data-price="50000">📈 Optimisation de Procédures Marketing & Stratégie – 50 000 FCFA</option>
-            <option value="support_procedures" data-price="100000">🛠 Optimisation de Procédures Support Client – 100 000 FCFA</option>
-            <option value="project_procedures" data-price="150000">🔍 Optimisation de Procédures Projets – 150 000 FCFA</option>
-            <option value="erp_ai" data-price="250000">🔗 Intégration et Automatisations ERP/IA – 250 000 FCFA</option>
-            <option value="simple_sheet" data-price="30000">📄 Système Excel ou Google Sheets simple – 30 000 FCFA</option>
-            <option value="dashboard_file" data-price="50000">📊 Système Fichier automatisé avec tableaux de bord – 50 000 FCFA</option>
-            <option value="semi_pro_system" data-price="100000">💻 Système semi-professionnel (Web/PC) – 100 000 FCFA</option>
-            <option value="custom_app" data-price="200000">📱 Système d'Application personnalisée (Web/App) – 200 000 FCFA</option>
-            <option value="website_creation" data-price="80000">🌐 Création de Site Web – 80 000 FCFA</option>
+            <option value="cv_creation">✍️ Création de CV sur mesure + Lettre</option>
+            <option value="cv_optimisation">✍️ Optimisation de CV sur mesure</option>
+            <option value="partnership_letters">🤝 Rédaction Demandes Partenariat/Sponsoring</option>
+            <option value="linkedin_branding">🧑‍💼 Personal Branding & LinkedIn</option>
+            <option value="coaching_emploi">🎓 Formation Coaching Emploi</option>
+            <option value="productivity">🚀 Formation Booster la productivité</option>
+            <option value="excel_analytics">📊 Formation Analyse de données via Excel</option>
+            <option value="ai_training">🤖 Formation IA</option>
+            <option value="office_suite">💼 Formation Optimisée Suite Office</option>
+            <option value="marketing_strategy">📈 Optimisation de Procédures Marketing & Stratégie</option>
+            <option value="support_procedures">🛠 Optimisation de Procédures Support Client</option>
+            <option value="project_procedures">🔍 Optimisation de Procédures Projets</option>
+            <option value="erp_ai">🔗 Intégration et Automatisations ERP/IA</option>
+            <option value="simple_sheet">📄 Système Excel ou Google Sheets simple</option>
+            <option value="dashboard_file">📊 Système Fichier automatisé avec tableaux de bord</option>
+            <option value="semi_pro_system">💻 Système semi-professionnel (Web/PC)</option>
+            <option value="custom_app">📱 Système d'Application personnalisée (Web/App)</option>
+            <option value="website_creation">🌐 Création de Site Web</option>
           </select>
         </div>
 
@@ -58,7 +61,8 @@
 
         <div class="field">
           <label for="additional_details">Détails complémentaires</label>
-          <textarea id="additional_details" name="additional_details" rows="4" placeholder="Ajoutez des précisions utiles (délais, contexte, références…)"></textarea>
+          <textarea id="additional_details" name="additional_details" rows="4"
+            placeholder="Ajoutez des précisions utiles (délais, contexte, références…)"></textarea>
         </div>
 
         <div class="field">
@@ -79,7 +83,8 @@
           </div>
           <div class="field" id="issue_details_row" style="display:none;">
             <label for="issue_details">Expliquez votre problème</label>
-            <textarea id="issue_details" name="issue_details" rows="3" placeholder="Décrivez brièvement votre souci…"></textarea>
+            <textarea id="issue_details" name="issue_details" rows="3"
+              placeholder="Décrivez brièvement votre souci…"></textarea>
           </div>
           <div class="field" id="budget_row" style="display:none;">
             <label for="budget_amount">Votre budget (FCFA)</label>
@@ -99,6 +104,5 @@
   <script src="env.js"></script>
   <script src="request.js" defer></script>
 </body>
+
 </html>
-
-

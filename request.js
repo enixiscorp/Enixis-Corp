@@ -1,5 +1,27 @@
 // Logique du formulaire de demande + prix dynamique + envoi Slack
 
+// Configuration des prix (modifiable facilement)
+const PRICES = {
+  cv_creation: 7000,
+  cv_optimisation: 3500,
+  partnership_letters: 10000,
+  linkedin_branding: 15000,
+  coaching_emploi: 15000,
+  productivity: 10000,
+  excel_analytics: 25000,
+  ai_training: 5000,
+  office_suite: 30000,
+  marketing_strategy: 50000,
+  support_procedures: 100000,
+  project_procedures: 150000,
+  erp_ai: 250000,
+  simple_sheet: 30000,
+  dashboard_file: 50000,
+  semi_pro_system: 100000,
+  custom_app: 200000,
+  website_creation: 80000
+};
+
 const formEl = document.getElementById('request-form');
 const serviceEl = document.getElementById('service');
 const priceBox = document.getElementById('price-box');
@@ -55,10 +77,10 @@ function serviceLabel(value) {
 }
 
 function updatePrice() {
-  const option = serviceEl.options[serviceEl.selectedIndex];
-  if (!option) { priceBox.textContent = '—'; return; }
-  const raw = option.getAttribute('data-price');
-  priceBox.textContent = formatFcfa(raw);
+  const serviceValue = serviceEl.value;
+  if (!serviceValue) { priceBox.textContent = '—'; return; }
+  const price = PRICES[serviceValue];
+  priceBox.textContent = formatFcfa(price);
 }
 
 function toggleIssueBlock() {
@@ -156,7 +178,7 @@ formEl?.addEventListener('submit', async (e) => {
   const email = document.getElementById('client_email').value.trim();
   const phone = document.getElementById('client_phone').value.trim();
   const service = serviceEl.value;
-  const price = serviceEl.options[serviceEl.selectedIndex]?.getAttribute('data-price') || '';
+  const price = PRICES[service] || '';
   const details = document.getElementById('additional_details').value.trim();
 
   if (!name || !email || !phone || !service) {
