@@ -300,13 +300,23 @@ const testimonialsTotalItems = testimonialsItems?.length || 0;
 
 function updateTestimonialsCarousel() {
   if (!testimonialsCarousel || !testimonialsItems) return;
-  const itemWidth = 100 / Math.min(testimonialsTotalItems, 1);
+  
+  // Calculer le nombre d'éléments visibles selon la taille d'écran
+  let itemsPerView = 1;
+  if (window.innerWidth >= 1200) {
+    itemsPerView = 3;
+  } else if (window.innerWidth >= 900) {
+    itemsPerView = 2;
+  }
+  
+  const maxIndex = Math.max(0, testimonialsTotalItems - itemsPerView);
+  const itemWidth = 100 / itemsPerView;
   const translateX = -testimonialsCurrentIndex * itemWidth;
   testimonialsCarousel.style.transform = `translateX(${translateX}%)`;
   
   // Désactiver les boutons si nécessaire
   testimonialsPrev.style.opacity = testimonialsCurrentIndex === 0 ? '0.5' : '1';
-  testimonialsNext.style.opacity = testimonialsCurrentIndex >= testimonialsTotalItems - 1 ? '0.5' : '1';
+  testimonialsNext.style.opacity = testimonialsCurrentIndex >= maxIndex ? '0.5' : '1';
 }
 
 testimonialsPrev?.addEventListener('click', () => {
@@ -317,7 +327,16 @@ testimonialsPrev?.addEventListener('click', () => {
 });
 
 testimonialsNext?.addEventListener('click', () => {
-  if (testimonialsCurrentIndex < testimonialsTotalItems - 1) {
+  // Calculer le nombre d'éléments visibles selon la taille d'écran
+  let itemsPerView = 1;
+  if (window.innerWidth >= 1200) {
+    itemsPerView = 3;
+  } else if (window.innerWidth >= 900) {
+    itemsPerView = 2;
+  }
+  
+  const maxIndex = Math.max(0, testimonialsTotalItems - itemsPerView);
+  if (testimonialsCurrentIndex < maxIndex) {
     testimonialsCurrentIndex++;
     updateTestimonialsCarousel();
   }
