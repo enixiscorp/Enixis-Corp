@@ -1,25 +1,79 @@
 // Logique du formulaire de demande + prix dynamique + envoi Slack
 
-// Configuration des prix (modifiable facilement)
-const PRICES = {
-  cv_creation: 7000,
-  cv_optimisation: 3500,
-  partnership_letters: 10000,
-  linkedin_branding: 15000,
-  coaching_emploi: 15000,
-  productivity: 10000,
-  excel_analytics: 25000,
-  ai_training: 5000,
-  office_suite: 30000,
-  marketing_strategy: 50000,
-  support_procedures: 100000,
-  project_procedures: 150000,
-  erp_ai: 250000,
-  simple_sheet: 30000,
-  dashboard_file: 50000,
-  semi_pro_system: 100000,
-  custom_app: 200000,
-  website_creation: 80000
+// Configuration des services (modifiable facilement)
+const SERVICES = {
+  cv_creation: {
+    label: "✍️ Création de CV sur mesure + Lettre",
+    price: 7000
+  },
+  cv_optimisation: {
+    label: "✍️ Optimisation de CV sur mesure",
+    price: 3500
+  },
+  partnership_letters: {
+    label: "🤝 Rédaction Demandes Partenariat/Sponsoring",
+    price: 10000
+  },
+  linkedin_branding: {
+    label: "🧑‍💼 Personal Branding & LinkedIn",
+    price: 15000
+  },
+  coaching_emploi: {
+    label: "🎓 Formation Coaching Emploi",
+    price: 15000
+  },
+  productivity: {
+    label: "🚀 Formation Booster la productivité",
+    price: 10000
+  },
+  excel_analytics: {
+    label: "📊 Formation Analyse de données via Excel",
+    price: 25000
+  },
+  ai_training: {
+    label: "🤖 Formation IA",
+    price: 5000
+  },
+  office_suite: {
+    label: "💼 Formation Optimisée Suite Office",
+    price: 30000
+  },
+  marketing_strategy: {
+    label: "📈 Optimisation de Procédures Marketing & Stratégie",
+    price: 50000
+  },
+  support_procedures: {
+    label: "🛠 Optimisation de Procédures Support Client",
+    price: 100000
+  },
+  project_procedures: {
+    label: "🔍 Optimisation de Procédures Projets",
+    price: 150000
+  },
+  erp_ai: {
+    label: "🔗 Intégration et Automatisations ERP/IA",
+    price: 250000
+  },
+  simple_sheet: {
+    label: "📄 Système Excel ou Google Sheets simple",
+    price: 30000
+  },
+  dashboard_file: {
+    label: "📊 Système Fichier automatisé avec tableaux de bord",
+    price: 50000
+  },
+  semi_pro_system: {
+    label: "💻 Système semi-professionnel (Web/PC)",
+    price: 100000
+  },
+  custom_app: {
+    label: "📱 Système d'Application personnalisée (Web/App)",
+    price: 200000
+  },
+  website_creation: {
+    label: "🌐 Création de Site Web",
+    price: 80000
+  }
 };
 
 const formEl = document.getElementById('request-form');
@@ -49,37 +103,19 @@ function formatFcfa(amount) {
   if (amount === null || amount === undefined || amount === '') return 'Tarif à définir';
   const n = Number(amount);
   if (!isFinite(n) || n <= 0) return 'Tarif à définir';
-  return `${n.toLocaleString('fr-FR')} FCFA`;
+  return `${n.toLocaleString('fr-FR')} F CFA`;
 }
 
 function serviceLabel(value) {
-  const map = {
-    cv_creation: "✍️ Création de CV sur mesure + Lettre – 7 000 FCFA",
-    cv_optimisation: "✍️ Optimisation de CV sur mesure – 3 500 FCFA",
-    partnership_letters: "🤝 Rédaction Demandes Partenariat/Sponsoring – 10 000 FCFA",
-    linkedin_branding: "🧑‍💼 Personal Branding & LinkedIn – 15 000 FCFA",
-    coaching_emploi: "🎓 Formation Coaching Emploi – 15 000 FCFA",
-    productivity: "🚀 Formation Booster la productivité – 10 000 FCFA",
-    excel_analytics: "📊 Formation Analyse de données via Excel – 25 000 FCFA",
-    ai_training: "🤖 Formation IA – 5 000 FCFA",
-    office_suite: "💼 Formation Optimisée Suite Office – 30 000 FCFA",
-    marketing_strategy: "📈 Optimisation de Procédures Marketing & Stratégie – 50 000 FCFA",
-    support_procedures: "🛠 Optimisation de Procédures Support Client – 100 000 FCFA",
-    project_procedures: "🔍 Optimisation de Procédures Projets – 150 000 FCFA",
-    erp_ai: "🔗 Intégration et Automatisations ERP/IA – 250 000 FCFA",
-    simple_sheet: "📄 Système Excel ou Google Sheets simple – 30 000 FCFA",
-    dashboard_file: "📊 Système Fichier automatisé avec tableaux de bord – 50 000 FCFA",
-    semi_pro_system: "💻 Système semi-professionnel (Web/PC) – 100 000 FCFA",
-    custom_app: "📱 Système d'Application personnalisée (Web/App) – 200 000 FCFA",
-    website_creation: "🌐 Création de Site Web – 80 000 FCFA"
-  };
-  return map[value] || value;
+  const service = SERVICES[value];
+  return service ? service.label : value;
 }
 
 function updatePrice() {
   const serviceValue = serviceEl.value;
   if (!serviceValue) { priceBox.textContent = '—'; return; }
-  const price = PRICES[serviceValue];
+  const service = SERVICES[serviceValue];
+  const price = service ? service.price : null;
   priceBox.textContent = formatFcfa(price);
 }
 
@@ -133,7 +169,7 @@ async function submitToSlack(payload) {
         const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
         const ok = navigator.sendBeacon(directUrl, blob);
         if (ok) return; // considérer comme envoyé
-      } catch {}
+      } catch { }
       // En mode GitHub Pages (statique), ne pas tenter de proxy inexistant
       throw new Error(`Erreur d'envoi direct: ${e.message}`);
     }
@@ -178,7 +214,8 @@ formEl?.addEventListener('submit', async (e) => {
   const email = document.getElementById('client_email').value.trim();
   const phone = document.getElementById('client_phone').value.trim();
   const service = serviceEl.value;
-  const price = PRICES[service] || '';
+  const serviceData = SERVICES[service];
+  const price = serviceData ? serviceData.price : '';
   const details = document.getElementById('additional_details').value.trim();
 
   if (!name || !email || !phone || !service) {
@@ -223,7 +260,22 @@ formEl?.addEventListener('submit', async (e) => {
   }
 });
 
+// Génération automatique des options
+function populateServiceOptions() {
+  // Garder l'option par défaut
+  serviceEl.innerHTML = '<option value="" disabled selected>Choisissez une prestation…</option>';
+
+  // Ajouter toutes les options depuis SERVICES
+  Object.keys(SERVICES).forEach(key => {
+    const option = document.createElement('option');
+    option.value = key;
+    option.textContent = SERVICES[key].label;
+    serviceEl.appendChild(option);
+  });
+}
+
 // Init
+populateServiceOptions();
 updatePrice();
 toggleIssueBlock();
 
