@@ -57,7 +57,7 @@ function serviceLabel(value) {
     cv_creation: "✍️ Création de CV sur mesure + Lettre – 7 000 FCFA",
     cv_optimisation: "✍️ Optimisation de CV sur mesure – 3 500 FCFA",
     partnership_letters: "🤝 Rédaction Demandes Partenariat/Sponsoring – 10 000 FCFA",
-    linkedin_branding: "🧑‍💼 Personal Branding & LinkedIn – tarif à définir",
+    linkedin_branding: "🧑‍💼 Personal Branding & LinkedIn – 15 000 FCFA",
     coaching_emploi: "🎓 Formation Coaching Emploi – 15 000 FCFA",
     productivity: "🚀 Formation Booster la productivité – 10 000 FCFA",
     excel_analytics: "📊 Formation Analyse de données via Excel – 25 000 FCFA",
