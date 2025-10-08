@@ -21,11 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate env.js from secrets
-        shell: bash
+      - name: Generate env.js from secrets (safe)
         run: |
-          echo "window.env = window.env || {};" > env.js
-          echo "window.env.SLACK_WEBHOOK_URL='${SLACK_WEBHOOK_URL//"/\"}'" >> env.js
+          python3 - << 'PY'
+          import json, os
+          data = {"SLACK_WEBHOOK_URL": os.environ.get("SLACK_WEBHOOK_URL", "")}
+          with open("env.js", "w", encoding="utf-8") as f:
+              f.write("window.env = " + json.dumps(data) + ";")
+          PY
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
