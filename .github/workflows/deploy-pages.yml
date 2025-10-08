@@ -21,13 +21,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Generate env.js from secrets (safe)
+      - name: Generate env.js from secrets
         run: |
-          echo "DEBUG: Secret length: ${#SLACK_WEBHOOK_URL}"
-          echo "DEBUG: Secret starts with: ${SLACK_WEBHOOK_URL:0:20}"
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "❌ ERREUR: Secret SLACK_WEBHOOK_URL est vide"
+          else
+            echo "✅ Secret trouvé, longueur: ${#SLACK_WEBHOOK_URL} caractères"
+            echo "✅ Commence par: ${SLACK_WEBHOOK_URL:0:25}..."
+          fi
           echo "window.env = {\"SLACK_WEBHOOK_URL\": \"$SLACK_WEBHOOK_URL\"};" > env.js
-          echo "env.js generated successfully"
-          cat env.js
+          echo "📄 Fichier env.js généré"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
