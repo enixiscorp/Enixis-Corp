@@ -23,12 +23,11 @@ jobs:
 
       - name: Generate env.js from secrets (safe)
         run: |
-          python3 - << 'PY'
-          import json, os
-          data = {"SLACK_WEBHOOK_URL": os.environ.get("SLACK_WEBHOOK_URL", "")}
-          with open("env.js", "w", encoding="utf-8") as f:
-              f.write("window.env = " + json.dumps(data) + ";")
-          PY
+          echo "DEBUG: Secret length: ${#SLACK_WEBHOOK_URL}"
+          echo "DEBUG: Secret starts with: ${SLACK_WEBHOOK_URL:0:20}"
+          echo "window.env = {\"SLACK_WEBHOOK_URL\": \"$SLACK_WEBHOOK_URL\"};" > env.js
+          echo "env.js generated successfully"
+          cat env.js
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
