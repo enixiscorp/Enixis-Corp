@@ -113,12 +113,12 @@ async function submitToSlack(payload) {
         if (ok) return; // considérer comme envoyé
       } catch {}
       // En mode GitHub Pages (statique), ne pas tenter de proxy inexistant
-      throw e;
+      throw new Error(`Erreur d'envoi direct: ${e.message}`);
     }
   }
 
   // Si aucune URL directe n'est fournie, lever une erreur explicite
-  throw new Error('SLACK_WEBHOOK_URL manquant dans window.env');
+  throw new Error('SLACK_WEBHOOK_URL manquant dans window.env - veuillez configurer env.js');
 }
 
 function buildSlackText(data) {
