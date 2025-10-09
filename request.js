@@ -357,36 +357,29 @@ formEl?.addEventListener('submit', async (e) => {
   }
 
   const slackText = buildSlackText({ name, email, phone, service, price, details, issue, delivery });
-
-  try {
-    await submitToSlack({ text: slackText });
-    noteEl.textContent = 'Votre demande a été envoyée. Merci !';
-    // Afficher un récapitulatif avant l'envoi effectif (pop-up de confirmation)
-    showOrderSummary({
-      name, email, phone,
-      serviceLabel: serviceLabel(service),
-      basePrice,
-      finalPrice: price,
-      coupon: appliedCoupon,
-      details,
-      issue,
-      delivery
-    }, async () => {
-      try {
-        await submitToSlack({ text: slackText });
-        noteEl.textContent = 'Votre demande a été envoyée. Merci !';
-        formEl.reset();
-        appliedCoupon = null;
-        updatePrice();
-        toggleIssueBlock();
-        togglePromoBlock();
-      } catch {
-        noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
-      }
-    });
-  } catch {
-    noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
-  }
+  // Afficher le récapitulatif; n'envoyer à Slack qu'après confirmation
+  showOrderSummary({
+    name, email, phone,
+    serviceLabel: serviceLabel(service),
+    basePrice,
+    finalPrice: price,
+    coupon: appliedCoupon,
+    details,
+    issue,
+    delivery
+  }, async () => {
+    try {
+      await submitToSlack({ text: slackText });
+      noteEl.textContent = 'Votre demande a été envoyée. Merci !';
+      formEl.reset();
+      appliedCoupon = null;
+      updatePrice();
+      toggleIssueBlock();
+      togglePromoBlock();
+    } catch {
+      noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
+    }
+  });
 });
 
 // Génération automatique des options
