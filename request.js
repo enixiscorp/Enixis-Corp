@@ -150,15 +150,12 @@ function updatePrice() {
   if (base === null) { priceBox.textContent = '—'; return; }
   const discounted = computeDiscountedPrice(base);
   const finalPrice = computeDeliveryAdjustedPrice(discounted);
-  if (appliedCoupon) {
-    if (finalPrice !== base) {
-      priceBox.textContent = `${formatFcfa(finalPrice)} (au lieu de ${formatFcfa(base)})`;
-    } else {
-      priceBox.textContent = formatFcfa(base);
-    }
-  } else {
-    priceBox.textContent = formatFcfa(base);
+  const parts = [];
+  parts.push(formatFcfa(finalPrice));
+  if (appliedCoupon || finalPrice !== base) {
+    parts.push(`(au lieu de ${formatFcfa(base)}${deliveryTimeEl?.value === 'urgent' ? ', x2 urgent' : ''})`);
   }
+  priceBox.textContent = parts.join(' ');
 }
 
 function toggleIssueBlock() {
@@ -444,6 +441,9 @@ function showOrderSummary(data, onConfirm) {
     lines.push(`<p><strong>Code promo:</strong> ${data.coupon.code} (−${data.coupon.percent}% )</p>`);
   }
   lines.push(`<p><strong>Prix:</strong> ${currencyPair(data.basePrice, data.finalPrice)}</p>`);
+  if (data.delivery === 'urgent') {
+    lines.push(`<p style="color:#c00; font-weight:700;">🚨 Urgent : En raison du délai souhaité le prix de votre prestation doublera. Merci ! 🚨</p>`);
+  }
   if (data.details) lines.push(`<p><strong>Détails:</strong> ${data.details}</p>`);
   if (data.issue) {
     lines.push(`<p><strong>Souci:</strong> ${data.issue.type}</p>`);
