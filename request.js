@@ -149,13 +149,20 @@ function updatePrice() {
   const base = service ? service.price : null;
   if (base === null) { priceBox.textContent = '—'; return; }
   const discounted = computeDiscountedPrice(base);
+  const isUrgent = deliveryTimeEl?.value === 'urgent';
   const finalPrice = computeDeliveryAdjustedPrice(discounted);
-  const parts = [];
-  parts.push(formatFcfa(finalPrice));
-  if (appliedCoupon || finalPrice !== base) {
-    parts.push(`(au lieu de ${formatFcfa(base)}${deliveryTimeEl?.value === 'urgent' ? ', x2 urgent' : ''})`);
+
+  // Affichages:
+  // - Urgent: montrer le prix doublé comme principal, et le prix actuel (remisé) entre parenthèses
+  // - Non urgent + promo: montrer le prix remisé comme principal, et le prix de base entre parenthèses
+  // - Non urgent sans promo: montrer le prix de base
+  if (isUrgent) {
+    priceBox.textContent = `${formatFcfa(finalPrice)} (au lieu de ${formatFcfa(discounted)})`;
+  } else if (appliedCoupon) {
+    priceBox.textContent = `${formatFcfa(discounted)} (au lieu de ${formatFcfa(base)})`;
+  } else {
+    priceBox.textContent = formatFcfa(base);
   }
-  priceBox.textContent = parts.join(' ');
 }
 
 function toggleIssueBlock() {
