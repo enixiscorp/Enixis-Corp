@@ -42,6 +42,17 @@
         </div>
 
         <div class="field">
+          <label for="delivery_time">Délai souhaité pour le rendu</label>
+          <select id="delivery_time" name="delivery_time" required>
+            <option value="" disabled selected>Choisissez un délai…</option>
+            <option value="urgent">🚨 Urgent (24h) – Tarification double</option>
+            <option value="short">⏳ Court terme (3 – 7 jours) – Tarification normale</option>
+            <option value="medium">📅 Moyen terme (2 – 4 semaines) – Tarification normale</option>
+            <option value="long">🕰️ Long terme (1 – 6 mois) – Tarification normale</option>
+          </select>
+        </div>
+
+        <div class="field">
           <label class="inline">
             <input type="checkbox" id="has_promo" name="has_promo"> Appliquer un code promotionnel
           </label>

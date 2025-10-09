@@ -80,6 +80,7 @@ const formEl = document.getElementById('request-form');
 const serviceEl = document.getElementById('service');
 const priceBox = document.getElementById('price-box');
 const noteEl = document.getElementById('request-note');
+const deliveryTimeEl = document.getElementById('delivery_time');
 
 // Promo elements
 const hasPromoEl = document.getElementById('has_promo');
@@ -128,6 +129,14 @@ function computeDiscountedPrice(basePrice) {
   return Math.max(0, discounted);
 }
 
+function computeDeliveryAdjustedPrice(price) {
+  if (!deliveryTimeEl) return price;
+  const val = deliveryTimeEl.value;
+  // Urgent double
+  if (val === 'urgent') return price * 2;
+  return price;
+}
+
 function serviceLabel(value) {
   const service = SERVICES[value];
   return service ? service.label : value;
@@ -139,9 +148,14 @@ function updatePrice() {
   const service = SERVICES[serviceValue];
   const base = service ? service.price : null;
   if (base === null) { priceBox.textContent = '—'; return; }
-  const finalPrice = computeDiscountedPrice(base);
+  const discounted = computeDiscountedPrice(base);
+  const finalPrice = computeDeliveryAdjustedPrice(discounted);
   if (appliedCoupon) {
-    priceBox.textContent = `${formatFcfa(finalPrice)} (au lieu de ${formatFcfa(base)})`;
+    if (finalPrice !== base) {
+      priceBox.textContent = `${formatFcfa(finalPrice)} (au lieu de ${formatFcfa(base)})`;
+    } else {
+      priceBox.textContent = formatFcfa(base);
+    }
   } else {
     priceBox.textContent = formatFcfa(base);
   }
@@ -269,6 +283,10 @@ function buildSlackText(data) {
     `• Prestation: ${serviceLabel(data.service)}`,
     `• Prix indicatif: ${formatFcfa(data.price)}`
   ];
+  if (data.delivery) {
+    const label = data.delivery === 'urgent' ? 'Urgent (24h – x2)' : data.delivery === 'short' ? 'Court terme (3–7j)' : data.delivery === 'medium' ? 'Moyen terme (2–4 sem.)' : data.delivery === 'long' ? 'Long terme (1–6 mois)' : data.delivery;
+    lines.push(`• Délai: ${label}`);
+  }
   if (data.details) lines.push(`• Détails: ${data.details}`);
   if (data.issue) {
     lines.push(`• Souci: ${data.issue.type}`);
@@ -286,6 +304,7 @@ formEl?.addEventListener('change', (e) => {
 
 hasIssueEl?.addEventListener('change', toggleIssueBlock);
 issueTypeEl?.addEventListener('change', onIssueTypeChange);
+deliveryTimeEl?.addEventListener('change', updatePrice);
 hasPromoEl?.addEventListener('change', togglePromoBlock);
 applyPromoBtn?.addEventListener('click', applyCouponFromInput);
 removePromoBtn?.addEventListener('click', removeCoupon);
@@ -300,7 +319,8 @@ formEl?.addEventListener('submit', async (e) => {
   const service = serviceEl.value;
   const serviceData = SERVICES[service];
   const basePrice = serviceData ? serviceData.price : '';
-  const price = basePrice ? computeDiscountedPrice(basePrice) : '';
+  const price = basePrice ? computeDeliveryAdjustedPrice(computeDiscountedPrice(basePrice)) : '';
+  const delivery = deliveryTimeEl?.value || '';
   const details = document.getElementById('additional_details').value.trim();
 
   if (!name || !email || !phone || !service) {
@@ -332,7 +352,7 @@ formEl?.addEventListener('submit', async (e) => {
     }
   }
 
-  const slackText = buildSlackText({ name, email, phone, service, price, details, issue });
+  const slackText = buildSlackText({ name, email, phone, service, price, details, issue, delivery });
 
   try {
     await submitToSlack({ text: slackText });
@@ -345,7 +365,8 @@ formEl?.addEventListener('submit', async (e) => {
       finalPrice: price,
       coupon: appliedCoupon,
       details,
-      issue
+      issue,
+      delivery
     }, async () => {
       try {
         await submitToSlack({ text: slackText });
@@ -415,6 +436,10 @@ function showOrderSummary(data, onConfirm) {
   lines.push(`<p><strong>Email:</strong> ${data.email}</p>`);
   lines.push(`<p><strong>Téléphone:</strong> ${data.phone}</p>`);
   lines.push(`<p><strong>Prestation:</strong> ${data.serviceLabel}</p>`);
+  if (data.delivery) {
+    const deliveryLabel = data.delivery === 'urgent' ? '🚨 Urgent (24h – tarification double)' : data.delivery === 'short' ? '⏳ Court terme (3 – 7 jours)' : data.delivery === 'medium' ? '📅 Moyen terme (2 – 4 semaines)' : data.delivery === 'long' ? '🕰️ Long terme (1 – 6 mois)' : data.delivery;
+    lines.push(`<p><strong>Délai:</strong> ${deliveryLabel}</p>`);
+  }
   if (data.coupon) {
     lines.push(`<p><strong>Code promo:</strong> ${data.coupon.code} (−${data.coupon.percent}% )</p>`);
   }
@@ -428,6 +453,10 @@ function showOrderSummary(data, onConfirm) {
     if (data.issue.explain) lines.push(`<p><strong>Explication:</strong> ${data.issue.explain}</p>`);
   }
   orderSummaryEl.innerHTML = lines.join('');
+  // Ajout du message de remerciement
+  const thanks = document.createElement('div');
+  thanks.innerHTML = `<p style="margin-top:12px;">💬 Merci pour votre commande !<br>Nous vous contacterons sous 15 - 30 minutes pour confirmer les prochaines étapes. Pour toute question urgente, contactez-nous à <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a> ou au <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97572346</a>.</p>`;
+  orderSummaryEl.appendChild(thanks);
   orderPopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
   orderConfirmCallback = onConfirm;
