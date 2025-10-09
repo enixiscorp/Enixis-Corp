@@ -81,6 +81,13 @@ const serviceEl = document.getElementById('service');
 const priceBox = document.getElementById('price-box');
 const noteEl = document.getElementById('request-note');
 
+// Promo elements
+const hasPromoEl = document.getElementById('has_promo');
+const promoBlock = document.getElementById('promo_block');
+const promoCodeEl = document.getElementById('promo_code');
+const applyPromoBtn = document.getElementById('apply_promo_btn');
+const removePromoBtn = document.getElementById('remove_promo_btn');
+
 const hasIssueEl = document.getElementById('has_issue');
 const issueBlock = document.getElementById('issue_block');
 const issueTypeEl = document.getElementById('issue_type');
@@ -106,6 +113,21 @@ function formatFcfa(amount) {
   return `${n.toLocaleString('fr-FR')} F CFA`;
 }
 
+// Gestion promo
+const ACTIVE_COUPONS = {
+  'ENX_RUTH_12': { percent: 14.3, label: 'Réduction 14,3% (6 mois)' },
+  'ENX_MARTIN_11': { percent: 14.3, label: 'Réduction 14,3% (6 mois)' }
+};
+
+let appliedCoupon = null; // { code, percent }
+
+function computeDiscountedPrice(basePrice) {
+  if (!appliedCoupon) return basePrice;
+  const pct = appliedCoupon.percent / 100;
+  const discounted = Math.round(basePrice * (1 - pct));
+  return Math.max(0, discounted);
+}
+
 function serviceLabel(value) {
   const service = SERVICES[value];
   return service ? service.label : value;
@@ -115,8 +137,14 @@ function updatePrice() {
   const serviceValue = serviceEl.value;
   if (!serviceValue) { priceBox.textContent = '—'; return; }
   const service = SERVICES[serviceValue];
-  const price = service ? service.price : null;
-  priceBox.textContent = formatFcfa(price);
+  const base = service ? service.price : null;
+  if (base === null) { priceBox.textContent = '—'; return; }
+  const finalPrice = computeDiscountedPrice(base);
+  if (appliedCoupon) {
+    priceBox.textContent = `${formatFcfa(finalPrice)} (au lieu de ${formatFcfa(base)})`;
+  } else {
+    priceBox.textContent = formatFcfa(base);
+  }
 }
 
 function toggleIssueBlock() {
@@ -147,6 +175,59 @@ function onIssueTypeChange() {
     budgetRow.style.display = 'none';
     issueDetailsRow.style.display = 'none';
   }
+}
+
+// Alert popup helpers (réutilisé pour code invalide)
+const alertPopup = document.getElementById('alert-popup');
+const alertMsg = document.getElementById('alert-message');
+const alertClose = alertPopup ? alertPopup.querySelector('.popup-close') : null;
+
+function showAlert(message) {
+  if (!alertPopup) { alert(message); return; }
+  alertMsg.textContent = message;
+  alertPopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function hideAlert() {
+  if (!alertPopup) return;
+  alertPopup.style.display = 'none';
+  document.body.style.overflow = '';
+}
+alertClose?.addEventListener('click', hideAlert);
+alertPopup?.addEventListener('click', (e) => { if (e.target === alertPopup) hideAlert(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && alertPopup?.style.display === 'flex') hideAlert(); });
+
+function togglePromoBlock() {
+  const show = hasPromoEl?.checked;
+  if (!promoBlock) return;
+  promoBlock.style.display = show ? '' : 'none';
+  if (!show) {
+    appliedCoupon = null;
+    promoCodeEl.value = '';
+    removePromoBtn.style.display = 'none';
+    applyPromoBtn.style.display = '';
+    updatePrice();
+  }
+}
+
+function applyCouponFromInput() {
+  const code = (promoCodeEl.value || '').trim().toUpperCase();
+  const def = ACTIVE_COUPONS[code];
+  if (!def) {
+    showAlert('Code Promotionnel Ou Coupon Inexistant');
+    return;
+  }
+  appliedCoupon = { code, percent: def.percent };
+  removePromoBtn.style.display = '';
+  applyPromoBtn.style.display = 'none';
+  updatePrice();
+}
+
+function removeCoupon() {
+  appliedCoupon = null;
+  removePromoBtn.style.display = 'none';
+  applyPromoBtn.style.display = '';
+  updatePrice();
 }
 
 async function submitToSlack(payload) {
@@ -205,6 +286,9 @@ formEl?.addEventListener('change', (e) => {
 
 hasIssueEl?.addEventListener('change', toggleIssueBlock);
 issueTypeEl?.addEventListener('change', onIssueTypeChange);
+hasPromoEl?.addEventListener('change', togglePromoBlock);
+applyPromoBtn?.addEventListener('click', applyCouponFromInput);
+removePromoBtn?.addEventListener('click', removeCoupon);
 
 formEl?.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -215,7 +299,8 @@ formEl?.addEventListener('submit', async (e) => {
   const phone = document.getElementById('client_phone').value.trim();
   const service = serviceEl.value;
   const serviceData = SERVICES[service];
-  const price = serviceData ? serviceData.price : '';
+  const basePrice = serviceData ? serviceData.price : '';
+  const price = basePrice ? computeDiscountedPrice(basePrice) : '';
   const details = document.getElementById('additional_details').value.trim();
 
   if (!name || !email || !phone || !service) {
@@ -252,9 +337,28 @@ formEl?.addEventListener('submit', async (e) => {
   try {
     await submitToSlack({ text: slackText });
     noteEl.textContent = 'Votre demande a été envoyée. Merci !';
-    formEl.reset();
-    updatePrice();
-    toggleIssueBlock();
+    // Afficher un récapitulatif avant l'envoi effectif (pop-up de confirmation)
+    showOrderSummary({
+      name, email, phone,
+      serviceLabel: serviceLabel(service),
+      basePrice,
+      finalPrice: price,
+      coupon: appliedCoupon,
+      details,
+      issue
+    }, async () => {
+      try {
+        await submitToSlack({ text: slackText });
+        noteEl.textContent = 'Votre demande a été envoyée. Merci !';
+        formEl.reset();
+        appliedCoupon = null;
+        updatePrice();
+        toggleIssueBlock();
+        togglePromoBlock();
+      } catch {
+        noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
+      }
+    });
   } catch {
     noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
   }
@@ -286,5 +390,67 @@ function populateServiceOptions() {
 populateServiceOptions();
 updatePrice();
 toggleIssueBlock();
+togglePromoBlock();
+
+// Order summary popup
+const orderPopup = document.getElementById('order-popup');
+const orderClose = orderPopup ? orderPopup.querySelector('.popup-close') : null;
+const orderSummaryEl = document.getElementById('order-summary');
+const orderConfirmBtn = document.getElementById('confirm-order-btn');
+const orderCancelBtn = document.getElementById('cancel-order-btn');
+
+let orderConfirmCallback = null;
+
+function currencyPair(base, final) {
+  if (final !== undefined && final !== null && final !== '' && final !== base) {
+    return `${formatFcfa(final)} (au lieu de ${formatFcfa(base)})`;
+  }
+  return formatFcfa(base);
+}
+
+function showOrderSummary(data, onConfirm) {
+  if (!orderPopup) return;
+  const lines = [];
+  lines.push(`<p><strong>Nom:</strong> ${data.name}</p>`);
+  lines.push(`<p><strong>Email:</strong> ${data.email}</p>`);
+  lines.push(`<p><strong>Téléphone:</strong> ${data.phone}</p>`);
+  lines.push(`<p><strong>Prestation:</strong> ${data.serviceLabel}</p>`);
+  if (data.coupon) {
+    lines.push(`<p><strong>Code promo:</strong> ${data.coupon.code} (−${data.coupon.percent}% )</p>`);
+  }
+  lines.push(`<p><strong>Prix:</strong> ${currencyPair(data.basePrice, data.finalPrice)}</p>`);
+  if (data.details) lines.push(`<p><strong>Détails:</strong> ${data.details}</p>`);
+  if (data.issue) {
+    lines.push(`<p><strong>Souci:</strong> ${data.issue.type}</p>`);
+    if (data.issue.type === 'montant' && data.issue.budget) {
+      lines.push(`<p><strong>Budget proposé:</strong> ${formatFcfa(data.issue.budget)}</p>`);
+    }
+    if (data.issue.explain) lines.push(`<p><strong>Explication:</strong> ${data.issue.explain}</p>`);
+  }
+  orderSummaryEl.innerHTML = lines.join('');
+  orderPopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  orderConfirmCallback = onConfirm;
+}
+
+function hideOrderSummary() {
+  if (!orderPopup) return;
+  orderPopup.style.display = 'none';
+  document.body.style.overflow = '';
+  orderConfirmCallback = null;
+}
+
+orderClose?.addEventListener('click', hideOrderSummary);
+orderCancelBtn?.addEventListener('click', hideOrderSummary);
+orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hideOrderSummary(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && orderPopup?.style.display === 'flex') hideOrderSummary(); });
+orderConfirmBtn?.addEventListener('click', async () => {
+  if (typeof orderConfirmCallback === 'function') {
+    hideOrderSummary();
+    await orderConfirmCallback();
+  } else {
+    hideOrderSummary();
+  }
+});
 
 

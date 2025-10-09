@@ -42,6 +42,24 @@
         </div>
 
         <div class="field">
+          <label class="inline">
+            <input type="checkbox" id="has_promo" name="has_promo"> Appliquer un code promotionnel
+          </label>
+        </div>
+
+        <div id="promo_block" style="display:none;">
+          <div class="field">
+            <label for="promo_code">Code promotionnel</label>
+            <div class="promo-row">
+              <input id="promo_code" name="promo_code" type="text" placeholder="Ex: ENX_RUTH_12">
+              <button type="button" id="apply_promo_btn" class="btn small">Appliquer</button>
+              <button type="button" id="remove_promo_btn" class="btn small ghost" style="display:none;">Retirer</button>
+            </div>
+            <small id="promo_hint" class="form-note">Codes actifs: ENX_RUTH_12, ENX_MARTIN_11 (−14,3% pendant 6 mois)</small>
+          </div>
+        </div>
+
+        <div class="field">
           <label for="additional_details">Détails complémentaires</label>
           <textarea id="additional_details" name="additional_details" rows="4"
             placeholder="Ajoutez des précisions utiles (délais, contexte, références…)"></textarea>
@@ -82,6 +100,37 @@
       </form>
     </div>
   </main>
+
+  <!-- Pop-up simple pour les alertes (ex: code promo invalide) -->
+  <div id="alert-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="alert-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="alert-title">Notification</h3>
+      </div>
+      <div class="popup-body">
+        <p id="alert-message">—</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up récapitulatif de commande -->
+  <div id="order-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="order-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="order-title">Récapitulatif de votre demande</h3>
+      </div>
+      <div class="popup-body">
+        <div id="order-summary"></div>
+        <p style="margin-top:12px; font-weight:700; color:#c00;">Prenez une capture d'écran de votre reçu</p>
+      </div>
+      <div class="actions" style="margin-top:12px;">
+        <button type="button" id="confirm-order-btn" class="btn primary">Confirmer et envoyer</button>
+        <button type="button" id="cancel-order-btn" class="btn cancel">Fermer</button>
+      </div>
+    </div>
+  </div>
 
   <script src="env.js"></script>
   <script src="request.js" defer></script>
