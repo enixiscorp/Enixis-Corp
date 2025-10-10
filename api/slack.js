@@ -9,16 +9,15 @@ module.exports = async function handler(req, res) {
   }
 
   // Protection simple CORS / Origin (optionnelle, ajustez selon votre domaine)
-  const origin = req.headers.origin || '';
+  const origin = req.headers.origin || '*';
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-  if (allowedOrigins.length > 0 && !allowedOrigins.includes(origin)) {
+  const allowThisOrigin = allowedOrigins.length === 0 || allowedOrigins.includes(req.headers.origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Origin', allowThisOrigin ? (req.headers.origin || '*') : 'null');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (!allowThisOrigin) {
     return res.status(403).json({ error: 'Forbidden origin' });
-  }
-  if (origin) {
-    res.setHeader('Vary', 'Origin');
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   }
   if (req.method === 'OPTIONS') {
     return res.status(204).end();
@@ -27,7 +26,15 @@ module.exports = async function handler(req, res) {
   // Valider payload minimal
   let body;
   try {
-    body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    if (req.headers['content-type'] && req.headers['content-type'].includes('application/json') && typeof req.body === 'string') {
+      body = JSON.parse(req.body);
+    } else if (typeof req.body === 'object') {
+      body = req.body;
+    } else if (typeof req.body === 'string') {
+      body = JSON.parse(req.body);
+    } else {
+      body = {};
+    }
   } catch {
     return res.status(400).json({ error: 'Invalid JSON body' });
   }

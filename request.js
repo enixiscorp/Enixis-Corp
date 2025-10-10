@@ -259,6 +259,8 @@ async function submitToSlack(payload) {
       credentials: 'omit'
     });
     if (resp.ok) return;
+    const err = await resp.json().catch(async () => ({ raw: await resp.text().catch(() => '') }));
+    console.error('Proxy Slack error:', resp.status, err);
     // Si le proxy répond mais en erreur, essayer le repli direct si configuré
   } catch {}
 
@@ -485,8 +487,18 @@ orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hide
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && orderPopup?.style.display === 'flex') hideOrderSummary(); });
 orderConfirmBtn?.addEventListener('click', async () => {
   if (typeof orderConfirmCallback === 'function') {
-    hideOrderSummary();
-    await orderConfirmCallback();
+    // état visuel d'envoi
+    try {
+      orderConfirmBtn.disabled = true;
+      orderConfirmBtn.textContent = 'Envoi en cours…';
+      await orderConfirmCallback();
+    } catch (e) {
+      showAlert((e && e.message) ? e.message : 'Échec d\'envoi');
+    } finally {
+      orderConfirmBtn.disabled = false;
+      orderConfirmBtn.textContent = 'Confirmer et envoyer';
+      hideOrderSummary();
+    }
   } else {
     hideOrderSummary();
   }
