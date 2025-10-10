@@ -99,8 +99,9 @@ const budgetAmountEl = document.getElementById('budget_amount');
 
 // Envoi Slack: 2 modes
 // - Mode A (proxy): POST vers /api/slack (recommandé)
-// - Mode B (env.js public): POST direct vers Slack via window.env.SLACK_WEBHOOK_URL (expérimental)
-const SLACK_PROXY_ENDPOINT = '/api/slack';
+// - Mode B (env.js public): POST direct vers Slack via window.env.SLACK_WEBHOOK_URL (repli)
+const API_BASE = (window.env && window.env.API_BASE) ? String(window.env.API_BASE).replace(/\/$/, '') : '';
+const SLACK_PROXY_ENDPOINT = `${API_BASE}/api/slack`;
 
 function getSlackWebhookUrl() {
   const fromEnv = (window.env && window.env.SLACK_WEBHOOK_URL) ? String(window.env.SLACK_WEBHOOK_URL) : '';
@@ -249,11 +250,22 @@ function removeCoupon() {
 }
 
 async function submitToSlack(payload) {
+  // 1) Essayer le proxy sécurisé
+  try {
+    const resp = await fetch(SLACK_PROXY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'omit'
+    });
+    if (resp.ok) return;
+    // Si le proxy répond mais en erreur, essayer le repli direct si configuré
+  } catch {}
+
+  // 2) Repli: envoi direct si une URL publique est définie (optionnel)
   const directUrl = getSlackWebhookUrl();
-  // Mode B: envoi direct (no-cors), sinon fallback proxy
   if (directUrl) {
     try {
-      // no-cors: on ne lit pas la réponse, mais l'appel est déclenché
       await fetch(directUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -261,21 +273,19 @@ async function submitToSlack(payload) {
         mode: 'no-cors',
         keepalive: true
       });
-      return; // considérer comme envoyé (pas de lecture de réponse en no-cors)
+      return;
     } catch (e) {
-      // Fallback sendBeacon si fetch échoue
       try {
         const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
         const ok = navigator.sendBeacon(directUrl, blob);
-        if (ok) return; // considérer comme envoyé
-      } catch { }
-      // En mode GitHub Pages (statique), ne pas tenter de proxy inexistant
+        if (ok) return;
+      } catch {}
       throw new Error(`Erreur d'envoi direct: ${e.message}`);
     }
   }
 
-  // Si aucune URL directe n'est fournie, lever une erreur explicite
-  throw new Error('SLACK_WEBHOOK_URL manquant dans window.env - veuillez configurer env.js');
+  // 3) Aucune option disponible
+  throw new Error('Aucun canal d\'envoi disponible (proxy injoignable et SLACK_WEBHOOK_URL absent)');
 }
 
 function buildSlackText(data) {
