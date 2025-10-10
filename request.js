@@ -471,7 +471,7 @@ function showOrderSummary(data, onConfirm) {
   orderSummaryEl.appendChild(thanks);
   orderPopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  orderConfirmCallback = onConfirm;
+  orderConfirmCallback = (typeof onConfirm === 'function') ? onConfirm : null;
 }
 
 function hideOrderSummary() {
@@ -486,12 +486,13 @@ orderCancelBtn?.addEventListener('click', hideOrderSummary);
 orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hideOrderSummary(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && orderPopup?.style.display === 'flex') hideOrderSummary(); });
 orderConfirmBtn?.addEventListener('click', async () => {
-  if (typeof orderConfirmCallback === 'function') {
+  const fn = (typeof orderConfirmCallback === 'function') ? orderConfirmCallback : null;
+  if (fn) {
     // état visuel d'envoi
     try {
       orderConfirmBtn.disabled = true;
       orderConfirmBtn.textContent = 'Envoi en cours…';
-      await orderConfirmCallback();
+      await fn();
     } catch (e) {
       showAlert((e && e.message) ? e.message : 'Échec d\'envoi');
     } finally {
