@@ -413,6 +413,35 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
   box-shadow: 0 4px 12px rgba(0,70,204,0.1);
 }
 
+/* Checkboxes accentuées */
+.checkbox-accent { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.checkbox-accent input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary);
+  border-radius: 6px;
+  background: #fff;
+  display: inline-block;
+  position: relative;
+  transition: all .2s ease;
+}
+.checkbox-accent input[type="checkbox"]:checked {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(0,70,204,0.12);
+}
+.checkbox-accent input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px; top: 0px;
+  width: 6px; height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.checkbox-accent span { font-weight: 700; color: #222; }
+
 #request .price-box::before {
   content: '';
   position: absolute;
@@ -430,6 +459,8 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; transition: transform .2s ease, background .2s ease, border-color .2s ease; cursor: pointer; }
 .btn.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); }
 .btn.primary:hover { transform: translateY(-2px); filter: saturate(110%); }
+.btn.back-link { position: relative; margin-bottom: 10px; background: transparent; border: 1px solid rgba(255,255,255,0.25); color: var(--text); padding: 6px 10px; border-radius: 10px; font-size: .9rem; }
+.btn.back-link:hover { background: rgba(255,255,255,0.08); }
 
 /* Bouton spécial pour le formulaire de demande */
 #request .btn.primary {

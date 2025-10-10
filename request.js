@@ -383,11 +383,7 @@ formEl?.addEventListener('submit', async (e) => {
     try {
       await submitToSlack({ text: slackText });
       noteEl.textContent = 'Votre demande a été envoyée. Merci !';
-      formEl.reset();
-      appliedCoupon = null;
-      updatePrice();
-      toggleIssueBlock();
-      togglePromoBlock();
+      resetRequestForm();
     } catch {
       noteEl.textContent = "Erreur lors de l'envoi. Veuillez réessayer plus tard.";
     }
@@ -503,6 +499,22 @@ orderConfirmBtn?.addEventListener('click', async () => {
   } else {
     hideOrderSummary();
   }
+});
+
+// Reset complet (bouton Annuler et après envoi)
+function resetRequestForm() {
+  formEl.reset();
+  appliedCoupon = null;
+  updatePrice();
+  toggleIssueBlock();
+  togglePromoBlock();
+  noteEl.textContent = '';
+}
+
+// Bouton Annuler: forcer le reset complet
+document.querySelector('#request-form .btn.cancel')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  resetRequestForm();
 });
 
 
