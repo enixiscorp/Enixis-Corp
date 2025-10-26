@@ -610,9 +610,11 @@ function showPaymentOptions(country) {
   const amount = currentOrderData.finalPrice;
   const amountText = formatFcfa(amount);
 
-  // Envoyer notification de sélection de pays
-  const countryLabel = country === 'togo' ? '🇹🇬 Togo' : country === 'africa' ? '🌍 Afrique (autres pays)' : '🌎 Reste du Monde';
-  sendCountrySelectionNotification(countryLabel, amount, currentOrderData);
+  // Envoyer notification seulement pour le Togo (paiement direct)
+  if (country === 'togo') {
+    const countryLabel = '🇹🇬 Togo';
+    sendCountrySelectionNotification(countryLabel, amount, currentOrderData);
+  }
 
   paymentInfo.innerHTML = `
     <div class="amount-highlight">
@@ -819,9 +821,6 @@ function showCryptoOptions(amount) {
 
   cryptoContent.innerHTML = cryptoHTML;
 
-  // Envoyer notification Slack pour sélection crypto
-  sendPaymentNotification('Cryptomonnaie (sélection)', amount, currentOrderData);
-
   // Ajouter les event listeners
   document.querySelectorAll('.crypto-option').forEach(option => {
     option.addEventListener('click', () => {
@@ -873,9 +872,6 @@ function showCryptoPayment(cryptoType, amount) {
 
   cryptoContent.innerHTML = cryptoHTML;
 
-  // Envoyer notification Slack
-  sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
-
   // Variable pour suivre si l'adresse a été copiée
   let addressCopied = false;
 
@@ -884,6 +880,16 @@ function showCryptoPayment(cryptoType, amount) {
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       addressCopied = true;
+      
+      // Envoyer les notifications Slack maintenant que l'adresse est copiée
+      if (currentOrderData.selectedCountry) {
+        // Notification de sélection de pays (différée)
+        sendCountrySelectionNotification(currentOrderData.selectedCountry, amount, currentOrderData);
+      }
+      
+      // Notification de paiement crypto
+      sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
+      
       // Générer la facture après 3 secondes une fois l'adresse copiée
       setTimeout(() => {
         hideCryptoPayment();
@@ -899,6 +905,12 @@ function showCryptoPayment(cryptoType, amount) {
   // Fallback : si l'utilisateur n'a pas copié après 30 secondes, générer quand même
   setTimeout(() => {
     if (!addressCopied) {
+      // Envoyer les notifications même si pas de copie (fallback)
+      if (currentOrderData.selectedCountry) {
+        sendCountrySelectionNotification(currentOrderData.selectedCountry, amount, currentOrderData);
+      }
+      sendPaymentNotification(`${cryptoType} (${network}) - Sans copie d'adresse`, amount, currentOrderData);
+      
       hideCryptoPayment();
       showInvoice(currentOrderData, `${cryptoType} (${network})`);
       setTimeout(() => {
@@ -922,11 +934,39 @@ function copyWalletAddress() {
       const originalText = copyBtn.textContent;
       copyBtn.textContent = '✅ Copié !';
       copyBtn.style.background = '#28a745';
+      copyBtn.style.color = 'white';
+      copyBtn.style.transform = 'scale(1.05)';
+
+      // Ajouter un message de confirmation
+      const confirmationMsg = document.createElement('p');
+      confirmationMsg.innerHTML = '✅ <strong>Adresse copiée !</strong> Votre facture sera générée dans quelques secondes.';
+      confirmationMsg.style.color = '#28a745';
+      confirmationMsg.style.fontWeight = '600';
+      confirmationMsg.style.textAlign = 'center';
+      confirmationMsg.style.marginTop = '15px';
+      confirmationMsg.style.padding = '10px';
+      confirmationMsg.style.background = 'rgba(40, 167, 69, 0.1)';
+      confirmationMsg.style.borderRadius = '8px';
+      confirmationMsg.style.border = '1px solid rgba(40, 167, 69, 0.3)';
+      
+      const walletInfo = document.querySelector('.wallet-info');
+      if (walletInfo && !walletInfo.querySelector('.copy-confirmation')) {
+        confirmationMsg.className = 'copy-confirmation';
+        walletInfo.appendChild(confirmationMsg);
+      }
 
       setTimeout(() => {
         copyBtn.textContent = originalText;
         copyBtn.style.background = '';
-      }, 2000);
+        copyBtn.style.color = '';
+        copyBtn.style.transform = '';
+        
+        // Supprimer le message de confirmation
+        const existingMsg = walletInfo?.querySelector('.copy-confirmation');
+        if (existingMsg) {
+          existingMsg.remove();
+        }
+      }, 5000);
     }).catch(() => {
       showAlert('Impossible de copier automatiquement. Veuillez sélectionner et copier manuellement.');
     });
@@ -935,6 +975,11 @@ function copyWalletAddress() {
 
 // Fonction pour envoyer la notification de sélection de pays à Slack
 async function sendCountrySelectionNotification(country, amount, orderData) {
+  const isTogoPayment = country.includes('🇹🇬');
+  const paymentContext = isTogoPayment ? 
+    'Le client peut choisir entre Flooz, Mixx by Yas ou Crypto.' :
+    'Le client va procéder au paiement par cryptomonnaie.';
+
   const slackText = `
 🌍 SÉLECTION DE PAYS - Enixis Corp
 
@@ -949,10 +994,11 @@ async function sendCountrySelectionNotification(country, amount, orderData) {
 📦 Commande:
 • Prestation: ${orderData.serviceLabel}
 • Délai: ${orderData.delivery || 'Non spécifié'}
+${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${orderData.details.length > 100 ? '...' : ''}` : ''}
 
 ⏰ ${new Date().toLocaleString('fr-FR')}
 
-ℹ️ Le client va maintenant choisir sa méthode de paiement.
+ℹ️ ${paymentContext}
   `.trim();
 
   try {
@@ -1320,7 +1366,12 @@ function filterCountries(searchTerm, countries, container, region) {
 function selectCountry(countryName, region) {
   hideCountrySelection();
   const countryLabel = `${region === 'africa' ? '🌍' : '🌎'} ${countryName}`;
-  sendCountrySelectionNotification(countryLabel, currentOrderData?.finalPrice || 0, currentOrderData);
+  
+  // Stocker le pays sélectionné pour l'utiliser plus tard
+  if (currentOrderData) {
+    currentOrderData.selectedCountry = countryLabel;
+  }
+  
   showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
 }
 
