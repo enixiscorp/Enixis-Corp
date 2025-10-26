@@ -81,6 +81,7 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 .hero-image-container {
   width: 100%;
   max-width: 995px;
+  aspect-ratio: 16 / 9; /* Format rectangulaire standard */
   margin: auto;
   position: relative;
   overflow: hidden;
@@ -90,7 +91,7 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
     0 8px 16px rgba(0,0,0,0.15);
   transform: perspective(1000px) rotateY(-2deg) rotateX(1deg);
   transition: all 0.4s ease;
-  background: transparent;
+  background: linear-gradient(135deg, rgba(10, 15, 44, 0.1), rgba(255, 43, 43, 0.1));
 }
 
 .hero-image-container:hover {
@@ -102,10 +103,11 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 
 .hero-image-container img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
   border-radius: 20px;
-  object-fit: cover;
+  object-fit: cover; /* Assure un remplissage parfait sans déformation */
+  object-position: center; /* Centre l'image */
   filter: contrast(1.1) saturate(1.05) brightness(1.02);
   transition: all 0.4s ease;
 }
@@ -127,6 +129,7 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
 /* ✅ Ajustements mobiles pour l'image hero */
 @media (max-width: 768px) {
   .hero-image-container {
+    aspect-ratio: 16 / 10; /* Légèrement plus carré sur tablette */
     border-radius: 15px;
     transform: perspective(800px) rotateY(-1deg) rotateX(0.5deg);
     box-shadow: 
@@ -139,13 +142,13 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
   }
 
   .hero-image-container img {
-    width: 100%;
     border-radius: 15px;
   }
 }
 
 @media (max-width: 480px) {
   .hero-image-container {
+    aspect-ratio: 4 / 3; /* Format plus adapté au mobile */
     border-radius: 12px;
     transform: none;
     box-shadow: 
@@ -158,7 +161,6 @@ link[rel="icon"], link[rel="apple-touch-icon"] { border-radius: 20%; }
   }
 
   .hero-image-container img {
-    width: 100%;
     border-radius: 12px;
   }
 }
@@ -561,16 +563,16 @@ main:focus { outline: none; }
 /* Styles pour les pop-ups de paiement */
 .country-options {
   display: grid;
-  gap: 12px;
-  margin-top: 16px;
+  gap: 15px;
+  margin-top: 20px;
 }
 
 .country-btn {
   background: linear-gradient(135deg, var(--primary), var(--accent));
   color: white;
-  border: none;
-  padding: 16px 20px;
-  border-radius: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  padding: 18px 24px;
+  border-radius: 15px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -579,12 +581,36 @@ main:focus { outline: none; }
   display: flex;
   align-items: center;
   gap: 12px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.country-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.country-btn:hover::before {
+  left: 100%;
 }
 
 .country-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(0,70,204,0.3);
-  filter: brightness(1.1);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0,70,204,0.4);
+  filter: brightness(1.15);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.country-btn:active {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,70,204,0.3);
 }
 
 .payment-method {
@@ -1173,44 +1199,88 @@ r l'aide des champs obligatoires */
 }/* Styles 
 pour les listes déroulantes de pays */
 .country-dropdown {
-  margin-top: 20px;
+  margin-top: 25px;
+  background: linear-gradient(135deg, rgba(10, 15, 44, 0.05), rgba(255, 43, 43, 0.05));
+  border-radius: 15px;
+  padding: 20px;
+  border: 1px solid rgba(10, 15, 44, 0.1);
 }
 
 .country-search {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.country-search::before {
+  content: "🔍";
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.1rem;
+  z-index: 1;
 }
 
 .country-search-input {
   width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #ddd;
-  border-radius: 8px;
+  padding: 14px 16px 14px 45px;
+  border: 2px solid rgba(10, 15, 44, 0.2);
+  border-radius: 12px;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
+  background: white;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .country-search-input:focus {
   outline: none;
   border-color: #0A0F2C;
-  box-shadow: 0 0 0 3px rgba(10, 15, 44, 0.1);
+  box-shadow: 0 0 0 3px rgba(10, 15, 44, 0.15), 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-1px);
+}
+
+.country-search-input::placeholder {
+  color: #999;
+  font-style: italic;
 }
 
 .country-list {
-  max-height: 300px;
+  max-height: 320px;
   overflow-y: auto;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  border: 2px solid rgba(10, 15, 44, 0.1);
+  border-radius: 12px;
   background: white;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+}
+
+.country-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.country-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.country-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #0A0F2C, #1a237e);
+  border-radius: 4px;
+}
+
+.country-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #1a237e, #0A0F2C);
 }
 
 .country-item {
-  padding: 12px 16px;
-  border-bottom: 1px solid #eee;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(10, 15, 44, 0.08);
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  position: relative;
+  background: white;
 }
 
 .country-item:last-child {
@@ -1218,28 +1288,60 @@ pour les listes déroulantes de pays */
 }
 
 .country-item:hover {
-  background-color: #f8f9fa;
+  background: linear-gradient(135deg, rgba(10, 15, 44, 0.08), rgba(255, 43, 43, 0.08));
+  transform: translateX(4px);
+  box-shadow: inset 4px 0 0 #0A0F2C;
+}
+
+.country-item:active {
+  background: linear-gradient(135deg, rgba(10, 15, 44, 0.15), rgba(255, 43, 43, 0.15));
+  transform: translateX(2px);
 }
 
 .country-item.selected {
-  background-color: #0A0F2C;
+  background: linear-gradient(135deg, #0A0F2C, #1a237e);
   color: white;
+  box-shadow: 0 2px 8px rgba(10, 15, 44, 0.3);
 }
 
 .country-flag {
-  font-size: 1.2rem;
-  width: 24px;
+  font-size: 1.4rem;
+  width: 28px;
   text-align: center;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
 }
 
 .country-name {
   flex: 1;
   font-weight: 500;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.country-item:hover .country-name {
+  color: #0A0F2C;
+  font-weight: 600;
+}
+
+.country-item.selected .country-name {
+  color: white;
 }
 
 .back-btn {
-  margin-top: 15px;
+  margin-top: 20px;
   width: 100%;
+  background: linear-gradient(135deg, rgba(10, 15, 44, 0.1), rgba(255, 43, 43, 0.1));
+  border: 2px solid rgba(10, 15, 44, 0.2);
+  color: #0A0F2C;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: linear-gradient(135deg, #0A0F2C, #1a237e);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(10, 15, 44, 0.3);
 }
 
 /* Responsive pour les listes de pays */
