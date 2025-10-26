@@ -1,32 +1,25 @@
 {
-  "name": "enixis-corp",
-  "version": "1.0.0",
-  "description": "Site web Enixis Corp - Solutions IA, analyse de données et optimisation business",
-  "main": "index.html",
-  "scripts": {
-    "dev": "npx http-server . -p 3000 -o",
-    "build": "node build.js",
-    "optimize-images": "echo 'Image optimization would run here'",
-    "test": "echo 'Tests would run here'",
-    "deploy": "echo 'Deployment script'",
-    "start": "npx http-server . -p 8080"
-  },
-  "keywords": [
-    "ia",
-    "data-analysis",
-    "business-optimization",
-    "consulting",
-    "formation",
-    "coaching"
-  ],
-  "author": "Enixis Corp",
-  "license": "MIT",
-  "devDependencies": {
-    "http-server": "^14.1.1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/handock-max/Enixis-Corp.git"
-  },
-  "homepage": "https://handock-max.github.io/Enixis-Corp/"
+    "name": "enixis-corp",
+    "version": "1.0.0",
+    "description": "Site web Enixis Corp - Solutions IA, analyse de données et optimisation business",
+    "main": "index.html",
+    "scripts": {
+        "dev": "npx http-server . -p 3000 -o",
+        "start": "npx http-server . -p 8080"
+    },
+    "keywords": [
+        "ia",
+        "data-analysis",
+        "business-optimization",
+        "consulting",
+        "formation",
+        "coaching"
+    ],
+    "author": "Enixis Corp",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/handock-max/Enixis-Corp.git"
+    },
+    "homepage": "https://handock-max.github.io/Enixis-Corp/"
 }
