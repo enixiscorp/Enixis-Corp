@@ -1411,7 +1411,8 @@ cryptoPopup?.addEventListener('click', (e) => { if (e.target === cryptoPopup) hi
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     if (invoicePopup?.style.display === 'flex') {
-      hideInvoice();
+      // Rediriger vers l'accueil au lieu de fermer
+      window.location.href = 'index.html';
     } else if (cryptoPopup?.style.display === 'flex') {
       hideCryptoPayment();
     } else if (paymentPopup?.style.display === 'flex') {
@@ -1448,8 +1449,6 @@ document.querySelector('#request-form .btn.cancel')?.addEventListener('click', (
 // Système de facture
 const invoicePopup = document.getElementById('invoice-popup');
 const invoiceContent = document.getElementById('invoice-content');
-const downloadInvoiceBtn = document.getElementById('download-invoice-btn');
-const closeInvoiceBtn = document.getElementById('close-invoice-btn');
 
 function generateInvoiceNumber() {
   const date = new Date();
@@ -1574,8 +1573,13 @@ function showInvoice(orderData, paymentMethod) {
       </div>
       
       <div class="invoice-footer">
-        <p>Merci pour votre confiance ! Cette facture a été générée automatiquement.</p>
-        <p>Pour toute question, contactez-nous : contacteccorp@gmail.com | +228 97 57 23 46</p>
+        <p><strong>🎉 Merci pour votre commande !</strong></p>
+        <p>Cette facture a été générée automatiquement et téléchargée sur votre appareil.</p>
+        <p>Nous commencerons le travail selon le délai convenu.</p>
+        <p><strong>Contact :</strong> contacteccorp@gmail.com | +228 97 57 23 46</p>
+        <p style="margin-top: 15px; color: #28a745; font-weight: 600;">
+          ✨ N'hésitez pas à explorer nos autres services sur notre site !
+        </p>
       </div>
     </div>
   `;
@@ -1666,14 +1670,22 @@ async function downloadInvoiceAsPDF() {
 
 
 
-function hideInvoice() {
-  invoicePopup.style.display = 'none';
-  document.body.style.overflow = '';
-}
+
 
 // Event listeners pour la facture
-closeInvoiceBtn?.addEventListener('click', hideInvoice);
-invoicePopup?.addEventListener('click', (e) => { if (e.target === invoicePopup) hideInvoice(); });
+const completeOrderBtn = document.getElementById('complete-order-btn');
+
+completeOrderBtn?.addEventListener('click', () => {
+  // Rediriger vers la page d'accueil
+  window.location.href = 'index.html';
+});
+
+// Garder la possibilité de fermer en cliquant à l'extérieur
+invoicePopup?.addEventListener('click', (e) => { 
+  if (e.target === invoicePopup) {
+    window.location.href = 'index.html';
+  }
+});
 
 // Rendre la fonction copyWalletAddress accessible globalement
 window.copyWalletAddress = copyWalletAddress;

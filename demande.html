@@ -228,7 +228,9 @@
   <!-- Pop-up de facture finale -->
   <div id="invoice-popup" class="popup-overlay" style="display:none;">
     <div class="popup-content invoice-content" role="dialog" aria-modal="true" aria-labelledby="invoice-title">
-      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <button type="button" id="complete-order-btn" class="complete-order-btn" aria-label="Terminer ma commande">
+        ✅ Terminer ma commande
+      </button>
       <div class="popup-header">
         <h3 id="invoice-title">📄 Facture - Enixis Corp</h3>
       </div>
@@ -239,7 +241,9 @@
         <p style="text-align: center; color: #28a745; font-weight: 600; margin-bottom: 15px;">
           ✅ Votre facture PDF a été téléchargée automatiquement
         </p>
-        <button type="button" id="close-invoice-btn" class="btn primary">Fermer</button>
+        <p style="text-align: center; color: #666; font-size: 0.9rem;">
+          Cliquez sur "Terminer ma commande" pour retourner à l'accueil
+        </p>
       </div>
     </div>
   </div>
