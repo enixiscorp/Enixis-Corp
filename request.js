@@ -881,13 +881,7 @@ function showCryptoPayment(cryptoType, amount) {
     copyBtn.addEventListener('click', () => {
       addressCopied = true;
       
-      // Envoyer les notifications Slack maintenant que l'adresse est copiée
-      if (currentOrderData.selectedCountry) {
-        // Notification de sélection de pays (différée)
-        sendCountrySelectionNotification(currentOrderData.selectedCountry, amount, currentOrderData);
-      }
-      
-      // Notification de paiement crypto
+      // Envoyer seulement la notification de tentative de paiement
       sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
       
       // Générer la facture après 3 secondes une fois l'adresse copiée
@@ -905,10 +899,7 @@ function showCryptoPayment(cryptoType, amount) {
   // Fallback : si l'utilisateur n'a pas copié après 30 secondes, générer quand même
   setTimeout(() => {
     if (!addressCopied) {
-      // Envoyer les notifications même si pas de copie (fallback)
-      if (currentOrderData.selectedCountry) {
-        sendCountrySelectionNotification(currentOrderData.selectedCountry, amount, currentOrderData);
-      }
+      // Envoyer seulement la notification de paiement (fallback)
       sendPaymentNotification(`${cryptoType} (${network}) - Sans copie d'adresse`, amount, currentOrderData);
       
       hideCryptoPayment();
@@ -1367,9 +1358,11 @@ function selectCountry(countryName, region) {
   hideCountrySelection();
   const countryLabel = `${region === 'africa' ? '🌍' : '🌎'} ${countryName}`;
   
-  // Stocker le pays sélectionné pour l'utiliser plus tard
+  // Stocker le pays sélectionné et envoyer la notification de sélection
   if (currentOrderData) {
     currentOrderData.selectedCountry = countryLabel;
+    // Envoyer immédiatement la notification de sélection de pays
+    sendCountrySelectionNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
   }
   
   showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
