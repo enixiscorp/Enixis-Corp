@@ -623,14 +623,14 @@ function showPaymentOptions(country) {
     // Options pour le Togo : Flooz, Mixx, et Crypto
     optionsHTML = `
       <div class="payment-method" data-method="flooz">
-        <div class="icon">📱</div>
+        <div class="payment-logo flooz-logo">FLOOZ</div>
         <div class="details">
           <h4>Flooz</h4>
           <p>Paiement mobile via Flooz</p>
         </div>
       </div>
       <div class="payment-method" data-method="mixx">
-        <div class="icon">💳</div>
+        <div class="payment-logo mixx-logo">MIXX</div>
         <div class="details">
           <h4>Mixx by Yas</h4>
           <p>Paiement mobile via Mixx</p>
@@ -1093,8 +1093,28 @@ function showInvoice(orderData, paymentMethod) {
   const currentDate = new Date().toLocaleDateString('fr-FR');
   const currentDateTime = new Date().toLocaleString('fr-FR');
   
+  // Calculer la date de validité selon le délai
+  const validityDate = new Date();
+  switch(orderData.delivery) {
+    case 'urgent':
+      validityDate.setDate(validityDate.getDate() + 1); // 24h
+      break;
+    case 'short':
+      validityDate.setDate(validityDate.getDate() + 7); // 7 jours
+      break;
+    case 'medium':
+      validityDate.setDate(validityDate.getDate() + 28); // 4 semaines
+      break;
+    case 'long':
+      validityDate.setMonth(validityDate.getMonth() + 6); // 6 mois
+      break;
+    default:
+      validityDate.setDate(validityDate.getDate() + 14); // 2 semaines par défaut
+  }
+  const validityDateStr = validityDate.toLocaleDateString('fr-FR');
+  
   // Stocker les données pour le téléchargement
-  window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate };
+  window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate, validityDateStr };
   
   const invoiceHTML = `
     <div class="invoice-document" id="invoice-document">
@@ -1113,7 +1133,7 @@ function showInvoice(orderData, paymentMethod) {
         <div class="invoice-details">
           <h3>${invoiceNumber}</h3>
           <p><strong>Date:</strong> ${currentDate}<br>
-          <strong>Date de validité:</strong> ${currentDate}<br>
+          <strong>Date de validité:</strong> ${validityDateStr}<br>
           <strong>Heure:</strong> ${new Date().toLocaleTimeString('fr-FR')}</p>
         </div>
       </div>
@@ -1144,7 +1164,6 @@ function showInvoice(orderData, paymentMethod) {
             <th>Qté</th>
             <th>Unité</th>
             <th>Prix unitaire</th>
-            <th>TVA</th>
             <th>Montant</th>
           </tr>
         </thead>
@@ -1155,30 +1174,21 @@ function showInvoice(orderData, paymentMethod) {
             <td>1,00</td>
             <td>pcs</td>
             <td>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</td>
-            <td>18,00 %</td>
             <td>${formatFcfa(orderData.finalPrice)}</td>
           </tr>
         </tbody>
       </table>
       
       <div class="invoice-totals">
-        <div class="totals-row">
-          <span>Sous-total TTC</span>
-          <span>${formatFcfa(orderData.finalPrice)}</span>
-        </div>
         ${orderData.coupon ? `
         <div class="totals-row">
-          <span>Remise (${orderData.coupon.code})</span>
+          <span>Sous-total TTC</span>
+          <span>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</span>
+        </div>
+        <div class="totals-row">
+          <span>Remise (${orderData.coupon.code} - ${orderData.coupon.percent}%)</span>
           <span>-${formatFcfa((orderData.basePrice || orderData.finalPrice) - orderData.finalPrice)}</span>
         </div>` : ''}
-        <div class="totals-row">
-          <span>Total HT</span>
-          <span>${formatFcfa(Math.round(orderData.finalPrice / 1.18))}</span>
-        </div>
-        <div class="totals-row">
-          <span>TVA 18,00 %</span>
-          <span>${formatFcfa(Math.round(orderData.finalPrice - (orderData.finalPrice / 1.18)))}</span>
-        </div>
         <div class="totals-row total-final">
           <span><strong>Total TTC</strong></span>
           <span><strong>${formatFcfa(orderData.finalPrice)}</strong></span>
