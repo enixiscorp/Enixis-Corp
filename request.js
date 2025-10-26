@@ -1496,7 +1496,7 @@ function showInvoice(orderData, paymentMethod) {
             <h4>Enixis Corp</h4>
             <p>contacteccorp@gmail.com</p>
             <p>+228 97 57 23 46</p>
-            <p>https://enixis-corp.vercel.app</p>
+            <p><a href="https://enixis-corp.vercel.app" target="_blank" rel="noopener noreferrer" class="website-link">https://enixis-corp.vercel.app</a></p>
           </div>
         </div>
         
