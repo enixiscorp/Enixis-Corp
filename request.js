@@ -606,6 +606,10 @@ function showPaymentOptions(country) {
   const amount = currentOrderData.finalPrice;
   const amountText = formatFcfa(amount);
 
+  // Envoyer notification de sélection de pays
+  const countryLabel = country === 'togo' ? '🇹🇬 Togo' : country === 'africa' ? '🌍 Afrique (autres pays)' : '🌎 Reste du Monde';
+  sendCountrySelectionNotification(countryLabel, amount, currentOrderData);
+
   paymentInfo.innerHTML = `
     <div class="amount-highlight">
       💰 Montant à payer: ${amountText}
@@ -791,6 +795,9 @@ function showCryptoOptions(amount) {
 
   cryptoContent.innerHTML = cryptoHTML;
 
+  // Envoyer notification Slack pour sélection crypto
+  sendPaymentNotification('Cryptomonnaie (sélection)', amount, currentOrderData);
+
   // Ajouter les event listeners
   document.querySelectorAll('.crypto-option').forEach(option => {
     option.addEventListener('click', () => {
@@ -805,6 +812,11 @@ function showCryptoOptions(amount) {
 
 function showCryptoPayment(cryptoType, amount) {
   const walletAddress = PAYMENT_CONFIG.CRYPTO_WALLETS[cryptoType];
+
+  if (!walletAddress || walletAddress.trim() === '') {
+    showAlert(`❌ Adresse ${cryptoType} non configurée. Veuillez contacter le support.`);
+    return;
+  }
 
   const cryptoHTML = `
     <div class="payment-instructions">
@@ -860,6 +872,36 @@ function copyWalletAddress() {
     }).catch(() => {
       showAlert('Impossible de copier automatiquement. Veuillez sélectionner et copier manuellement.');
     });
+  }
+}
+
+// Fonction pour envoyer la notification de sélection de pays à Slack
+async function sendCountrySelectionNotification(country, amount, orderData) {
+  const slackText = `
+🌍 SÉLECTION DE PAYS - Enixis Corp
+
+🏳️ Pays sélectionné: ${country}
+💰 Montant: ${formatFcfa(amount)}
+
+👤 Client:
+• Nom: ${orderData.name}
+• Email: ${orderData.email}
+• Téléphone: ${orderData.phone}
+
+📦 Commande:
+• Prestation: ${orderData.serviceLabel}
+• Délai: ${orderData.delivery || 'Non spécifié'}
+
+⏰ ${new Date().toLocaleString('fr-FR')}
+
+ℹ️ Le client va maintenant choisir sa méthode de paiement.
+  `.trim();
+
+  try {
+    await submitToSlack({ text: slackText });
+    console.log('✅ Notification de sélection de pays envoyée');
+  } catch (error) {
+    console.error('❌ Erreur envoi notification pays:', error);
   }
 }
 
