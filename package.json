@@ -5,6 +5,7 @@
     "main": "index.html",
     "scripts": {
         "dev": "npx http-server . -p 3000 -o",
+        "build": "node build.js",
         "start": "npx http-server . -p 8080"
     },
     "keywords": [
