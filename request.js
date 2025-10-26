@@ -387,12 +387,15 @@ formEl?.addEventListener('submit', async (e) => {
   const phone = document.getElementById('client_phone').value.trim();
   const service = serviceEl.value;
 
+  const details = document.getElementById('additional_details').value.trim();
+
   // Validation des champs requis avec messages spécifiques
   const validations = [
     { field: name, message: 'Le nom est requis' },
     { field: email, message: 'L\'email est requis' },
     { field: phone, message: 'Le téléphone est requis' },
-    { field: service, message: 'Veuillez sélectionner une prestation' }
+    { field: service, message: 'Veuillez sélectionner une prestation' },
+    { field: details, message: 'Les détails complémentaires sont obligatoires pour personnaliser votre service' }
   ];
 
   for (const validation of validations) {
@@ -418,7 +421,6 @@ formEl?.addEventListener('submit', async (e) => {
   const basePrice = serviceData ? serviceData.price : '';
   const price = basePrice ? computeDeliveryAdjustedPrice(computeDiscountedPrice(basePrice)) : '';
   const delivery = deliveryTimeEl?.value || '';
-  const details = document.getElementById('additional_details').value.trim();
 
   let issue = null;
   if (hasIssueEl.checked) {
@@ -640,7 +642,7 @@ function showPaymentOptions(country) {
         <div class="icon">₿</div>
         <div class="details">
           <h4>Cryptomonnaie</h4>
-          <p>USDT ou BTC sur réseau TRC-20</p>
+          <p>USDT (TRC-20) ou BTC (BEP-20)</p>
         </div>
       </div>
     `;
@@ -651,7 +653,7 @@ function showPaymentOptions(country) {
         <div class="icon">₿</div>
         <div class="details">
           <h4>Cryptomonnaie</h4>
-          <p>USDT ou BTC sur réseau TRC-20</p>
+          <p>USDT (TRC-20) ou BTC (BEP-20)</p>
         </div>
       </div>
     `;
@@ -793,7 +795,7 @@ function showCryptoOptions(amount) {
     <div class="payment-instructions">
       <h4>₿ Paiement Cryptomonnaie</h4>
       <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
-      <p>Choisissez votre cryptomonnaie (réseau TRC-20 uniquement) :</p>
+      <p>Choisissez votre cryptomonnaie :</p>
     </div>
     
     <button class="crypto-option usdt" data-crypto="USDT">
@@ -807,8 +809,8 @@ function showCryptoOptions(amount) {
     <button class="crypto-option btc" data-crypto="BTC">
       <span>₿</span>
       <div>
-        <strong>BTC (TRC-20)</strong><br>
-        <small>Bitcoin sur réseau TRON</small>
+        <strong>BTC (BEP-20)</strong><br>
+        <small>Bitcoin sur réseau Binance Smart Chain</small>
       </div>
     </button>
   `;
@@ -838,28 +840,31 @@ function showCryptoPayment(cryptoType, amount) {
     return;
   }
 
+  const network = cryptoType === 'BTC' ? 'BEP-20' : 'TRC-20';
+  const networkName = cryptoType === 'BTC' ? 'Binance Smart Chain' : 'TRON';
+
   const cryptoHTML = `
     <div class="payment-instructions">
-      <h4>₿ Paiement ${cryptoType} (TRC-20)</h4>
+      <h4>₿ Paiement ${cryptoType} (${network})</h4>
       <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
       
       <div class="wallet-info">
         <h4>📍 Adresse de réception :</h4>
         <div class="wallet-address" id="wallet-address">${walletAddress}</div>
-        <button class="copy-btn" onclick="copyWalletAddress()">📋 Copier l'adresse</button>
+        <button class="copy-btn" onclick="copyWalletAddress()" id="copy-address-btn">📋 Copier l'adresse</button>
       </div>
       
       <ol>
         <li>Ouvrez votre wallet crypto (Trust Wallet, Binance, etc.)</li>
-        <li>Sélectionnez ${cryptoType} sur le <strong>réseau TRC-20</strong></li>
+        <li>Sélectionnez ${cryptoType} sur le <strong>réseau ${network}</strong> (${networkName})</li>
         <li>Collez l'adresse ci-dessus comme destinataire</li>
         <li>Entrez le montant équivalent en ${cryptoType}</li>
         <li>Confirmez la transaction</li>
       </ol>
       
       <p style="color: #c00; font-weight: bold;">
-        ⚠️ IMPORTANT : Utilisez uniquement le réseau TRC-20 !<br>
-        Une fois le paiement effectué, nous recevrons automatiquement une notification.
+        ⚠️ IMPORTANT : Utilisez uniquement le réseau ${network} !<br>
+        Une fois l'adresse copiée et le paiement effectué, votre facture sera générée automatiquement.
       </p>
     </div>
   `;
@@ -867,17 +872,38 @@ function showCryptoPayment(cryptoType, amount) {
   cryptoContent.innerHTML = cryptoHTML;
 
   // Envoyer notification Slack
-  sendPaymentNotification(`${cryptoType} (TRC-20)`, amount, currentOrderData);
+  sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
 
-  // Afficher la facture après 8 secondes et télécharger automatiquement
+  // Variable pour suivre si l'adresse a été copiée
+  let addressCopied = false;
+
+  // Attendre que l'utilisateur copie l'adresse avant de générer la facture
+  const copyBtn = document.getElementById('copy-address-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      addressCopied = true;
+      // Générer la facture après 3 secondes une fois l'adresse copiée
+      setTimeout(() => {
+        hideCryptoPayment();
+        showInvoice(currentOrderData, `${cryptoType} (${network})`);
+        // Téléchargement automatique après 2 secondes d'affichage
+        setTimeout(() => {
+          downloadInvoiceAsPDF();
+        }, 2000);
+      }, 3000);
+    });
+  }
+
+  // Fallback : si l'utilisateur n'a pas copié après 30 secondes, générer quand même
   setTimeout(() => {
-    hideCryptoPayment();
-    showInvoice(currentOrderData, `${cryptoType} (TRC-20)`);
-    // Téléchargement automatique après 2 secondes d'affichage
-    setTimeout(() => {
-      downloadInvoiceAsPDF();
-    }, 2000);
-  }, 8000);
+    if (!addressCopied) {
+      hideCryptoPayment();
+      showInvoice(currentOrderData, `${cryptoType} (${network})`);
+      setTimeout(() => {
+        downloadInvoiceAsPDF();
+      }, 2000);
+    }
+  }, 30000);
 }
 
 function hideCryptoPayment() {
@@ -1235,24 +1261,41 @@ async function downloadInvoiceAsPDF() {
   }
 
   try {
-    // Créer le PDF avec jsPDF en format universel
+    // Créer le PDF avec jsPDF en format A4 universel
     const { jsPDF } = window.jspdf;
     
-    // Capturer l'élément avec html2canvas en haute qualité
+    // Forcer les dimensions A4 pour la capture
+    const originalWidth = invoiceElement.style.width;
+    const originalMaxWidth = invoiceElement.style.maxWidth;
+    
+    // Appliquer temporairement les dimensions A4 exactes
+    invoiceElement.style.width = '210mm';
+    invoiceElement.style.maxWidth = '210mm';
+    
+    // Attendre que le DOM se mette à jour
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Capturer avec des paramètres optimisés pour A4
     const canvas = await html2canvas(invoiceElement, {
       backgroundColor: '#ffffff',
-      scale: 3, // Haute qualité pour tous les appareils
+      scale: 2, // Équilibre entre qualité et performance
       useCORS: true,
       allowTaint: true,
-      width: invoiceElement.scrollWidth,
-      height: invoiceElement.scrollHeight,
+      width: 794, // 210mm en pixels à 96 DPI
+      height: 1123, // 297mm en pixels à 96 DPI
       logging: false,
-      removeContainer: true
+      removeContainer: true,
+      scrollX: 0,
+      scrollY: 0
     });
     
-    const imgData = canvas.toDataURL('image/png', 1.0);
+    // Restaurer les styles originaux
+    invoiceElement.style.width = originalWidth;
+    invoiceElement.style.maxWidth = originalMaxWidth;
     
-    // Format A4 optimisé pour lecture universelle
+    const imgData = canvas.toDataURL('image/png', 0.95);
+    
+    // Créer le PDF A4
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -1260,25 +1303,12 @@ async function downloadInvoiceAsPDF() {
       compress: true
     });
     
-    // Calculer les dimensions optimales
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
+    // Dimensions A4 exactes
+    const pdfWidth = 210;
+    const pdfHeight = 297;
     
-    // Ratio pour s'adapter parfaitement à A4 avec marges
-    const margin = 10;
-    const availableWidth = pdfWidth - (margin * 2);
-    const availableHeight = pdfHeight - (margin * 2);
-    const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
-    
-    const finalWidth = imgWidth * ratio;
-    const finalHeight = imgHeight * ratio;
-    const imgX = (pdfWidth - finalWidth) / 2;
-    const imgY = margin;
-    
-    // Ajouter l'image au PDF
-    pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight, '', 'FAST');
+    // Ajouter l'image en pleine page A4
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
     
     // Métadonnées du PDF
     pdf.setProperties({
@@ -1286,13 +1316,14 @@ async function downloadInvoiceAsPDF() {
       subject: 'Facture Enixis Corp',
       author: 'Enixis Corp',
       creator: 'Enixis Corp - Solutions IA & Optimisation Business',
-      producer: 'Enixis Corp'
+      producer: 'Enixis Corp',
+      keywords: 'facture, enixis corp, ia, optimisation'
     });
     
     // Téléchargement automatique
     pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
     
-    console.log('✅ PDF téléchargé automatiquement avec succès');
+    console.log('✅ PDF A4 téléchargé automatiquement avec succès');
   } catch (error) {
     console.error('❌ Erreur génération PDF:', error);
     // Fallback silencieux - pas d'alerte pour ne pas perturber l'UX
