@@ -140,8 +140,59 @@
         <p style="margin-top:12px; font-weight:700; color:#c00;">Prenez une capture d'écran de votre reçu</p>
       </div>
       <div class="actions" style="margin-top:12px;">
-        <button type="button" id="confirm-order-btn" class="btn primary">Confirmer et envoyer</button>
+        <button type="button" id="payment-btn" class="btn primary">💳 Payer</button>
         <button type="button" id="cancel-order-btn" class="btn cancel">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up de sélection du pays -->
+  <div id="country-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="country-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="country-title">🌍 Sélectionnez votre pays</h3>
+      </div>
+      <div class="popup-body">
+        <p style="margin-bottom: 16px;">Choisissez votre pays pour voir les options de paiement disponibles :</p>
+        <div class="country-options">
+          <button type="button" class="btn country-btn" data-country="togo">
+            🇹🇬 Togo
+          </button>
+          <button type="button" class="btn country-btn" data-country="africa">
+            🌍 Afrique (autres pays)
+          </button>
+          <button type="button" class="btn country-btn" data-country="world">
+            🌎 Reste du Monde
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up des options de paiement -->
+  <div id="payment-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="payment-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="payment-title">💳 Options de paiement</h3>
+      </div>
+      <div class="popup-body">
+        <div id="payment-info"></div>
+        <div id="payment-options"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up de paiement crypto -->
+  <div id="crypto-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content" role="dialog" aria-modal="true" aria-labelledby="crypto-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="crypto-title">₿ Paiement Cryptomonnaie</h3>
+      </div>
+      <div class="popup-body">
+        <div id="crypto-content"></div>
       </div>
     </div>
   </div>

@@ -152,27 +152,65 @@ cancelBtn?.addEventListener('click', () => {
 
 form?.addEventListener('submit', async (e) => {
   e.preventDefault();
+  
+  // Validation améliorée
   updateFieldRequirements();
   if (!form.checkValidity()) {
     note.textContent = 'Merci de compléter les champs requis.';
+    note.style.color = '#dc3545';
     return;
   }
+  
+  // Validation des formats
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[\+]?[0-9\s\-\(\)]{8,}$/;
+  
+  if (channel.value === 'email' && emailInput.value && !emailRegex.test(emailInput.value)) {
+    note.textContent = 'Format d\'email invalide.';
+    note.style.color = '#dc3545';
+    return;
+  }
+  
+  if (channel.value === 'whatsapp' && phoneInput.value && !phoneRegex.test(phoneInput.value)) {
+    note.textContent = 'Format de téléphone invalide.';
+    note.style.color = '#dc3545';
+    return;
+  }
+  
   updatePreview();
   const subject = buildSubject();
   const body = buildBody();
 
+  // Copie dans le presse-papiers avec gestion d'erreur
   try {
     await navigator.clipboard.writeText(preview.value);
-  } catch {}
+    console.log('✅ Contenu copié dans le presse-papiers');
+  } catch (clipboardError) {
+    console.warn('⚠️ Impossible de copier automatiquement:', clipboardError.message);
+  }
 
-  if (channel.value === 'email') {
-    const mailto = `mailto:${COMPANY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailto;
-    note.textContent = 'Ouverture de votre client mail…';
-  } else {
-    const wa = `https://wa.me/${COMPANY_WHATSAPP}?text=${encodeURIComponent(preview.value)}`;
-    window.open(wa, '_blank', 'noopener');
-    note.textContent = 'Ouverture de WhatsApp…';
+  // Ouverture des applications avec gestion d'erreur
+  try {
+    if (channel.value === 'email') {
+      const mailto = `mailto:${COMPANY_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+      note.textContent = 'Ouverture de votre client mail…';
+      note.style.color = '#28a745';
+    } else {
+      const wa = `https://wa.me/${COMPANY_WHATSAPP}?text=${encodeURIComponent(preview.value)}`;
+      const opened = window.open(wa, '_blank', 'noopener,noreferrer');
+      if (opened) {
+        note.textContent = 'Ouverture de WhatsApp…';
+        note.style.color = '#28a745';
+      } else {
+        note.textContent = 'Impossible d\'ouvrir WhatsApp. Veuillez autoriser les pop-ups.';
+        note.style.color = '#dc3545';
+      }
+    }
+  } catch (openError) {
+    note.textContent = 'Erreur lors de l\'ouverture de l\'application.';
+    note.style.color = '#dc3545';
+    console.error('Erreur ouverture:', openError);
   }
 });
 

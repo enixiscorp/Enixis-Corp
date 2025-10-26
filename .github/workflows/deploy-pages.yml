@@ -25,14 +25,34 @@ jobs:
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "❌ ERREUR: Secret SLACK_WEBHOOK_URL est vide"
+            echo "window.env = {\"API_BASE\": \"\", \"SLACK_WEBHOOK_URL\": \"\"};" > env.js
           else
             echo "✅ Secret trouvé, longueur: ${#SLACK_WEBHOOK_URL} caractères"
             echo "✅ Commence par: ${SLACK_WEBHOOK_URL:0:25}..."
+            echo "window.env = {\"API_BASE\": \"\", \"SLACK_WEBHOOK_URL\": \"$SLACK_WEBHOOK_URL\"};" > env.js
           fi
-          echo "window.env = {\"SLACK_WEBHOOK_URL\": \"$SLACK_WEBHOOK_URL\"};" > env.js
           echo "📄 Fichier env.js généré"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Optimize and validate files
+        run: |
+          echo "🔍 Validation des fichiers HTML..."
+          # Vérifier que les fichiers critiques existent
+          for file in index.html demande.html style.css script.js request.js; do
+            if [ -f "$file" ]; then
+              echo "✅ $file trouvé"
+            else
+              echo "❌ $file manquant"
+              exit 1
+            fi
+          done
+          
+          echo "📊 Statistiques du projet:"
+          echo "- Fichiers HTML: $(find . -name "*.html" | wc -l)"
+          echo "- Fichiers CSS: $(find . -name "*.css" | wc -l)"
+          echo "- Fichiers JS: $(find . -name "*.js" | wc -l)"
+          echo "- Images: $(find ./images -type f 2>/dev/null | wc -l || echo 0)"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

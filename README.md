@@ -1,5 +1,19 @@
 # Enixis Corp – Site web
 
+[![Deploy Status](https://github.com/handock-max/Enixis-Corp/workflows/Deploy%20to%20GitHub%20Pages%20(with%20env.js)/badge.svg)](https://github.com/handock-max/Enixis-Corp/actions)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fhandock-max.github.io%2FEnixis-Corp%2F)](https://handock-max.github.io/Enixis-Corp/)
+
+Site web professionnel pour Enixis Corp - Solutions IA, analyse de données et optimisation business.
+
+## 🚀 Fonctionnalités
+
+- ✅ Site vitrine responsive et moderne
+- ✅ Formulaire de demande avec calcul de prix dynamique
+- ✅ Intégration Slack sécurisée via proxy API
+- ✅ Validation en temps réel des formulaires
+- ✅ Optimisations SEO et performance
+- ✅ Déploiement automatisé GitHub Actions
+
 ## Soumission de demande (Slack)
 
 - La page `demande.html` collecte les informations du client et propose une sélection de prestations avec prix indicatif dynamique.

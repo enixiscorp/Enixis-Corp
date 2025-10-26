@@ -2,9 +2,15 @@
 // Utilise la variable d'environnement SLACK_WEBHOOK_URL côté serveur
 
 module.exports = async function handler(req, res) {
+  // Headers de sécurité
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
   // Méthode autorisée uniquement: POST
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'POST, OPTIONS');
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 

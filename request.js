@@ -203,7 +203,14 @@ const alertClose = alertPopup ? alertPopup.querySelector('.popup-close') : null;
 
 function showAlert(message) {
   if (!alertPopup) { alert(message); return; }
-  alertMsg.textContent = message;
+
+  // Vérifier si le message contient du HTML
+  if (message.includes('<')) {
+    alertMsg.innerHTML = message;
+  } else {
+    alertMsg.textContent = message;
+  }
+
   alertPopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
@@ -250,19 +257,37 @@ function removeCoupon() {
 }
 
 async function submitToSlack(payload) {
+  // Validation du payload
+  if (!payload || !payload.text || typeof payload.text !== 'string') {
+    throw new Error('Données invalides pour l\'envoi');
+  }
+
   // 1) Essayer le proxy sécurisé
   try {
     const resp = await fetch(SLACK_PROXY_ENDPOINT, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
       body: JSON.stringify(payload),
       credentials: 'omit'
     });
-    if (resp.ok) return;
-    const err = await resp.json().catch(async () => ({ raw: await resp.text().catch(() => '') }));
+
+    if (resp.ok) {
+      console.log('✅ Message envoyé via proxy sécurisé');
+      return;
+    }
+
+    const err = await resp.json().catch(async () => ({
+      raw: await resp.text().catch(() => 'Erreur inconnue')
+    }));
     console.error('Proxy Slack error:', resp.status, err);
+
     // Si le proxy répond mais en erreur, essayer le repli direct si configuré
-  } catch {}
+  } catch (fetchError) {
+    console.warn('Erreur proxy:', fetchError.message);
+  }
 
   // 2) Repli: envoi direct si une URL publique est définie (optionnel)
   const directUrl = getSlackWebhookUrl();
@@ -281,7 +306,7 @@ async function submitToSlack(payload) {
         const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
         const ok = navigator.sendBeacon(directUrl, blob);
         if (ok) return;
-      } catch {}
+      } catch { }
       throw new Error(`Erreur d'envoi direct: ${e.message}`);
     }
   }
@@ -314,8 +339,61 @@ function buildSlackText(data) {
   return lines.join('\n');
 }
 
+// Validation en temps réel
+function validateField(field) {
+  const value = field.value.trim();
+  let isValid = true;
+  let message = '';
+
+  switch (field.id) {
+    case 'client_name':
+      isValid = value.length >= 2;
+      message = isValid ? '' : 'Le nom doit contenir au moins 2 caractères';
+      break;
+    case 'client_email':
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      isValid = emailRegex.test(value);
+      message = isValid ? '' : 'Format d\'email invalide';
+      break;
+    case 'client_phone':
+      const phoneRegex = /^[\+]?[0-9\s\-\(\)]{8,}$/;
+      isValid = phoneRegex.test(value);
+      message = isValid ? '' : 'Format de téléphone invalide';
+      break;
+  }
+
+  // Affichage visuel de la validation
+  field.style.borderColor = isValid ? '#28a745' : '#dc3545';
+
+  // Affichage du message d'erreur
+  let errorEl = field.parentNode.querySelector('.field-error');
+  if (!errorEl) {
+    errorEl = document.createElement('small');
+    errorEl.className = 'field-error';
+    errorEl.style.color = '#dc3545';
+    errorEl.style.fontSize = '0.8rem';
+    field.parentNode.appendChild(errorEl);
+  }
+  errorEl.textContent = message;
+
+  return isValid;
+}
+
 formEl?.addEventListener('change', (e) => {
   if (e.target === serviceEl) updatePrice();
+
+  // Validation en temps réel pour les champs critiques
+  if (['client_name', 'client_email', 'client_phone'].includes(e.target.id)) {
+    validateField(e.target);
+  }
+});
+
+formEl?.addEventListener('input', (e) => {
+  // Validation pendant la saisie (avec délai)
+  if (['client_name', 'client_email', 'client_phone'].includes(e.target.id)) {
+    clearTimeout(e.target.validationTimeout);
+    e.target.validationTimeout = setTimeout(() => validateField(e.target), 500);
+  }
 });
 
 hasIssueEl?.addEventListener('change', toggleIssueBlock);
@@ -329,20 +407,44 @@ formEl?.addEventListener('submit', async (e) => {
   e.preventDefault();
   noteEl.textContent = '';
 
+  // Validation complète avant soumission
   const name = document.getElementById('client_name').value.trim();
   const email = document.getElementById('client_email').value.trim();
   const phone = document.getElementById('client_phone').value.trim();
   const service = serviceEl.value;
+
+  // Validation des champs requis avec messages spécifiques
+  const validations = [
+    { field: name, message: 'Le nom est requis' },
+    { field: email, message: 'L\'email est requis' },
+    { field: phone, message: 'Le téléphone est requis' },
+    { field: service, message: 'Veuillez sélectionner une prestation' }
+  ];
+
+  for (const validation of validations) {
+    if (!validation.field) {
+      noteEl.textContent = validation.message;
+      noteEl.style.color = '#dc3545';
+      return;
+    }
+  }
+
+  // Validation des formats
+  const nameField = document.getElementById('client_name');
+  const emailField = document.getElementById('client_email');
+  const phoneField = document.getElementById('client_phone');
+
+  if (!validateField(nameField) || !validateField(emailField) || !validateField(phoneField)) {
+    noteEl.textContent = 'Veuillez corriger les erreurs dans le formulaire.';
+    noteEl.style.color = '#dc3545';
+    return;
+  }
+
   const serviceData = SERVICES[service];
   const basePrice = serviceData ? serviceData.price : '';
   const price = basePrice ? computeDeliveryAdjustedPrice(computeDiscountedPrice(basePrice)) : '';
   const delivery = deliveryTimeEl?.value || '';
   const details = document.getElementById('additional_details').value.trim();
-
-  if (!name || !email || !phone || !service) {
-    noteEl.textContent = 'Merci de compléter les champs requis.';
-    return;
-  }
 
   let issue = null;
   if (hasIssueEl.checked) {
@@ -394,7 +496,7 @@ formEl?.addEventListener('submit', async (e) => {
 function populateServiceOptions() {
   // Vider le select
   serviceEl.innerHTML = '';
-  
+
   // Ajouter l'option par défaut (non sélectionnable)
   const defaultOption = document.createElement('option');
   defaultOption.value = '';
@@ -418,14 +520,42 @@ updatePrice();
 toggleIssueBlock();
 togglePromoBlock();
 
+// Configuration des destinataires de paiement
+const PAYMENT_CONFIG = {
+  // Numéro de téléphone pour Flooz et Mixx
+  RECIPIENT_PHONE: '97572346',
+
+  // Adresses crypto TRC-20
+  CRYPTO_WALLETS: {
+    USDT: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE',
+    BTC: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE' // Même adresse TRC-20 pour BTC
+  }
+};
+
 // Order summary popup
 const orderPopup = document.getElementById('order-popup');
 const orderClose = orderPopup ? orderPopup.querySelector('.popup-close') : null;
 const orderSummaryEl = document.getElementById('order-summary');
-const orderConfirmBtn = document.getElementById('confirm-order-btn');
+const paymentBtn = document.getElementById('payment-btn');
 const orderCancelBtn = document.getElementById('cancel-order-btn');
 
-let orderConfirmCallback = null;
+// Country selection popup
+const countryPopup = document.getElementById('country-popup');
+const countryClose = countryPopup ? countryPopup.querySelector('.popup-close') : null;
+const countryBtns = document.querySelectorAll('.country-btn');
+
+// Payment options popup
+const paymentPopup = document.getElementById('payment-popup');
+const paymentClose = paymentPopup ? paymentPopup.querySelector('.popup-close') : null;
+const paymentInfo = document.getElementById('payment-info');
+const paymentOptions = document.getElementById('payment-options');
+
+// Crypto payment popup
+const cryptoPopup = document.getElementById('crypto-popup');
+const cryptoClose = cryptoPopup ? cryptoPopup.querySelector('.popup-close') : null;
+const cryptoContent = document.getElementById('crypto-content');
+
+let currentOrderData = null;
 
 function currencyPair(base, final) {
   if (final !== undefined && final !== null && final !== '' && final !== base) {
@@ -436,6 +566,10 @@ function currencyPair(base, final) {
 
 function showOrderSummary(data, onConfirm) {
   if (!orderPopup) return;
+
+  // Stocker les données de commande pour le paiement
+  currentOrderData = { ...data, onConfirm };
+
   const lines = [];
   lines.push(`<p><strong>Nom:</strong> ${data.name}</p>`);
   lines.push(`<p><strong>Email:</strong> ${data.email}</p>`);
@@ -461,43 +595,369 @@ function showOrderSummary(data, onConfirm) {
     if (data.issue.explain) lines.push(`<p><strong>Explication:</strong> ${data.issue.explain}</p>`);
   }
   orderSummaryEl.innerHTML = lines.join('');
+
   // Ajout du message de remerciement
   const thanks = document.createElement('div');
-  thanks.innerHTML = `<p style="margin-top:12px;">💬 Merci pour votre commande !<br>Nous vous contacterons sous 15 - 30 minutes pour confirmer les prochaines étapes. Pour toute question urgente, contactez-nous à <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a> ou au <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97572346</a>.</p>`;
+  thanks.innerHTML = `<p style="margin-top:12px;">💬 Merci pour votre commande !<br>Cliquez sur "Payer" pour procéder au paiement sécurisé.</p>`;
   orderSummaryEl.appendChild(thanks);
+
   orderPopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  orderConfirmCallback = (typeof onConfirm === 'function') ? onConfirm : null;
+}
+
+function showCountrySelection() {
+  hideOrderSummary();
+  countryPopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function hideCountrySelection() {
+  countryPopup.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function showPaymentOptions(country) {
+  hideCountrySelection();
+
+  if (!currentOrderData) return;
+
+  const amount = currentOrderData.finalPrice;
+  const amountText = formatFcfa(amount);
+
+  paymentInfo.innerHTML = `
+    <div class="amount-highlight">
+      💰 Montant à payer: ${amountText}
+    </div>
+    <p>Choisissez votre méthode de paiement :</p>
+  `;
+
+  let optionsHTML = '';
+
+  if (country === 'togo') {
+    // Options pour le Togo : Flooz, Mixx, et Crypto
+    optionsHTML = `
+      <div class="payment-method" data-method="flooz">
+        <div class="icon">📱</div>
+        <div class="details">
+          <h4>Flooz</h4>
+          <p>Paiement mobile via Flooz</p>
+        </div>
+      </div>
+      <div class="payment-method" data-method="mixx">
+        <div class="icon">💳</div>
+        <div class="details">
+          <h4>Mixx by Yas</h4>
+          <p>Paiement mobile via Mixx</p>
+        </div>
+      </div>
+      <div class="payment-method" data-method="crypto">
+        <div class="icon">₿</div>
+        <div class="details">
+          <h4>Cryptomonnaie</h4>
+          <p>USDT ou BTC sur réseau TRC-20</p>
+        </div>
+      </div>
+    `;
+  } else {
+    // Autres pays : uniquement crypto
+    optionsHTML = `
+      <div class="payment-method" data-method="crypto">
+        <div class="icon">₿</div>
+        <div class="details">
+          <h4>Cryptomonnaie</h4>
+          <p>USDT ou BTC sur réseau TRC-20</p>
+        </div>
+      </div>
+    `;
+  }
+
+  paymentOptions.innerHTML = optionsHTML;
+
+  // Ajouter les event listeners
+  document.querySelectorAll('.payment-method').forEach(method => {
+    method.addEventListener('click', () => {
+      const methodType = method.getAttribute('data-method');
+      handlePaymentMethod(methodType, amount);
+    });
+  });
+
+  paymentPopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function hidePaymentOptions() {
+  paymentPopup.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function handlePaymentMethod(method, amount) {
+  switch (method) {
+    case 'flooz':
+      handleFloozPayment(amount);
+      break;
+    case 'mixx':
+      handleMixxPayment(amount);
+      break;
+    case 'crypto':
+      showCryptoOptions(amount);
+      break;
+  }
+}
+
+function handleFloozPayment(amount) {
+  const recipient = PAYMENT_CONFIG.RECIPIENT_PHONE;
+  const ussdCode = `*155*1*1*${recipient}*${recipient}*${amount}*1#`;
+
+  hidePaymentOptions();
+
+  const instructions = `
+    <div class="payment-instructions">
+      <h4>📱 Paiement Flooz</h4>
+      <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
+      <p><strong>Destinataire:</strong> ${recipient}</p>
+      
+      <div class="ussd-code">${ussdCode}</div>
+      
+      <ol>
+        <li>Composez le code USSD ci-dessus sur votre téléphone</li>
+        <li>Suivez les instructions à l'écran</li>
+        <li>Confirmez le paiement avec votre code PIN</li>
+        <li>Vous recevrez un SMS de confirmation</li>
+      </ol>
+      
+      <p style="color: #c00; font-weight: bold;">
+        ⚠️ Une fois le paiement effectué, nous recevrons automatiquement une notification.
+      </p>
+    </div>
+  `;
+
+  showAlert(instructions);
+
+  // Envoyer notification Slack
+  sendPaymentNotification('Flooz', amount, currentOrderData);
+
+  // Ouvrir l'application de téléphone avec le code USSD
+  setTimeout(() => {
+    window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
+  }, 2000);
+}
+
+function handleMixxPayment(amount) {
+  const recipient = PAYMENT_CONFIG.RECIPIENT_PHONE;
+  const ussdCode = `*145*1*${amount}*${recipient}*1#`;
+
+  hidePaymentOptions();
+
+  const instructions = `
+    <div class="payment-instructions">
+      <h4>💳 Paiement Mixx by Yas</h4>
+      <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
+      <p><strong>Destinataire:</strong> ${recipient}</p>
+      
+      <div class="ussd-code">${ussdCode}</div>
+      
+      <ol>
+        <li>Composez le code USSD ci-dessus sur votre téléphone</li>
+        <li>Suivez les instructions à l'écran</li>
+        <li>Confirmez le paiement avec votre code PIN</li>
+        <li>Vous recevrez un SMS de confirmation</li>
+      </ol>
+      
+      <p style="color: #c00; font-weight: bold;">
+        ⚠️ Une fois le paiement effectué, nous recevrons automatiquement une notification.
+      </p>
+    </div>
+  `;
+
+  showAlert(instructions);
+
+  // Envoyer notification Slack
+  sendPaymentNotification('Mixx by Yas', amount, currentOrderData);
+
+  // Ouvrir l'application de téléphone avec le code USSD
+  setTimeout(() => {
+    window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
+  }, 2000);
+}
+
+function showCryptoOptions(amount) {
+  hidePaymentOptions();
+
+  const cryptoHTML = `
+    <div class="payment-instructions">
+      <h4>₿ Paiement Cryptomonnaie</h4>
+      <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
+      <p>Choisissez votre cryptomonnaie (réseau TRC-20 uniquement) :</p>
+    </div>
+    
+    <button class="crypto-option usdt" data-crypto="USDT">
+      <span>💚</span>
+      <div>
+        <strong>USDT (TRC-20)</strong><br>
+        <small>Tether sur réseau TRON</small>
+      </div>
+    </button>
+    
+    <button class="crypto-option btc" data-crypto="BTC">
+      <span>₿</span>
+      <div>
+        <strong>BTC (TRC-20)</strong><br>
+        <small>Bitcoin sur réseau TRON</small>
+      </div>
+    </button>
+  `;
+
+  cryptoContent.innerHTML = cryptoHTML;
+
+  // Ajouter les event listeners
+  document.querySelectorAll('.crypto-option').forEach(option => {
+    option.addEventListener('click', () => {
+      const cryptoType = option.getAttribute('data-crypto');
+      showCryptoPayment(cryptoType, amount);
+    });
+  });
+
+  cryptoPopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function showCryptoPayment(cryptoType, amount) {
+  const walletAddress = PAYMENT_CONFIG.CRYPTO_WALLETS[cryptoType];
+
+  const cryptoHTML = `
+    <div class="payment-instructions">
+      <h4>₿ Paiement ${cryptoType} (TRC-20)</h4>
+      <p><strong>Montant:</strong> ${formatFcfa(amount)}</p>
+      
+      <div class="wallet-info">
+        <h4>📍 Adresse de réception :</h4>
+        <div class="wallet-address" id="wallet-address">${walletAddress}</div>
+        <button class="copy-btn" onclick="copyWalletAddress()">📋 Copier l'adresse</button>
+      </div>
+      
+      <ol>
+        <li>Ouvrez votre wallet crypto (Trust Wallet, Binance, etc.)</li>
+        <li>Sélectionnez ${cryptoType} sur le <strong>réseau TRC-20</strong></li>
+        <li>Collez l'adresse ci-dessus comme destinataire</li>
+        <li>Entrez le montant équivalent en ${cryptoType}</li>
+        <li>Confirmez la transaction</li>
+      </ol>
+      
+      <p style="color: #c00; font-weight: bold;">
+        ⚠️ IMPORTANT : Utilisez uniquement le réseau TRC-20 !<br>
+        Une fois le paiement effectué, nous recevrons automatiquement une notification.
+      </p>
+    </div>
+  `;
+
+  cryptoContent.innerHTML = cryptoHTML;
+
+  // Envoyer notification Slack
+  sendPaymentNotification(`${cryptoType} (TRC-20)`, amount, currentOrderData);
+}
+
+function hideCryptoPayment() {
+  cryptoPopup.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Fonction pour copier l'adresse wallet
+function copyWalletAddress() {
+  const addressEl = document.getElementById('wallet-address');
+  if (addressEl) {
+    navigator.clipboard.writeText(addressEl.textContent).then(() => {
+      const copyBtn = document.querySelector('.copy-btn');
+      const originalText = copyBtn.textContent;
+      copyBtn.textContent = '✅ Copié !';
+      copyBtn.style.background = '#28a745';
+
+      setTimeout(() => {
+        copyBtn.textContent = originalText;
+        copyBtn.style.background = '';
+      }, 2000);
+    }).catch(() => {
+      showAlert('Impossible de copier automatiquement. Veuillez sélectionner et copier manuellement.');
+    });
+  }
+}
+
+// Fonction pour envoyer la notification de paiement à Slack
+async function sendPaymentNotification(paymentMethod, amount, orderData) {
+  const slackText = `
+🔔 TENTATIVE DE PAIEMENT - Enixis Corp
+
+💳 Méthode: ${paymentMethod}
+💰 Montant: ${formatFcfa(amount)}
+
+👤 Client:
+• Nom: ${orderData.name}
+• Email: ${orderData.email}
+• Téléphone: ${orderData.phone}
+
+📦 Commande:
+• Prestation: ${orderData.serviceLabel}
+• Délai: ${orderData.delivery || 'Non spécifié'}
+
+⏰ ${new Date().toLocaleString('fr-FR')}
+
+⚠️ Vérifiez la réception du paiement et confirmez la commande.
+  `.trim();
+
+  try {
+    await submitToSlack({ text: slackText });
+    console.log('✅ Notification de paiement envoyée');
+  } catch (error) {
+    console.error('❌ Erreur envoi notification paiement:', error);
+  }
 }
 
 function hideOrderSummary() {
   if (!orderPopup) return;
   orderPopup.style.display = 'none';
   document.body.style.overflow = '';
-  orderConfirmCallback = null;
 }
 
+// Event listeners pour les pop-ups
 orderClose?.addEventListener('click', hideOrderSummary);
 orderCancelBtn?.addEventListener('click', hideOrderSummary);
 orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hideOrderSummary(); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && orderPopup?.style.display === 'flex') hideOrderSummary(); });
-orderConfirmBtn?.addEventListener('click', async () => {
-  const fn = (typeof orderConfirmCallback === 'function') ? orderConfirmCallback : null;
-  if (fn) {
-    // état visuel d'envoi
-    try {
-      orderConfirmBtn.disabled = true;
-      orderConfirmBtn.textContent = 'Envoi en cours…';
-      await fn();
-    } catch (e) {
-      showAlert((e && e.message) ? e.message : 'Échec d\'envoi');
-    } finally {
-      orderConfirmBtn.disabled = false;
-      orderConfirmBtn.textContent = 'Confirmer et envoyer';
+
+// Bouton Payer - ouvre la sélection de pays
+paymentBtn?.addEventListener('click', () => {
+  showCountrySelection();
+});
+
+// Country selection popup
+countryClose?.addEventListener('click', hideCountrySelection);
+countryPopup?.addEventListener('click', (e) => { if (e.target === countryPopup) hideCountrySelection(); });
+
+countryBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const country = btn.getAttribute('data-country');
+    showPaymentOptions(country);
+  });
+});
+
+// Payment options popup
+paymentClose?.addEventListener('click', hidePaymentOptions);
+paymentPopup?.addEventListener('click', (e) => { if (e.target === paymentPopup) hidePaymentOptions(); });
+
+// Crypto payment popup
+cryptoClose?.addEventListener('click', hideCryptoPayment);
+cryptoPopup?.addEventListener('click', (e) => { if (e.target === cryptoPopup) hideCryptoPayment(); });
+
+// Gestion des touches Escape pour tous les pop-ups
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (cryptoPopup?.style.display === 'flex') {
+      hideCryptoPayment();
+    } else if (paymentPopup?.style.display === 'flex') {
+      hidePaymentOptions();
+    } else if (countryPopup?.style.display === 'flex') {
+      hideCountrySelection();
+    } else if (orderPopup?.style.display === 'flex') {
       hideOrderSummary();
     }
-  } else {
-    hideOrderSummary();
   }
 });
 
@@ -516,5 +976,8 @@ document.querySelector('#request-form .btn.cancel')?.addEventListener('click', (
   e.preventDefault();
   resetRequestForm();
 });
+
+// Rendre la fonction copyWalletAddress accessible globalement
+window.copyWalletAddress = copyWalletAddress;
 
 
