@@ -3,5 +3,6 @@ node_modules
 .github
 *.md
 LICENSE
-build.js
+build-vercel.js
 env.example.js
+.gitignore

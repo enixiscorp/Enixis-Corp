@@ -468,6 +468,11 @@ formEl?.addEventListener('submit', async (e) => {
 
 // Génération automatique des options
 function populateServiceOptions() {
+  if (!serviceEl) {
+    console.error('Element serviceEl not found');
+    return;
+  }
+
   // Vider le select
   serviceEl.innerHTML = '';
 
@@ -488,11 +493,13 @@ function populateServiceOptions() {
   });
 }
 
-// Init
-populateServiceOptions();
-updatePrice();
-toggleIssueBlock();
-togglePromoBlock();
+// Init - Attendre que le DOM soit chargé
+document.addEventListener('DOMContentLoaded', function() {
+  populateServiceOptions();
+  updatePrice();
+  toggleIssueBlock();
+  togglePromoBlock();
+});
 
 // Configuration des destinataires de paiement (depuis les variables d'environnement)
 const PAYMENT_CONFIG = {
@@ -898,7 +905,7 @@ orderCancelBtn?.addEventListener('click', hideOrderSummary);
 orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hideOrderSummary(); });
 
 // Bouton Payer - ouvre la sélection de pays
-paymentBtn?.addEventListener('click', () => {tBtn?.addEventListener('click', () => {
+paymentBtn?.addEventListener('click', () => {
   showCountrySelection();
 });
 
