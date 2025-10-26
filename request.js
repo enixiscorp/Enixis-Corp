@@ -1490,40 +1490,45 @@ function showInvoice(orderData, paymentMethod) {
   const invoiceHTML = `
     <div class="invoice-document" id="invoice-document">
       <div class="invoice-header">
-        <div class="invoice-logo">
-          <img src="images/enixis corp_logo.png" alt="Enixis Corp" width="80" height="80">
-          <div class="company-info">
+        <div class="company-section">
+          <img src="images/enixis corp_logo.png" alt="Enixis Corp" class="company-logo">
+          <div class="company-details">
             <h4>Enixis Corp</h4>
-            <p>Bouchard Drago DUBUN<br>
-            Lomé<br>
-            +22897572346<br>
-            contacteccorp@gmail.com<br>
-            https://enixis-corp.vercel.app</p>
+            <p>contacteccorp@gmail.com</p>
+            <p>+228 97 57 23 46</p>
+            <p>https://enixis-corp.vercel.app</p>
           </div>
         </div>
-        <div class="invoice-details">
-          <h3>${invoiceNumber}</h3>
-          <p><strong>Date:</strong> ${currentDate}<br>
-          <strong>Date de validité:</strong> ${validityDateStr}<br>
-          <strong>Heure:</strong> ${new Date().toLocaleTimeString('fr-FR')}</p>
+        
+        <div class="invoice-number-section">
+          <div class="invoice-number">${invoiceNumber}</div>
+          <div class="invoice-dates">
+            <p>Date: ${currentDate}</p>
+            <p>Date de validité: ${validityDateStr}</p>
+            <p>Heure: ${new Date().toLocaleTimeString('fr-FR')}</p>
+          </div>
         </div>
       </div>
       
-      <div class="invoice-client-section">
-        <div class="invoice-client">
+      <div class="client-service-section">
+        <div class="client-info">
           <h4>📋 Informations Client</h4>
-          <p><strong>${orderData.name}</strong><br>
-          📧 ${orderData.email}<br>
-          📞 ${orderData.phone}</p>
+          <div class="client-details">
+            <p><strong>${orderData.name}</strong></p>
+            <p>${orderData.email}</p>
+            <p>${orderData.phone}</p>
+          </div>
         </div>
         
-        <div class="invoice-service">
+        <div class="service-info">
           <h4>🎯 Prestation Demandée</h4>
-          <p><strong>${orderData.serviceLabel}</strong><br>
-          ⏱️ Délai: ${orderData.delivery === 'urgent' ? '🚨 Urgent (24h)' : 
-                      orderData.delivery === 'short' ? '⏳ Court terme (3-7j)' : 
-                      orderData.delivery === 'medium' ? '📅 Moyen terme (2-4 sem.)' : 
-                      orderData.delivery === 'long' ? '🕰️ Long terme (1-6 mois)' : 'Standard'}</p>
+          <div class="service-details">
+            <p><strong>${orderData.serviceLabel}</strong></p>
+            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
+                      orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
+                      orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                      orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
+          </div>
         </div>
       </div>
       
@@ -1566,10 +1571,22 @@ function showInvoice(orderData, paymentMethod) {
         </div>
       </div>
       
-      <div class="invoice-payment">
-        <p><strong>💳 Méthode de paiement:</strong> ${paymentMethod}</p>
-        <p><strong>✅ Statut:</strong> Payé le ${currentDateTime}</p>
-        <p><strong>🔒 Transaction:</strong> Sécurisée et validée</p>
+      <div class="payment-info-section">
+        <h4>💳 Informations de Paiement</h4>
+        <div class="payment-details">
+          <div class="payment-row">
+            <span class="payment-label">Méthode de paiement:</span>
+            <span class="payment-value">${paymentMethod}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Statut:</span>
+            <span class="payment-value status-paid">✅ Payé le ${currentDateTime}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Transaction:</span>
+            <span class="payment-value">🔒 Sécurisée et validée</span>
+          </div>
+        </div>
       </div>
       
       <div class="invoice-footer">
