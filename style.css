@@ -793,34 +793,31 @@ main:focus { outline: none; }
 }
 
 
-/* Styles pour la facture - Format A4 strict universel */
+/* Styles pour la facture - Responsive adaptatif */
 .invoice-content {
-  width: 210mm; /* Largeur A4 exacte */
-  max-width: 95vw; /* Limite pour petits écrans */
-  height: 297mm; /* Hauteur A4 exacte */
-  max-height: 95vh; /* Limite pour petits écrans */
+  max-width: 800px;
+  width: 95vw;
+  max-height: 95vh;
   overflow-y: auto;
   background: white;
   margin: 0 auto;
   position: relative;
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.15);
-  transform-origin: top center;
 }
 
 .invoice-document {
   background: white;
-  padding: 20mm; /* Marges A4 standard */
+  padding: 30px;
   margin: 0;
   font-family: 'Arial', sans-serif;
   color: #333;
-  line-height: 1.4;
+  line-height: 1.5;
   box-sizing: border-box;
-  font-size: 12pt; /* Taille A4 standard */
+  font-size: 14px;
   position: relative;
   overflow-x: hidden;
   width: 100%;
-  height: 100%;
 }
 
 /* En-tête de facture unifié */
@@ -1051,84 +1048,205 @@ main:focus { outline: none; }
 
 
 
-/* Système de mise à l'échelle automatique pour maintenir le format A4 */
-@media (max-width: 1200px) {
-  .invoice-content {
-    transform: scale(0.9);
-    transform-origin: top center;
-  }
-}
-
-@media (max-width: 1000px) {
-  .invoice-content {
-    transform: scale(0.8);
-  }
-}
-
-@media (max-width: 900px) {
-  .invoice-content {
-    transform: scale(0.75);
-  }
-}
-
+/* Responsive adaptatif pour tous les écrans */
 @media (max-width: 768px) {
   .invoice-content {
-    width: 210mm;
-    height: 297mm;
-    max-width: none;
-    max-height: none;
-    transform: scale(0.65);
+    width: 100vw;
+    max-width: 100vw;
+    max-height: calc(100vh - 80px); /* Espace pour le bouton */
     border-radius: 0;
-    margin: 0 auto;
-    position: relative;
-    top: -50px; /* Ajuster la position pour le bouton fixe */
+    margin: 0;
   }
   
   .invoice-document {
-    padding: 20mm;
-    font-size: 12pt;
+    padding: 20px;
+    font-size: 13px;
   }
   
-  /* Tous les éléments gardent leur format A4 original */
-}
-
-@media (max-width: 600px) {
-  .invoice-content {
-    transform: scale(0.55);
-    top: -80px;
+  /* Adapter l'en-tête pour mobile */
+  .invoice-header {
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 25px;
+  }
+  
+  .company-section {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .invoice-number-section {
+    text-align: center;
+    width: 100%;
+  }
+  
+  .company-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .company-details h4 {
+    font-size: 1.2rem;
+  }
+  
+  .company-details p {
+    font-size: 0.9rem;
+  }
+  
+  .invoice-number {
+    font-size: 1rem;
+    padding: 8px 14px;
+  }
+  
+  .invoice-dates p {
+    font-size: 0.85rem;
+  }
+  
+  /* Adapter la section client-service */
+  .client-service-section {
+    flex-direction: column;
+    gap: 20px;
+    padding: 18px;
+  }
+  
+  .client-info h4, .service-info h4 {
+    font-size: 0.95rem;
+  }
+  
+  .client-details p, .service-details p {
+    font-size: 0.9rem;
+  }
+  
+  /* Adapter le tableau */
+  .invoice-table {
+    font-size: 0.85rem;
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    padding: 8px 4px;
+    font-size: 0.8rem;
+  }
+  
+  /* Adapter les totaux */
+  .invoice-totals {
+    padding: 18px;
+  }
+  
+  .totals-row {
+    font-size: 0.9rem;
+  }
+  
+  .total-final {
+    font-size: 1rem;
+  }
+  
+  /* Adapter la section paiement */
+  .payment-info-section {
+    padding: 18px;
+  }
+  
+  .payment-info-section h4 {
+    font-size: 0.95rem;
+  }
+  
+  .payment-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+  }
+  
+  .payment-label, .payment-value {
+    font-size: 0.9rem;
+  }
+  
+  .payment-value {
+    text-align: left;
   }
 }
 
 @media (max-width: 480px) {
   .invoice-content {
-    transform: scale(0.5);
-    top: -100px;
+    max-height: calc(100vh - 70px);
   }
-}
-
-@media (max-width: 400px) {
-  .invoice-content {
-    transform: scale(0.45);
-    top: -120px;
+  
+  .invoice-document {
+    padding: 15px;
+    font-size: 12px;
   }
-}
-
-@media (max-width: 360px) {
-  .invoice-content {
-    transform: scale(0.42);
-    top: -130px;
+  
+  .invoice-header {
+    gap: 15px;
+    margin-bottom: 20px;
   }
-}
-
-/* Ajustements pour le bouton sur mobile avec mise à l'échelle */
-@media (max-width: 768px) {
-  .complete-order-btn {
-    position: fixed;
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    z-index: 2000;
-    transform: none !important; /* Pas de mise à l'échelle pour le bouton */
+  
+  .company-logo {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .company-details h4 {
+    font-size: 1.1rem;
+  }
+  
+  .company-details p {
+    font-size: 0.85rem;
+  }
+  
+  .invoice-number {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+  }
+  
+  .invoice-dates p {
+    font-size: 0.8rem;
+  }
+  
+  .client-service-section {
+    padding: 15px;
+    gap: 15px;
+  }
+  
+  .client-info h4, .service-info h4 {
+    font-size: 0.9rem;
+  }
+  
+  .client-details p, .service-details p {
+    font-size: 0.85rem;
+  }
+  
+  .invoice-table {
+    font-size: 0.8rem;
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    padding: 6px 3px;
+    font-size: 0.75rem;
+  }
+  
+  .invoice-totals {
+    padding: 15px;
+  }
+  
+  .totals-row {
+    font-size: 0.85rem;
+  }
+  
+  .total-final {
+    font-size: 0.95rem;
+  }
+  
+  .payment-info-section {
+    padding: 15px;
+  }
+  
+  .payment-info-section h4 {
+    font-size: 0.9rem;
+  }
+  
+  .payment-label, .payment-value {
+    font-size: 0.85rem;
   }
 }
 
@@ -1472,30 +1590,29 @@ pour les listes déroulantes de pays */
 
 @media (max-width: 768px) {
   .complete-order-btn {
-    position: fixed !important;
-    top: auto !important;
-    bottom: 15px !important;
-    right: 15px !important;
-    left: 15px !important;
-    width: auto !important;
-    padding: 16px 24px !important;
-    font-size: 1rem !important;
-    border-radius: 30px !important;
-    text-align: center !important;
-    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4) !important;
-    transform: none !important; /* Empêcher la mise à l'échelle */
-    z-index: 2000 !important;
+    position: fixed;
+    top: auto;
+    bottom: 15px;
+    right: 15px;
+    left: 15px;
+    width: auto;
+    padding: 16px 24px;
+    font-size: 1rem;
+    border-radius: 30px;
+    text-align: center;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+    z-index: 2000;
   }
 }
 
 @media (max-width: 480px) {
   .complete-order-btn {
-    bottom: 12px !important;
-    right: 12px !important;
-    left: 12px !important;
-    padding: 18px 20px !important;
-    font-size: 1.1rem !important;
-    font-weight: 700 !important;
+    bottom: 12px;
+    right: 12px;
+    left: 12px;
+    padding: 18px 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
   }
 }/*
  Styles pour empêcher le défilement horizontal et rendre la facture statique */

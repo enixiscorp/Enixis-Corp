@@ -4,7 +4,7 @@
 window.env = {
   // Base API pour les requêtes (vide = même domaine)
   API_BASE: "",
-  
+
   // Variables d'environnement (seront remplacées par les vraies valeurs)
   SLACK_WEBHOOK_URL: "",
   FLOOZ_PHONE: "",
