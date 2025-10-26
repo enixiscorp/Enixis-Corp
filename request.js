@@ -1091,89 +1091,110 @@ function generateInvoiceNumber() {
 function showInvoice(orderData, paymentMethod) {
   const invoiceNumber = generateInvoiceNumber();
   const currentDate = new Date().toLocaleDateString('fr-FR');
+  const currentDateTime = new Date().toLocaleString('fr-FR');
+  
+  // Stocker les données pour le téléchargement
+  window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate };
   
   const invoiceHTML = `
-    <div class="invoice-header">
-      <div class="invoice-logo">
-        <img src="images/enixis corp_logo.png" alt="Enixis Corp" width="60" height="60">
-        <div class="company-info">
-          <h4>Enixis Corp</h4>
-          <p>Bouchard Drago DUBUN<br>
-          Lomé<br>
-          +22897572346<br>
-          contacteccorp@gmail.com</p>
+    <div class="invoice-document" id="invoice-document">
+      <div class="invoice-header">
+        <div class="invoice-logo">
+          <img src="images/enixis corp_logo.png" alt="Enixis Corp" width="80" height="80">
+          <div class="company-info">
+            <h4>Enixis Corp</h4>
+            <p>Bouchard Drago DUBUN<br>
+            Lomé<br>
+            +22897572346<br>
+            contacteccorp@gmail.com<br>
+            https://enixis-corp.vercel.app</p>
+          </div>
+        </div>
+        <div class="invoice-details">
+          <h3>${invoiceNumber}</h3>
+          <p><strong>Date:</strong> ${currentDate}<br>
+          <strong>Date de validité:</strong> ${currentDate}<br>
+          <strong>Heure:</strong> ${new Date().toLocaleTimeString('fr-FR')}</p>
         </div>
       </div>
-      <div class="invoice-details">
-        <h3>${invoiceNumber}</h3>
-        <p><strong>Date:</strong> ${currentDate}<br>
-        <strong>Date de validité:</strong> ${currentDate}</p>
+      
+      <div class="invoice-client-section">
+        <div class="invoice-client">
+          <h4>📋 Informations Client</h4>
+          <p><strong>${orderData.name}</strong><br>
+          📧 ${orderData.email}<br>
+          📞 ${orderData.phone}</p>
+        </div>
+        
+        <div class="invoice-service">
+          <h4>🎯 Prestation Demandée</h4>
+          <p><strong>${orderData.serviceLabel}</strong><br>
+          ⏱️ Délai: ${orderData.delivery === 'urgent' ? '🚨 Urgent (24h)' : 
+                      orderData.delivery === 'short' ? '⏳ Court terme (3-7j)' : 
+                      orderData.delivery === 'medium' ? '📅 Moyen terme (2-4 sem.)' : 
+                      orderData.delivery === 'long' ? '🕰️ Long terme (1-6 mois)' : 'Standard'}</p>
+        </div>
       </div>
-    </div>
-    
-    <div class="invoice-client">
-      <h4>Client:</h4>
-      <p><strong>${orderData.name}</strong><br>
-      ${orderData.email}<br>
-      ${orderData.phone}</p>
-    </div>
-    
-    <div class="invoice-service">
-      <h4>Prestation:</h4>
-      <p>${orderData.serviceLabel}</p>
-    </div>
-    
-    <table class="invoice-table">
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th>Date</th>
-          <th>Qté</th>
-          <th>Unité</th>
-          <th>Prix unitaire</th>
-          <th>TVA</th>
-          <th>Montant</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>→ ${orderData.serviceLabel}</td>
-          <td>${currentDate}</td>
-          <td>1,00</td>
-          <td>pcs</td>
-          <td>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</td>
-          <td>18,00 %</td>
-          <td>${formatFcfa(orderData.finalPrice)}</td>
-        </tr>
-      </tbody>
-    </table>
-    
-    <div class="invoice-totals">
-      <div class="totals-row">
-        <span>Sous-total TTC</span>
-        <span>${formatFcfa(orderData.finalPrice)}</span>
+      
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Date</th>
+            <th>Qté</th>
+            <th>Unité</th>
+            <th>Prix unitaire</th>
+            <th>TVA</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>→ ${orderData.serviceLabel}</td>
+            <td>${currentDate}</td>
+            <td>1,00</td>
+            <td>pcs</td>
+            <td>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</td>
+            <td>18,00 %</td>
+            <td>${formatFcfa(orderData.finalPrice)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="invoice-totals">
+        <div class="totals-row">
+          <span>Sous-total TTC</span>
+          <span>${formatFcfa(orderData.finalPrice)}</span>
+        </div>
+        ${orderData.coupon ? `
+        <div class="totals-row">
+          <span>Remise (${orderData.coupon.code})</span>
+          <span>-${formatFcfa((orderData.basePrice || orderData.finalPrice) - orderData.finalPrice)}</span>
+        </div>` : ''}
+        <div class="totals-row">
+          <span>Total HT</span>
+          <span>${formatFcfa(Math.round(orderData.finalPrice / 1.18))}</span>
+        </div>
+        <div class="totals-row">
+          <span>TVA 18,00 %</span>
+          <span>${formatFcfa(Math.round(orderData.finalPrice - (orderData.finalPrice / 1.18)))}</span>
+        </div>
+        <div class="totals-row total-final">
+          <span><strong>Total TTC</strong></span>
+          <span><strong>${formatFcfa(orderData.finalPrice)}</strong></span>
+        </div>
       </div>
-      <div class="totals-row">
-        <span>Remise</span>
-        <span>${orderData.coupon ? formatFcfa(orderData.basePrice - orderData.finalPrice) : '0 F CFA'}</span>
+      
+      <div class="invoice-payment">
+        <p><strong>💳 Méthode de paiement:</strong> ${paymentMethod}</p>
+        <p><strong>✅ Statut:</strong> Payé le ${currentDateTime}</p>
+        <p><strong>🔒 Transaction:</strong> Sécurisée et validée</p>
       </div>
-      <div class="totals-row">
-        <span>Total HT</span>
-        <span>${formatFcfa(Math.round(orderData.finalPrice / 1.18))}</span>
+      
+      <div class="invoice-footer">
+        <p>Merci pour votre confiance ! Cette facture a été générée automatiquement.</p>
+        <p>Pour toute question, contactez-nous : contacteccorp@gmail.com | +228 97 57 23 46</p>
       </div>
-      <div class="totals-row">
-        <span>TVA 18,00 %</span>
-        <span>${formatFcfa(Math.round(orderData.finalPrice - (orderData.finalPrice / 1.18)))}</span>
-      </div>
-      <div class="totals-row total-final">
-        <span><strong>Total TTC</strong></span>
-        <span><strong>${formatFcfa(orderData.finalPrice)}</strong></span>
-      </div>
-    </div>
-    
-    <div class="invoice-payment">
-      <p><strong>Méthode de paiement:</strong> ${paymentMethod}</p>
-      <p><strong>Statut:</strong> ✅ Payé</p>
     </div>
   `;
   
@@ -1182,45 +1203,84 @@ function showInvoice(orderData, paymentMethod) {
   document.body.style.overflow = 'hidden';
 }
 
-function downloadInvoice() {
-  const invoiceElement = invoiceContent;
-  const invoiceNumber = document.querySelector('.invoice-details h3').textContent;
+async function downloadInvoiceAsPDF() {
+  const invoiceElement = document.getElementById('invoice-document');
+  const invoiceData = window.currentInvoiceData;
   
-  // Utiliser html2canvas pour capturer la facture
-  if (typeof html2canvas !== 'undefined') {
-    html2canvas(invoiceElement, {
+  if (!invoiceElement || !invoiceData) {
+    showAlert('❌ Erreur lors de la génération du PDF');
+    return;
+  }
+
+  try {
+    // Créer le PDF avec jsPDF
+    const { jsPDF } = window.jspdf;
+    
+    // Capturer l'élément avec html2canvas
+    const canvas = await html2canvas(invoiceElement, {
       backgroundColor: '#ffffff',
-      scale: 2
-    }).then(canvas => {
-      const link = document.createElement('a');
-      link.download = `Facture_${invoiceNumber}.png`;
-      link.href = canvas.toDataURL();
-      link.click();
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      width: invoiceElement.scrollWidth,
+      height: invoiceElement.scrollHeight
     });
-  } else {
-    // Fallback: ouvrir dans une nouvelle fenêtre pour impression
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Facture ${invoiceNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .invoice-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
-            .invoice-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            .invoice-table th, .invoice-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .invoice-table th { background-color: #f5f5f5; }
-            .invoice-totals { margin-top: 20px; }
-            .totals-row { display: flex; justify-content: space-between; margin: 5px 0; }
-            .total-final { font-weight: bold; border-top: 2px solid #333; padding-top: 10px; }
-          </style>
-        </head>
-        <body>
-          ${invoiceElement.innerHTML}
-          <script>window.print(); window.close();</script>
-        </body>
-      </html>
-    `);
+    
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    
+    // Calculer les dimensions pour s'adapter à A4
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+    const imgY = 10;
+    
+    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+    pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
+    
+    console.log('✅ PDF téléchargé avec succès');
+  } catch (error) {
+    console.error('❌ Erreur génération PDF:', error);
+    showAlert('❌ Erreur lors de la génération du PDF. Essayez le téléchargement en image.');
+  }
+}
+
+async function downloadInvoiceAsImage() {
+  const invoiceElement = document.getElementById('invoice-document');
+  const invoiceData = window.currentInvoiceData;
+  
+  if (!invoiceElement || !invoiceData) {
+    showAlert('❌ Erreur lors de la génération de l\'image');
+    return;
+  }
+
+  try {
+    const canvas = await html2canvas(invoiceElement, {
+      backgroundColor: '#ffffff',
+      scale: 3, // Haute qualité pour l'image
+      useCORS: true,
+      allowTaint: true,
+      width: invoiceElement.scrollWidth,
+      height: invoiceElement.scrollHeight
+    });
+    
+    // Créer le lien de téléchargement
+    const link = document.createElement('a');
+    link.download = `Facture_${invoiceData.invoiceNumber}.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    
+    // Déclencher le téléchargement
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Image téléchargée avec succès');
+  } catch (error) {
+    console.error('❌ Erreur génération image:', error);
+    showAlert('❌ Erreur lors de la génération de l\'image');
   }
 }
 
@@ -1230,7 +1290,11 @@ function hideInvoice() {
 }
 
 // Event listeners pour la facture
-downloadInvoiceBtn?.addEventListener('click', downloadInvoice);
+const downloadPdfBtn = document.getElementById('download-pdf-btn');
+const downloadImageBtn = document.getElementById('download-image-btn');
+
+downloadPdfBtn?.addEventListener('click', downloadInvoiceAsPDF);
+downloadImageBtn?.addEventListener('click', downloadInvoiceAsImage);
 closeInvoiceBtn?.addEventListener('click', hideInvoice);
 invoicePopup?.addEventListener('click', (e) => { if (e.target === invoicePopup) hideInvoice(); });
 

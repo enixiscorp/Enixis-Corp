@@ -8,6 +8,10 @@
   <meta name="description"
     content="Soumettre une demande de prestation Enixis Corp avec estimation de prix et envoi Slack.">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- Bibliothèques pour génération PDF/Image -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
@@ -209,8 +213,11 @@
         <div id="invoice-content"></div>
       </div>
       <div class="actions" style="margin-top:20px;">
-        <button type="button" id="download-invoice-btn" class="btn primary">📥 Télécharger la facture</button>
-        <button type="button" id="close-invoice-btn" class="btn ghost">Fermer</button>
+        <div class="download-options">
+          <button type="button" id="download-pdf-btn" class="download-btn pdf">📄 Télécharger PDF</button>
+          <button type="button" id="download-image-btn" class="download-btn image">🖼️ Télécharger Image</button>
+        </div>
+        <button type="button" id="close-invoice-btn" class="btn ghost" style="margin-top: 15px;">Fermer</button>
       </div>
     </div>
   </div>
