@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 
 console.log('🔧 Génération du fichier env.js avec les variables Vercel...');
 
@@ -17,6 +18,21 @@ window.env = {
 
 fs.writeFileSync('env.js', envContent);
 console.log('✅ env.js généré avec les variables Vercel');
+
+// Copier le favicon vers la racine pour une meilleure compatibilité
+const faviconSource = path.join('images', 'favikon_enixis corp.png');
+const faviconDest = 'favicon.ico';
+
+try {
+  if (fs.existsSync(faviconSource)) {
+    fs.copyFileSync(faviconSource, faviconDest);
+    console.log('✅ Favicon copié vers la racine');
+  } else {
+    console.log('⚠️ Fichier favicon source non trouvé');
+  }
+} catch (error) {
+  console.log('⚠️ Erreur lors de la copie du favicon:', error.message);
+}
 
 // Debug - afficher les variables (sans les valeurs sensibles)
 console.log('Variables détectées:');
