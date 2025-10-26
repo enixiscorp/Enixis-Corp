@@ -726,6 +726,12 @@ function handleFloozPayment(amount) {
   setTimeout(() => {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
+
+  // Afficher la facture après 5 secondes (temps pour le paiement)
+  setTimeout(() => {
+    hideAlert();
+    showInvoice(currentOrderData, 'Flooz');
+  }, 5000);
 }
 
 function handleMixxPayment(amount) {
@@ -764,6 +770,12 @@ function handleMixxPayment(amount) {
   setTimeout(() => {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
+
+  // Afficher la facture après 5 secondes (temps pour le paiement)
+  setTimeout(() => {
+    hideAlert();
+    showInvoice(currentOrderData, 'Mixx by Yas');
+  }, 5000);
 }
 
 function showCryptoOptions(amount) {
@@ -848,6 +860,12 @@ function showCryptoPayment(cryptoType, amount) {
 
   // Envoyer notification Slack
   sendPaymentNotification(`${cryptoType} (TRC-20)`, amount, currentOrderData);
+
+  // Afficher la facture après 10 secondes (temps pour le paiement crypto)
+  setTimeout(() => {
+    hideCryptoPayment();
+    showInvoice(currentOrderData, `${cryptoType} (TRC-20)`);
+  }, 10000);
 }
 
 function hideCryptoPayment() {
@@ -905,6 +923,36 @@ async function sendCountrySelectionNotification(country, amount, orderData) {
   }
 }
 
+// Fonction pour envoyer la notification WhatsApp à Slack
+async function sendWhatsAppNotification(orderData) {
+  const slackText = `
+💬 CONTACT WHATSAPP - Enixis Corp
+
+📱 Le client souhaite discuter avant paiement
+
+👤 Client:
+• Nom: ${orderData.name}
+• Email: ${orderData.email}
+• Téléphone: ${orderData.phone}
+
+📦 Commande:
+• Prestation: ${orderData.serviceLabel}
+• Montant: ${formatFcfa(orderData.finalPrice)}
+• Délai: ${orderData.delivery || 'Non spécifié'}
+
+⏰ ${new Date().toLocaleString('fr-FR')}
+
+ℹ️ Le client a été redirigé vers WhatsApp (+228 97 57 23 46)
+  `.trim();
+
+  try {
+    await submitToSlack({ text: slackText });
+    console.log('✅ Notification WhatsApp envoyée');
+  } catch (error) {
+    console.error('❌ Erreur envoi notification WhatsApp:', error);
+  }
+}
+
 // Fonction pour envoyer la notification de paiement à Slack
 async function sendPaymentNotification(paymentMethod, amount, orderData) {
   const slackText = `
@@ -951,6 +999,28 @@ paymentBtn?.addEventListener('click', () => {
   showCountrySelection();
 });
 
+// Bouton WhatsApp - redirige vers WhatsApp
+const whatsappBtn = document.getElementById('whatsapp-btn');
+whatsappBtn?.addEventListener('click', () => {
+  const whatsappNumber = '22897572346';
+  const message = encodeURIComponent(`Bonjour Enixis Corp,
+
+Je souhaite discuter de ma commande avant de procéder au paiement.
+
+Détails de ma commande :
+• Nom : ${currentOrderData?.name || 'Non spécifié'}
+• Prestation : ${currentOrderData?.serviceLabel || 'Non spécifiée'}
+• Montant : ${formatFcfa(currentOrderData?.finalPrice || 0)}
+
+Merci !`);
+  
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+  window.open(whatsappUrl, '_blank');
+  
+  // Envoyer notification Slack
+  sendWhatsAppNotification(currentOrderData);
+});
+
 // Country selection popup
 countryClose?.addEventListener('click', hideCountrySelection);
 countryPopup?.addEventListener('click', (e) => { if (e.target === countryPopup) hideCountrySelection(); });
@@ -973,7 +1043,9 @@ cryptoPopup?.addEventListener('click', (e) => { if (e.target === cryptoPopup) hi
 // Gestion des touches Escape pour tous les pop-ups
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    if (cryptoPopup?.style.display === 'flex') {
+    if (invoicePopup?.style.display === 'flex') {
+      hideInvoice();
+    } else if (cryptoPopup?.style.display === 'flex') {
       hideCryptoPayment();
     } else if (paymentPopup?.style.display === 'flex') {
       hidePaymentOptions();
@@ -1000,6 +1072,167 @@ document.querySelector('#request-form .btn.cancel')?.addEventListener('click', (
   e.preventDefault();
   resetRequestForm();
 });
+
+// Système de facture
+const invoicePopup = document.getElementById('invoice-popup');
+const invoiceContent = document.getElementById('invoice-content');
+const downloadInvoiceBtn = document.getElementById('download-invoice-btn');
+const closeInvoiceBtn = document.getElementById('close-invoice-btn');
+
+function generateInvoiceNumber() {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const random = Math.floor(Math.random() * 100);
+  return `ENIXIS_${year}${month}${day}_${random}`;
+}
+
+function showInvoice(orderData, paymentMethod) {
+  const invoiceNumber = generateInvoiceNumber();
+  const currentDate = new Date().toLocaleDateString('fr-FR');
+  
+  const invoiceHTML = `
+    <div class="invoice-header">
+      <div class="invoice-logo">
+        <img src="images/enixis corp_logo.png" alt="Enixis Corp" width="60" height="60">
+        <div class="company-info">
+          <h4>Enixis Corp</h4>
+          <p>Bouchard Drago DUBUN<br>
+          Lomé<br>
+          +22897572346<br>
+          contacteccorp@gmail.com</p>
+        </div>
+      </div>
+      <div class="invoice-details">
+        <h3>${invoiceNumber}</h3>
+        <p><strong>Date:</strong> ${currentDate}<br>
+        <strong>Date de validité:</strong> ${currentDate}</p>
+      </div>
+    </div>
+    
+    <div class="invoice-client">
+      <h4>Client:</h4>
+      <p><strong>${orderData.name}</strong><br>
+      ${orderData.email}<br>
+      ${orderData.phone}</p>
+    </div>
+    
+    <div class="invoice-service">
+      <h4>Prestation:</h4>
+      <p>${orderData.serviceLabel}</p>
+    </div>
+    
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Date</th>
+          <th>Qté</th>
+          <th>Unité</th>
+          <th>Prix unitaire</th>
+          <th>TVA</th>
+          <th>Montant</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>→ ${orderData.serviceLabel}</td>
+          <td>${currentDate}</td>
+          <td>1,00</td>
+          <td>pcs</td>
+          <td>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</td>
+          <td>18,00 %</td>
+          <td>${formatFcfa(orderData.finalPrice)}</td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div class="invoice-totals">
+      <div class="totals-row">
+        <span>Sous-total TTC</span>
+        <span>${formatFcfa(orderData.finalPrice)}</span>
+      </div>
+      <div class="totals-row">
+        <span>Remise</span>
+        <span>${orderData.coupon ? formatFcfa(orderData.basePrice - orderData.finalPrice) : '0 F CFA'}</span>
+      </div>
+      <div class="totals-row">
+        <span>Total HT</span>
+        <span>${formatFcfa(Math.round(orderData.finalPrice / 1.18))}</span>
+      </div>
+      <div class="totals-row">
+        <span>TVA 18,00 %</span>
+        <span>${formatFcfa(Math.round(orderData.finalPrice - (orderData.finalPrice / 1.18)))}</span>
+      </div>
+      <div class="totals-row total-final">
+        <span><strong>Total TTC</strong></span>
+        <span><strong>${formatFcfa(orderData.finalPrice)}</strong></span>
+      </div>
+    </div>
+    
+    <div class="invoice-payment">
+      <p><strong>Méthode de paiement:</strong> ${paymentMethod}</p>
+      <p><strong>Statut:</strong> ✅ Payé</p>
+    </div>
+  `;
+  
+  invoiceContent.innerHTML = invoiceHTML;
+  invoicePopup.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function downloadInvoice() {
+  const invoiceElement = invoiceContent;
+  const invoiceNumber = document.querySelector('.invoice-details h3').textContent;
+  
+  // Utiliser html2canvas pour capturer la facture
+  if (typeof html2canvas !== 'undefined') {
+    html2canvas(invoiceElement, {
+      backgroundColor: '#ffffff',
+      scale: 2
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `Facture_${invoiceNumber}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+    });
+  } else {
+    // Fallback: ouvrir dans une nouvelle fenêtre pour impression
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Facture ${invoiceNumber}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            .invoice-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+            .invoice-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            .invoice-table th, .invoice-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            .invoice-table th { background-color: #f5f5f5; }
+            .invoice-totals { margin-top: 20px; }
+            .totals-row { display: flex; justify-content: space-between; margin: 5px 0; }
+            .total-final { font-weight: bold; border-top: 2px solid #333; padding-top: 10px; }
+          </style>
+        </head>
+        <body>
+          ${invoiceElement.innerHTML}
+          <script>window.print(); window.close();</script>
+        </body>
+      </html>
+    `);
+  }
+}
+
+function hideInvoice() {
+  invoicePopup.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// Event listeners pour la facture
+downloadInvoiceBtn?.addEventListener('click', downloadInvoice);
+closeInvoiceBtn?.addEventListener('click', hideInvoice);
+invoicePopup?.addEventListener('click', (e) => { if (e.target === invoicePopup) hideInvoice(); });
 
 // Rendre la fonction copyWalletAddress accessible globalement
 window.copyWalletAddress = copyWalletAddress;

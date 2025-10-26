@@ -141,6 +141,7 @@
       </div>
       <div class="actions" style="margin-top:12px;">
         <button type="button" id="payment-btn" class="btn primary">💳 Payer</button>
+        <button type="button" id="whatsapp-btn" class="btn ghost">💬 Contacter sur WhatsApp</button>
         <button type="button" id="cancel-order-btn" class="btn cancel">Fermer</button>
       </div>
     </div>
@@ -193,6 +194,23 @@
       </div>
       <div class="popup-body">
         <div id="crypto-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pop-up de facture finale -->
+  <div id="invoice-popup" class="popup-overlay" style="display:none;">
+    <div class="popup-content invoice-content" role="dialog" aria-modal="true" aria-labelledby="invoice-title">
+      <button type="button" class="popup-close" aria-label="Fermer">✕</button>
+      <div class="popup-header">
+        <h3 id="invoice-title">📄 Facture - Enixis Corp</h3>
+      </div>
+      <div class="popup-body">
+        <div id="invoice-content"></div>
+      </div>
+      <div class="actions" style="margin-top:20px;">
+        <button type="button" id="download-invoice-btn" class="btn primary">📥 Télécharger la facture</button>
+        <button type="button" id="close-invoice-btn" class="btn ghost">Fermer</button>
       </div>
     </div>
   </div>

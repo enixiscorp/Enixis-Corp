@@ -739,3 +739,137 @@ main:focus { outline: none; }
 }
 
 
+/* Styles pour la facture */
+.invoice-content {
+  max-width: 800px;
+  width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #0A0F2C;
+}
+
+.invoice-logo {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+}
+
+.company-info h4 {
+  margin: 0 0 10px 0;
+  color: #0A0F2C;
+  font-size: 1.2rem;
+}
+
+.company-info p {
+  margin: 0;
+  line-height: 1.4;
+  color: #666;
+}
+
+.invoice-details {
+  text-align: right;
+}
+
+.invoice-details h3 {
+  margin: 0 0 10px 0;
+  color: #0A0F2C;
+  font-size: 1.4rem;
+}
+
+.invoice-client, .invoice-service {
+  margin: 20px 0;
+}
+
+.invoice-client h4, .invoice-service h4 {
+  margin: 0 0 10px 0;
+  color: #0A0F2C;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 30px 0;
+  font-size: 0.9rem;
+}
+
+.invoice-table th,
+.invoice-table td {
+  border: 1px solid #ddd;
+  padding: 12px 8px;
+  text-align: left;
+}
+
+.invoice-table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #0A0F2C;
+}
+
+.invoice-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.invoice-totals {
+  margin-top: 30px;
+  max-width: 400px;
+  margin-left: auto;
+}
+
+.totals-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.total-final {
+  border-top: 2px solid #0A0F2C;
+  border-bottom: 2px solid #0A0F2C;
+  margin-top: 10px;
+  padding-top: 15px;
+  font-size: 1.1rem;
+}
+
+.invoice-payment {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.invoice-payment p {
+  margin: 5px 0;
+}
+
+/* Responsive pour la facture */
+@media (max-width: 768px) {
+  .invoice-content {
+    width: 95vw;
+  }
+  
+  .invoice-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .invoice-details {
+    text-align: left;
+  }
+  
+  .invoice-table {
+    font-size: 0.8rem;
+  }
+  
+  .invoice-table th,
+  .invoice-table td {
+    padding: 8px 4px;
+  }
+}
