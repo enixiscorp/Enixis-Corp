@@ -1,8 +1,0 @@
-node_modules
-.git
-.github
-*.md
-LICENSE
-build-vercel.js
-env.example.js
-.gitignore

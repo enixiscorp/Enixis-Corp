@@ -5,8 +5,9 @@
     "main": "index.html",
     "scripts": {
         "dev": "npx http-server . -p 3000 -o",
-        "build": "node build-vercel.js",
-        "start": "npx http-server . -p 8080"
+        "build": "copy-to-public.bat",
+        "start": "npx http-server . -p 8080",
+        "copy": "copy-to-public.bat"
     },
     "keywords": [
         "ia",
