@@ -161,7 +161,7 @@
       </div>
       <div class="popup-body">
         <p style="margin-bottom: 16px;">Choisissez votre pays pour voir les options de paiement disponibles :</p>
-        <div class="country-options">
+        <div class="country-options" id="country-main-options">
           <button type="button" class="btn country-btn" data-country="togo">
             🇹🇬 Togo
           </button>
@@ -171,6 +171,28 @@
           <button type="button" class="btn country-btn" data-country="world">
             🌎 Reste du Monde
           </button>
+        </div>
+        
+        <!-- Liste des pays d'Afrique -->
+        <div id="africa-countries" class="country-dropdown" style="display:none;">
+          <div class="country-search">
+            <input type="text" id="africa-search" placeholder="Rechercher un pays africain..." class="country-search-input">
+          </div>
+          <div class="country-list" id="africa-list">
+            <!-- Sera rempli par JavaScript -->
+          </div>
+          <button type="button" class="btn ghost back-btn" id="back-to-main-africa">← Retour</button>
+        </div>
+        
+        <!-- Liste des pays du reste du monde -->
+        <div id="world-countries" class="country-dropdown" style="display:none;">
+          <div class="country-search">
+            <input type="text" id="world-search" placeholder="Rechercher un pays..." class="country-search-input">
+          </div>
+          <div class="country-list" id="world-list">
+            <!-- Sera rempli par JavaScript -->
+          </div>
+          <button type="button" class="btn ghost back-btn" id="back-to-main-world">← Retour</button>
         </div>
       </div>
     </div>

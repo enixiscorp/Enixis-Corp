@@ -598,6 +598,8 @@ function showCountrySelection() {
 function hideCountrySelection() {
   countryPopup.style.display = 'none';
   document.body.style.overflow = '';
+  // Réinitialiser l'état des listes
+  backToMainOptions();
 }
 
 function showPaymentOptions(country) {
@@ -1059,16 +1061,299 @@ Merci !`);
   sendWhatsAppNotification(currentOrderData);
 });
 
-// Country selection popup
-countryClose?.addEventListener('click', hideCountrySelection);
-countryPopup?.addEventListener('click', (e) => { if (e.target === countryPopup) hideCountrySelection(); });
+// Listes de pays
+const AFRICA_COUNTRIES = [
+  { name: 'Afrique du Sud', flag: '🇿🇦' },
+  { name: 'Algérie', flag: '🇩🇿' },
+  { name: 'Angola', flag: '🇦🇴' },
+  { name: 'Bénin', flag: '🇧🇯' },
+  { name: 'Botswana', flag: '🇧🇼' },
+  { name: 'Burkina Faso', flag: '🇧🇫' },
+  { name: 'Burundi', flag: '🇧🇮' },
+  { name: 'Cameroun', flag: '🇨🇲' },
+  { name: 'Cap-Vert', flag: '🇨🇻' },
+  { name: 'Comores', flag: '🇰🇲' },
+  { name: 'Congo (Rép.)', flag: '🇨🇬' },
+  { name: 'Côte d\'Ivoire', flag: '🇨🇮' },
+  { name: 'Djibouti', flag: '🇩🇯' },
+  { name: 'Égypte', flag: '🇪🇬' },
+  { name: 'Érythrée', flag: '🇪🇷' },
+  { name: 'Eswatini', flag: '🇸🇿' },
+  { name: 'Éthiopie', flag: '🇪🇹' },
+  { name: 'Gabon', flag: '🇬🇦' },
+  { name: 'Gambie', flag: '🇬🇲' },
+  { name: 'Ghana', flag: '🇬🇭' },
+  { name: 'Guinée', flag: '🇬🇳' },
+  { name: 'Guinée-Bissau', flag: '🇬🇼' },
+  { name: 'Guinée équatoriale', flag: '🇬🇶' },
+  { name: 'Kenya', flag: '🇰🇪' },
+  { name: 'Lesotho', flag: '🇱🇸' },
+  { name: 'Liberia', flag: '🇱🇷' },
+  { name: 'Libye', flag: '🇱🇾' },
+  { name: 'Madagascar', flag: '🇲🇬' },
+  { name: 'Malawi', flag: '🇲🇼' },
+  { name: 'Mali', flag: '🇲🇱' },
+  { name: 'Maroc', flag: '🇲🇦' },
+  { name: 'Maurice', flag: '🇲🇺' },
+  { name: 'Mauritanie', flag: '🇲🇷' },
+  { name: 'Mozambique', flag: '🇲🇿' },
+  { name: 'Namibie', flag: '🇳🇦' },
+  { name: 'Niger', flag: '🇳🇪' },
+  { name: 'Nigeria', flag: '🇳🇬' },
+  { name: 'Ouganda', flag: '🇺🇬' },
+  { name: 'Rwanda', flag: '🇷🇼' },
+  { name: 'São Tomé-et-Principe', flag: '🇸🇹' },
+  { name: 'Sénégal', flag: '🇸🇳' },
+  { name: 'Seychelles', flag: '🇸🇨' },
+  { name: 'Sierra Leone', flag: '🇸🇱' },
+  { name: 'Somalie', flag: '🇸🇴' },
+  { name: 'Soudan', flag: '🇸🇩' },
+  { name: 'Soudan du Sud', flag: '🇸🇸' },
+  { name: 'Tanzanie', flag: '🇹🇿' },
+  { name: 'Tchad', flag: '🇹🇩' },
+  { name: 'Togo', flag: '🇹🇬' },
+  { name: 'Tunisie', flag: '🇹🇳' },
+  { name: 'Zambie', flag: '🇿🇲' },
+  { name: 'Zimbabwe', flag: '🇿🇼' }
+];
 
+const WORLD_COUNTRIES = [
+  { name: 'Afghanistan', flag: '🇦🇫' },
+  { name: 'Albanie', flag: '🇦🇱' },
+  { name: 'Allemagne', flag: '🇩🇪' },
+  { name: 'Andorre', flag: '🇦🇩' },
+  { name: 'Antigua-et-Barbuda', flag: '🇦🇬' },
+  { name: 'Arabie saoudite', flag: '🇸🇦' },
+  { name: 'Argentine', flag: '🇦🇷' },
+  { name: 'Arménie', flag: '🇦🇲' },
+  { name: 'Australie', flag: '🇦🇺' },
+  { name: 'Autriche', flag: '🇦🇹' },
+  { name: 'Azerbaïdjan', flag: '🇦🇿' },
+  { name: 'Bahamas', flag: '🇧🇸' },
+  { name: 'Bahreïn', flag: '🇧🇭' },
+  { name: 'Bangladesh', flag: '🇧🇩' },
+  { name: 'Barbade', flag: '🇧🇧' },
+  { name: 'Biélorussie', flag: '🇧🇾' },
+  { name: 'Belgique', flag: '🇧🇪' },
+  { name: 'Belize', flag: '🇧🇿' },
+  { name: 'Bhoutan', flag: '🇧🇹' },
+  { name: 'Bolivie', flag: '🇧🇴' },
+  { name: 'Bosnie-Herzégovine', flag: '🇧🇦' },
+  { name: 'Brésil', flag: '🇧🇷' },
+  { name: 'Brunei', flag: '🇧🇳' },
+  { name: 'Bulgarie', flag: '🇧🇬' },
+  { name: 'Cambodge', flag: '🇰🇭' },
+  { name: 'Canada', flag: '🇨🇦' },
+  { name: 'Chili', flag: '🇨🇱' },
+  { name: 'Chine', flag: '🇨🇳' },
+  { name: 'Chypre', flag: '🇨🇾' },
+  { name: 'Colombie', flag: '🇨🇴' },
+  { name: 'Corée du Nord', flag: '🇰🇵' },
+  { name: 'Corée du Sud', flag: '🇰🇷' },
+  { name: 'Costa Rica', flag: '🇨🇷' },
+  { name: 'Croatie', flag: '🇭🇷' },
+  { name: 'Cuba', flag: '🇨🇺' },
+  { name: 'Danemark', flag: '🇩🇰' },
+  { name: 'Dominique', flag: '🇩🇲' },
+  { name: 'Émirats arabes unis', flag: '🇦🇪' },
+  { name: 'Équateur', flag: '🇪🇨' },
+  { name: 'Espagne', flag: '🇪🇸' },
+  { name: 'Estonie', flag: '🇪🇪' },
+  { name: 'États-Unis', flag: '🇺🇸' },
+  { name: 'Fidji', flag: '🇫🇯' },
+  { name: 'Finlande', flag: '🇫🇮' },
+  { name: 'France', flag: '🇫🇷' },
+  { name: 'Géorgie', flag: '🇬🇪' },
+  { name: 'Grèce', flag: '🇬🇷' },
+  { name: 'Grenade', flag: '🇬🇩' },
+  { name: 'Guatemala', flag: '🇬🇹' },
+  { name: 'Guyana', flag: '🇬🇾' },
+  { name: 'Haïti', flag: '🇭🇹' },
+  { name: 'Honduras', flag: '🇭🇳' },
+  { name: 'Hongrie', flag: '🇭🇺' },
+  { name: 'Inde', flag: '🇮🇳' },
+  { name: 'Indonésie', flag: '🇮🇩' },
+  { name: 'Iran', flag: '🇮🇷' },
+  { name: 'Iraq', flag: '🇮🇶' },
+  { name: 'Irlande', flag: '🇮🇪' },
+  { name: 'Islande', flag: '🇮🇸' },
+  { name: 'Israël', flag: '🇮🇱' },
+  { name: 'Italie', flag: '🇮🇹' },
+  { name: 'Jamaïque', flag: '🇯🇲' },
+  { name: 'Japon', flag: '🇯🇵' },
+  { name: 'Jordanie', flag: '🇯🇴' },
+  { name: 'Kazakhstan', flag: '🇰🇿' },
+  { name: 'Kirghizistan', flag: '🇰🇬' },
+  { name: 'Kiribati', flag: '🇰🇮' },
+  { name: 'Koweït', flag: '🇰🇼' },
+  { name: 'Laos', flag: '🇱🇦' },
+  { name: 'Lettonie', flag: '🇱🇻' },
+  { name: 'Liban', flag: '🇱🇧' },
+  { name: 'Liechtenstein', flag: '🇱🇮' },
+  { name: 'Lituanie', flag: '🇱🇹' },
+  { name: 'Luxembourg', flag: '🇱🇺' },
+  { name: 'Macédoine du Nord', flag: '🇲🇰' },
+  { name: 'Malaisie', flag: '🇲🇾' },
+  { name: 'Maldives', flag: '🇲🇻' },
+  { name: 'Malte', flag: '🇲🇹' },
+  { name: 'Marshall', flag: '🇲🇭' },
+  { name: 'Mexique', flag: '🇲🇽' },
+  { name: 'Micronésie', flag: '🇫🇲' },
+  { name: 'Moldavie', flag: '🇲🇩' },
+  { name: 'Monaco', flag: '🇲🇨' },
+  { name: 'Mongolie', flag: '🇲🇳' },
+  { name: 'Monténégro', flag: '🇲🇪' },
+  { name: 'Myanmar', flag: '🇲🇲' },
+  { name: 'Nauru', flag: '🇳🇷' },
+  { name: 'Népal', flag: '🇳🇵' },
+  { name: 'Nicaragua', flag: '🇳🇮' },
+  { name: 'Norvège', flag: '🇳🇴' },
+  { name: 'Nouvelle-Zélande', flag: '🇳🇿' },
+  { name: 'Oman', flag: '🇴🇲' },
+  { name: 'Ouzbékistan', flag: '🇺🇿' },
+  { name: 'Pakistan', flag: '🇵🇰' },
+  { name: 'Palau', flag: '🇵🇼' },
+  { name: 'Palestine', flag: '🇵🇸' },
+  { name: 'Panama', flag: '🇵🇦' },
+  { name: 'Papouasie-Nouvelle-Guinée', flag: '🇵🇬' },
+  { name: 'Paraguay', flag: '🇵🇾' },
+  { name: 'Pays-Bas', flag: '🇳🇱' },
+  { name: 'Pérou', flag: '🇵🇪' },
+  { name: 'Philippines', flag: '🇵🇭' },
+  { name: 'Pologne', flag: '🇵🇱' },
+  { name: 'Portugal', flag: '🇵🇹' },
+  { name: 'Qatar', flag: '🇶🇦' },
+  { name: 'République centrafricaine', flag: '🇨🇫' },
+  { name: 'République dominicaine', flag: '🇩🇴' },
+  { name: 'République tchèque', flag: '🇨🇿' },
+  { name: 'Roumanie', flag: '🇷🇴' },
+  { name: 'Royaume-Uni', flag: '🇬🇧' },
+  { name: 'Russie', flag: '🇷🇺' },
+  { name: 'Saint-Christophe-et-Niévès', flag: '🇰🇳' },
+  { name: 'Saint-Marin', flag: '🇸🇲' },
+  { name: 'Saint-Vincent-et-les-Grenadines', flag: '🇻🇨' },
+  { name: 'Sainte-Lucie', flag: '🇱🇨' },
+  { name: 'Salvador', flag: '🇸🇻' },
+  { name: 'Samoa', flag: '🇼🇸' },
+  { name: 'Serbie', flag: '🇷🇸' },
+  { name: 'Singapour', flag: '🇸🇬' },
+  { name: 'Slovaquie', flag: '🇸🇰' },
+  { name: 'Slovénie', flag: '🇸🇮' },
+  { name: 'Solomon', flag: '🇸🇧' },
+  { name: 'Sri Lanka', flag: '🇱🇰' },
+  { name: 'Suède', flag: '🇸🇪' },
+  { name: 'Suisse', flag: '🇨🇭' },
+  { name: 'Syrie', flag: '🇸🇾' },
+  { name: 'Tadjikistan', flag: '🇹🇯' },
+  { name: 'Thaïlande', flag: '🇹🇭' },
+  { name: 'Timor oriental', flag: '🇹🇱' },
+  { name: 'Tonga', flag: '🇹🇴' },
+  { name: 'Trinité-et-Tobago', flag: '🇹🇹' },
+  { name: 'Turkménistan', flag: '🇹🇲' },
+  { name: 'Turquie', flag: '🇹🇷' },
+  { name: 'Tuvalu', flag: '🇹🇻' },
+  { name: 'Ukraine', flag: '🇺🇦' },
+  { name: 'Uruguay', flag: '🇺🇾' },
+  { name: 'Vanuatu', flag: '🇻🇺' },
+  { name: 'Venezuela', flag: '🇻🇪' },
+  { name: 'Vietnam', flag: '🇻🇳' },
+  { name: 'Yémen', flag: '🇾🇪' }
+];
+
+// Éléments DOM pour les listes de pays
+const countryMainOptions = document.getElementById('country-main-options');
+const africaCountries = document.getElementById('africa-countries');
+const worldCountries = document.getElementById('world-countries');
+const africaSearch = document.getElementById('africa-search');
+const worldSearch = document.getElementById('world-search');
+const africaList = document.getElementById('africa-list');
+const worldList = document.getElementById('world-list');
+const backToMainAfrica = document.getElementById('back-to-main-africa');
+const backToMainWorld = document.getElementById('back-to-main-world');
+
+// Fonctions pour afficher les listes de pays
+function showAfricaCountries() {
+  countryMainOptions.style.display = 'none';
+  africaCountries.style.display = 'block';
+  populateCountryList(AFRICA_COUNTRIES, africaList, 'africa');
+  africaSearch.focus();
+}
+
+function showWorldCountries() {
+  countryMainOptions.style.display = 'none';
+  worldCountries.style.display = 'block';
+  populateCountryList(WORLD_COUNTRIES, worldList, 'world');
+  worldSearch.focus();
+}
+
+function backToMainOptions() {
+  countryMainOptions.style.display = 'block';
+  africaCountries.style.display = 'none';
+  worldCountries.style.display = 'none';
+  africaSearch.value = '';
+  worldSearch.value = '';
+}
+
+function populateCountryList(countries, container, region) {
+  container.innerHTML = '';
+  countries.forEach(country => {
+    const countryItem = document.createElement('div');
+    countryItem.className = 'country-item';
+    countryItem.innerHTML = `
+      <span class="country-flag">${country.flag}</span>
+      <span class="country-name">${country.name}</span>
+    `;
+    countryItem.addEventListener('click', () => {
+      selectCountry(country.name, region);
+    });
+    container.appendChild(countryItem);
+  });
+}
+
+function filterCountries(searchTerm, countries, container, region) {
+  const filtered = countries.filter(country => 
+    country.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  populateCountryList(filtered, container, region);
+}
+
+function selectCountry(countryName, region) {
+  hideCountrySelection();
+  const countryLabel = `${region === 'africa' ? '🌍' : '🌎'} ${countryName}`;
+  sendCountrySelectionNotification(countryLabel, currentOrderData?.finalPrice || 0, currentOrderData);
+  showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
+}
+
+// Event listeners pour les boutons principaux
 countryBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const country = btn.getAttribute('data-country');
-    showPaymentOptions(country);
+    if (country === 'africa') {
+      showAfricaCountries();
+    } else if (country === 'world') {
+      showWorldCountries();
+    } else {
+      showPaymentOptions(country);
+    }
   });
 });
+
+// Event listeners pour les boutons retour
+backToMainAfrica?.addEventListener('click', backToMainOptions);
+backToMainWorld?.addEventListener('click', backToMainOptions);
+
+// Event listeners pour la recherche
+africaSearch?.addEventListener('input', (e) => {
+  filterCountries(e.target.value, AFRICA_COUNTRIES, africaList, 'africa');
+});
+
+worldSearch?.addEventListener('input', (e) => {
+  filterCountries(e.target.value, WORLD_COUNTRIES, worldList, 'world');
+});
+
+// Country selection popup
+countryClose?.addEventListener('click', hideCountrySelection);
+countryPopup?.addEventListener('click', (e) => { if (e.target === countryPopup) hideCountrySelection(); });
 
 // Payment options popup
 paymentClose?.addEventListener('click', hidePaymentOptions);
@@ -1088,7 +1373,12 @@ document.addEventListener('keydown', (e) => {
     } else if (paymentPopup?.style.display === 'flex') {
       hidePaymentOptions();
     } else if (countryPopup?.style.display === 'flex') {
-      hideCountrySelection();
+      // Si on est dans une liste de pays, revenir au menu principal
+      if (africaCountries?.style.display === 'block' || worldCountries?.style.display === 'block') {
+        backToMainOptions();
+      } else {
+        hideCountrySelection();
+      }
     } else if (orderPopup?.style.display === 'flex') {
       hideOrderSummary();
     }
