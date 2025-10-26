@@ -97,11 +97,7 @@ const issueDetailsEl = document.getElementById('issue_details');
 const budgetRow = document.getElementById('budget_row');
 const budgetAmountEl = document.getElementById('budget_amount');
 
-// Envoi Slack: 2 modes
-// - Mode A (proxy): POST vers /api/slack (recommandé)
-// - Mode B (env.js public): POST direct vers Slack via window.env.SLACK_WEBHOOK_URL (repli)
-const API_BASE = (window.env && window.env.API_BASE) ? String(window.env.API_BASE).replace(/\/$/, '') : '';
-const SLACK_PROXY_ENDPOINT = `${API_BASE}/api/slack`;
+// Envoi Slack direct via webhook (depuis variables d'environnement)
 
 function getSlackWebhookUrl() {
   const fromEnv = (window.env && window.env.SLACK_WEBHOOK_URL) ? String(window.env.SLACK_WEBHOOK_URL) : '';
@@ -262,57 +258,35 @@ async function submitToSlack(payload) {
     throw new Error('Données invalides pour l\'envoi');
   }
 
-  // 1) Essayer le proxy sécurisé
+  // Récupérer l'URL du webhook depuis les variables d'environnement
+  const webhookUrl = getSlackWebhookUrl();
+  if (!webhookUrl) {
+    throw new Error('URL Slack webhook non configurée');
+  }
+
   try {
-    const resp = await fetch(SLACK_PROXY_ENDPOINT, {
+    // Envoi direct vers Slack
+    await fetch(webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      credentials: 'omit'
+      mode: 'no-cors',
+      keepalive: true
     });
-
-    if (resp.ok) {
-      console.log('✅ Message envoyé via proxy sécurisé');
-      return;
-    }
-
-    const err = await resp.json().catch(async () => ({
-      raw: await resp.text().catch(() => 'Erreur inconnue')
-    }));
-    console.error('Proxy Slack error:', resp.status, err);
-
-    // Si le proxy répond mais en erreur, essayer le repli direct si configuré
-  } catch (fetchError) {
-    console.warn('Erreur proxy:', fetchError.message);
-  }
-
-  // 2) Repli: envoi direct si une URL publique est définie (optionnel)
-  const directUrl = getSlackWebhookUrl();
-  if (directUrl) {
+    console.log('✅ Message envoyé vers Slack');
+    return;
+  } catch (e) {
+    // Fallback avec sendBeacon
     try {
-      await fetch(directUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        mode: 'no-cors',
-        keepalive: true
-      });
-      return;
-    } catch (e) {
-      try {
-        const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
-        const ok = navigator.sendBeacon(directUrl, blob);
-        if (ok) return;
-      } catch { }
-      throw new Error(`Erreur d'envoi direct: ${e.message}`);
-    }
+      const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+      const ok = navigator.sendBeacon(webhookUrl, blob);
+      if (ok) {
+        console.log('✅ Message envoyé vers Slack (beacon)');
+        return;
+      }
+    } catch { }
+    throw new Error(`Erreur d'envoi vers Slack: ${e.message}`);
   }
-
-  // 3) Aucune option disponible
-  throw new Error('Aucun canal d\'envoi disponible (proxy injoignable et SLACK_WEBHOOK_URL absent)');
 }
 
 function buildSlackText(data) {
@@ -520,15 +494,16 @@ updatePrice();
 toggleIssueBlock();
 togglePromoBlock();
 
-// Configuration des destinataires de paiement
+// Configuration des destinataires de paiement (depuis les variables d'environnement)
 const PAYMENT_CONFIG = {
-  // Numéro de téléphone pour Flooz et Mixx
-  RECIPIENT_PHONE: '97572346',
-
-  // Adresses crypto TRC-20
+  // Numéros de téléphone pour les paiements mobiles (depuis env.js)
+  FLOOZ_PHONE: (window.env && window.env.FLOOZ_PHONE) ? String(window.env.FLOOZ_PHONE) : '',
+  MIXX_PHONE: (window.env && window.env.MIXX_PHONE) ? String(window.env.MIXX_PHONE) : '',
+  
+  // Adresses crypto TRC-20 (depuis env.js)
   CRYPTO_WALLETS: {
-    USDT: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE',
-    BTC: 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE' // Même adresse TRC-20 pour BTC
+    USDT: (window.env && window.env.USDT_WALLET) ? String(window.env.USDT_WALLET) : '',
+    BTC: (window.env && window.env.BTC_WALLET) ? String(window.env.BTC_WALLET) : ''
   }
 };
 
@@ -705,7 +680,7 @@ function handlePaymentMethod(method, amount) {
 }
 
 function handleFloozPayment(amount) {
-  const recipient = PAYMENT_CONFIG.RECIPIENT_PHONE;
+  const recipient = PAYMENT_CONFIG.FLOOZ_PHONE;
   const ussdCode = `*155*1*1*${recipient}*${recipient}*${amount}*1#`;
 
   hidePaymentOptions();
@@ -743,7 +718,7 @@ function handleFloozPayment(amount) {
 }
 
 function handleMixxPayment(amount) {
-  const recipient = PAYMENT_CONFIG.RECIPIENT_PHONE;
+  const recipient = PAYMENT_CONFIG.MIXX_PHONE;
   const ussdCode = `*145*1*${amount}*${recipient}*1#`;
 
   hidePaymentOptions();

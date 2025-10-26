@@ -23,17 +23,57 @@ jobs:
 
       - name: Generate env.js from secrets
         run: |
+          echo "🔧 Génération du fichier env.js avec les secrets..."
+          
+          # Vérification des secrets requis
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
             echo "❌ ERREUR: Secret SLACK_WEBHOOK_URL est vide"
-            echo "window.env = {\"API_BASE\": \"\", \"SLACK_WEBHOOK_URL\": \"\"};" > env.js
           else
-            echo "✅ Secret trouvé, longueur: ${#SLACK_WEBHOOK_URL} caractères"
-            echo "✅ Commence par: ${SLACK_WEBHOOK_URL:0:25}..."
-            echo "window.env = {\"API_BASE\": \"\", \"SLACK_WEBHOOK_URL\": \"$SLACK_WEBHOOK_URL\"};" > env.js
+            echo "✅ SLACK_WEBHOOK_URL configuré"
           fi
-          echo "📄 Fichier env.js généré"
+          
+          if [ -z "$FLOOZ_PHONE" ]; then
+            echo "⚠️ AVERTISSEMENT: FLOOZ_PHONE non configuré"
+          else
+            echo "✅ FLOOZ_PHONE configuré"
+          fi
+          
+          if [ -z "$MIXX_PHONE" ]; then
+            echo "⚠️ AVERTISSEMENT: MIXX_PHONE non configuré"
+          else
+            echo "✅ MIXX_PHONE configuré"
+          fi
+          
+          if [ -z "$USDT_WALLET" ]; then
+            echo "⚠️ AVERTISSEMENT: USDT_WALLET non configuré"
+          else
+            echo "✅ USDT_WALLET configuré"
+          fi
+          
+          if [ -z "$BTC_WALLET" ]; then
+            echo "⚠️ AVERTISSEMENT: BTC_WALLET non configuré"
+          else
+            echo "✅ BTC_WALLET configuré"
+          fi
+          
+          # Génération du fichier env.js
+          cat > env.js << EOF
+window.env = {
+  "SLACK_WEBHOOK_URL": "$SLACK_WEBHOOK_URL",
+  "FLOOZ_PHONE": "$FLOOZ_PHONE",
+  "MIXX_PHONE": "$MIXX_PHONE",
+  "USDT_WALLET": "$USDT_WALLET",
+  "BTC_WALLET": "$BTC_WALLET"
+};
+EOF
+          
+          echo "📄 Fichier env.js généré avec succès"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          FLOOZ_PHONE: ${{ secrets.FLOOZ_PHONE }}
+          MIXX_PHONE: ${{ secrets.MIXX_PHONE }}
+          USDT_WALLET: ${{ secrets.USDT_WALLET }}
+          BTC_WALLET: ${{ secrets.BTC_WALLET }}
 
       - name: Optimize and validate files
         run: |

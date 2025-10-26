@@ -1,23 +1,4 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/*.js", "use": "@vercel/node" },
-    { "src": "*.html", "use": "@vercel/static" },
-    { "src": "*.css", "use": "@vercel/static" },
-    { "src": "*.js", "use": "@vercel/static" },
-    { "src": "images/**", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/api/slack", "dest": "/api/slack.js" },
-    { "src": "/robots.txt", "dest": "/robots.txt" },
-    { "src": "/sitemap.xml", "dest": "/sitemap.xml" }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs18.x",
-      "maxDuration": 10
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
@@ -35,7 +16,7 @@
       ]
     },
     {
-      "source": "/(style|script|request)\\.js",
+      "source": "/(.*\\.(css|js))",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=86400" }
       ]
