@@ -898,7 +898,7 @@ orderCancelBtn?.addEventListener('click', hideOrderSummary);
 orderPopup?.addEventListener('click', (e) => { if (e.target === orderPopup) hideOrderSummary(); });
 
 // Bouton Payer - ouvre la sélection de pays
-paymentBtn?.addEventListener('click', () => {
+paymentBtn?.addEventListener('click', () => {tBtn?.addEventListener('click', () => {
   showCountrySelection();
 });
 
