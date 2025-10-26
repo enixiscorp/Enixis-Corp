@@ -623,14 +623,14 @@ function showPaymentOptions(country) {
     // Options pour le Togo : Flooz, Mixx, et Crypto
     optionsHTML = `
       <div class="payment-method" data-method="flooz">
-        <div class="payment-logo flooz-logo">FLOOZ</div>
+        <img src="images/moov_money_enixis.png" alt="Moov Money" class="payment-logo-img">
         <div class="details">
           <h4>Flooz</h4>
           <p>Paiement mobile via Flooz</p>
         </div>
       </div>
       <div class="payment-method" data-method="mixx">
-        <div class="payment-logo mixx-logo">MIXX</div>
+        <img src="images/mixx_by_yas_enixis.png" alt="Mixx by Yas" class="payment-logo-img">
         <div class="details">
           <h4>Mixx by Yas</h4>
           <p>Paiement mobile via Mixx</p>
@@ -727,11 +727,15 @@ function handleFloozPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 5 secondes (temps pour le paiement)
+  // Afficher la facture après 3 secondes et télécharger automatiquement
   setTimeout(() => {
     hideAlert();
     showInvoice(currentOrderData, 'Flooz');
-  }, 5000);
+    // Téléchargement automatique après 2 secondes d'affichage
+    setTimeout(() => {
+      downloadInvoiceAsPDF();
+    }, 2000);
+  }, 3000);
 }
 
 function handleMixxPayment(amount) {
@@ -771,11 +775,15 @@ function handleMixxPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 5 secondes (temps pour le paiement)
+  // Afficher la facture après 3 secondes et télécharger automatiquement
   setTimeout(() => {
     hideAlert();
     showInvoice(currentOrderData, 'Mixx by Yas');
-  }, 5000);
+    // Téléchargement automatique après 2 secondes d'affichage
+    setTimeout(() => {
+      downloadInvoiceAsPDF();
+    }, 2000);
+  }, 3000);
 }
 
 function showCryptoOptions(amount) {
@@ -861,11 +869,15 @@ function showCryptoPayment(cryptoType, amount) {
   // Envoyer notification Slack
   sendPaymentNotification(`${cryptoType} (TRC-20)`, amount, currentOrderData);
 
-  // Afficher la facture après 10 secondes (temps pour le paiement crypto)
+  // Afficher la facture après 8 secondes et télécharger automatiquement
   setTimeout(() => {
     hideCryptoPayment();
     showInvoice(currentOrderData, `${cryptoType} (TRC-20)`);
-  }, 10000);
+    // Téléchargement automatique après 2 secondes d'affichage
+    setTimeout(() => {
+      downloadInvoiceAsPDF();
+    }, 2000);
+  }, 8000);
 }
 
 function hideCryptoPayment() {
@@ -1218,81 +1230,76 @@ async function downloadInvoiceAsPDF() {
   const invoiceData = window.currentInvoiceData;
   
   if (!invoiceElement || !invoiceData) {
-    showAlert('❌ Erreur lors de la génération du PDF');
+    console.error('❌ Erreur lors de la génération du PDF');
     return;
   }
 
   try {
-    // Créer le PDF avec jsPDF
+    // Créer le PDF avec jsPDF en format universel
     const { jsPDF } = window.jspdf;
     
-    // Capturer l'élément avec html2canvas
+    // Capturer l'élément avec html2canvas en haute qualité
     const canvas = await html2canvas(invoiceElement, {
       backgroundColor: '#ffffff',
-      scale: 2,
+      scale: 3, // Haute qualité pour tous les appareils
       useCORS: true,
       allowTaint: true,
       width: invoiceElement.scrollWidth,
-      height: invoiceElement.scrollHeight
+      height: invoiceElement.scrollHeight,
+      logging: false,
+      removeContainer: true
     });
     
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgData = canvas.toDataURL('image/png', 1.0);
     
-    // Calculer les dimensions pour s'adapter à A4
+    // Format A4 optimisé pour lecture universelle
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+    
+    // Calculer les dimensions optimales
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
     const imgWidth = canvas.width;
     const imgHeight = canvas.height;
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-    const imgX = (pdfWidth - imgWidth * ratio) / 2;
-    const imgY = 10;
     
-    pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-    pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
+    // Ratio pour s'adapter parfaitement à A4 avec marges
+    const margin = 10;
+    const availableWidth = pdfWidth - (margin * 2);
+    const availableHeight = pdfHeight - (margin * 2);
+    const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
     
-    console.log('✅ PDF téléchargé avec succès');
-  } catch (error) {
-    console.error('❌ Erreur génération PDF:', error);
-    showAlert('❌ Erreur lors de la génération du PDF. Essayez le téléchargement en image.');
-  }
-}
-
-async function downloadInvoiceAsImage() {
-  const invoiceElement = document.getElementById('invoice-document');
-  const invoiceData = window.currentInvoiceData;
-  
-  if (!invoiceElement || !invoiceData) {
-    showAlert('❌ Erreur lors de la génération de l\'image');
-    return;
-  }
-
-  try {
-    const canvas = await html2canvas(invoiceElement, {
-      backgroundColor: '#ffffff',
-      scale: 3, // Haute qualité pour l'image
-      useCORS: true,
-      allowTaint: true,
-      width: invoiceElement.scrollWidth,
-      height: invoiceElement.scrollHeight
+    const finalWidth = imgWidth * ratio;
+    const finalHeight = imgHeight * ratio;
+    const imgX = (pdfWidth - finalWidth) / 2;
+    const imgY = margin;
+    
+    // Ajouter l'image au PDF
+    pdf.addImage(imgData, 'PNG', imgX, imgY, finalWidth, finalHeight, '', 'FAST');
+    
+    // Métadonnées du PDF
+    pdf.setProperties({
+      title: `Facture ${invoiceData.invoiceNumber}`,
+      subject: 'Facture Enixis Corp',
+      author: 'Enixis Corp',
+      creator: 'Enixis Corp - Solutions IA & Optimisation Business',
+      producer: 'Enixis Corp'
     });
     
-    // Créer le lien de téléchargement
-    const link = document.createElement('a');
-    link.download = `Facture_${invoiceData.invoiceNumber}.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
+    // Téléchargement automatique
+    pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
     
-    // Déclencher le téléchargement
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log('✅ Image téléchargée avec succès');
+    console.log('✅ PDF téléchargé automatiquement avec succès');
   } catch (error) {
-    console.error('❌ Erreur génération image:', error);
-    showAlert('❌ Erreur lors de la génération de l\'image');
+    console.error('❌ Erreur génération PDF:', error);
+    // Fallback silencieux - pas d'alerte pour ne pas perturber l'UX
   }
 }
+
+
 
 function hideInvoice() {
   invoicePopup.style.display = 'none';
@@ -1300,11 +1307,6 @@ function hideInvoice() {
 }
 
 // Event listeners pour la facture
-const downloadPdfBtn = document.getElementById('download-pdf-btn');
-const downloadImageBtn = document.getElementById('download-image-btn');
-
-downloadPdfBtn?.addEventListener('click', downloadInvoiceAsPDF);
-downloadImageBtn?.addEventListener('click', downloadInvoiceAsImage);
 closeInvoiceBtn?.addEventListener('click', hideInvoice);
 invoicePopup?.addEventListener('click', (e) => { if (e.target === invoicePopup) hideInvoice(); });
 
