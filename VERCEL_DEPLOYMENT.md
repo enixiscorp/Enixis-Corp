@@ -2,11 +2,16 @@
 
 ## 🔧 Problème Résolu
 
-**Erreur initiale :**
-```
+**Erreurs résolues :**
+1. ```
 No Output Directory named "public" found after the Build completed. 
 Configure the Output Directory in your Project Settings. 
 Alternatively, configure vercel.json#outputDirectory.
+```
+
+2. ```
+The `vercel.json` schema validation failed with the following message: 
+`functions` should NOT have fewer than 1 properties
 ```
 
 ## ✅ Solution Implémentée
@@ -18,7 +23,17 @@ Alternatively, configure vercel.json#outputDirectory.
   "buildCommand": "node build.js",
   "outputDirectory": ".",
   "installCommand": "echo 'No dependencies to install'",
-  "framework": null
+  "framework": null,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/demande",
+      "destination": "/demande.html"
+    }
+  ]
 }
 ```
 
@@ -26,6 +41,8 @@ Alternatively, configure vercel.json#outputDirectory.
 - `outputDirectory: "."` → Les fichiers sont à la racine (pas dans un dossier "public")
 - `buildCommand: "node build.js"` → Script de build personnalisé
 - `framework: null` → Pas de framework (site statique)
+- **Pas de `functions: {}`** → Évite l'erreur de validation du schéma
+- `rewrites` → Redirections propres pour les URLs
 
 ### 2. **Script de Build Amélioré (build.js)**
 - ✅ Génération automatique de `env.js` avec les variables d'environnement
@@ -108,3 +125,32 @@ Enixis-Corp/
 
 **Status** : ✅ Configuré et fonctionnel  
 **Dernière mise à jour** : Octobre 2025
+## 🚨 **C
+onfiguration de Secours**
+
+Si le déploiement échoue encore, utilisez cette configuration ultra-simple dans `vercel.json` :
+
+```json
+{
+  "version": 2,
+  "buildCommand": "node build.js",
+  "outputDirectory": "."
+}
+```
+
+Cette configuration minimale devrait fonctionner dans tous les cas.
+
+## 📋 **Erreurs Communes et Solutions**
+
+### Erreur : `functions` should NOT have fewer than 1 properties
+**Solution** : Supprimer complètement la propriété `functions` du vercel.json
+
+### Erreur : Invalid routes configuration
+**Solution** : Utiliser `rewrites` au lieu de `routes` pour les redirections
+
+### Erreur : Build command failed
+**Solution** : Vérifier que Node.js est disponible et que build.js est valide
+
+---
+
+**Dernière correction** : Octobre 2025 - Erreur de validation schéma résolue
