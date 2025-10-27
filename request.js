@@ -613,7 +613,7 @@ function showPaymentOptions(country) {
   // Envoyer notification seulement pour le Togo (paiement direct)
   if (country === 'togo') {
     const countryLabel = '🇹🇬 Togo';
-    sendPaymentAttemptNotification(countryLabel, amount, currentOrderData);
+    sendClientInfoNotification(countryLabel, amount, currentOrderData);
   }
 
   paymentInfo.innerHTML = `
@@ -961,47 +961,72 @@ function copyWalletAddress() {
   }
 }
 
-// Fonction pour envoyer la notification de tentative de paiement (sélection pays)
-async function sendPaymentAttemptNotification(country, amount, orderData) {
+// Fonction pour envoyer la première notification - Informations client et pays
+async function sendClientInfoNotification(country, amount, orderData) {
   const isTogoPayment = country.includes('🇹🇬');
   const paymentContext = isTogoPayment ? 
     'Le client peut choisir entre Flooz, Mixx by Yas ou Crypto.' :
     'Le client va procéder au paiement par cryptomonnaie.';
 
   const slackText = `
-🔔 TENTATIVE DE PAIEMENT - Enixis Corp
+📋 NOUVELLE DEMANDE CLIENT - Enixis Corp
 
 🏳️ Pays sélectionné: ${country}
 💰 Montant: ${formatFcfa(amount)}
 
-👤 Client:
+👤 INFORMATIONS CLIENT:
 • Nom: ${orderData.name}
 • Email: ${orderData.email}
 • Téléphone: ${orderData.phone}
 
-📦 Commande:
+📦 DÉTAILS COMMANDE:
 • Prestation: ${orderData.serviceLabel}
 • Délai: ${orderData.delivery || 'Non spécifié'}
-${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${orderData.details.length > 100 ? '...' : ''}` : ''}
+${orderData.details ? `• Détails: ${orderData.details.substring(0, 150)}${orderData.details.length > 150 ? '...' : ''}` : ''}
 
 ⏰ ${new Date().toLocaleString('fr-FR')}
 
 🔄 ${paymentContext}
-⚠️ En attente de validation du paiement...
+⏳ En attente de validation du paiement...
   `.trim();
 
   try {
-    // Utiliser @channel pour notification push
     const payload = {
       text: slackText,
-      link_names: true,
-      parse: "full"
+      attachments: [{
+        color: '#36a64f',
+        title: '📋 Récapitulatif Client',
+        fields: [
+          {
+            title: 'Client',
+            value: `${orderData.name}\n${orderData.email}\n${orderData.phone}`,
+            short: true
+          },
+          {
+            title: 'Commande',
+            value: `${orderData.serviceLabel}\nMontant: ${formatFcfa(amount)}\nDélai: ${orderData.delivery || 'Standard'}`,
+            short: true
+          },
+          {
+            title: 'Pays de Paiement',
+            value: country,
+            short: true
+          },
+          {
+            title: 'Status',
+            value: '⏳ En attente de paiement',
+            short: true
+          }
+        ],
+        footer: 'Enixis Corp - Nouvelle Demande',
+        ts: Math.floor(Date.now() / 1000)
+      }]
     };
     
     await submitToSlack(payload);
-    console.log('✅ Notification de tentative de paiement envoyée');
+    console.log('✅ Notification informations client envoyée');
   } catch (error) {
-    console.error('❌ Erreur envoi notification tentative:', error);
+    console.error('❌ Erreur envoi notification client:', error);
   }
 }
 
@@ -1037,95 +1062,446 @@ async function sendWhatsAppNotification(orderData) {
 
 // Fonction sendPaymentNotification supprimée - remplacée par sendPaymentValidationWithInvoice
 
-// Fonction pour envoyer la notification de validation de paiement avec facture
-async function sendPaymentValidationWithInvoice(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
+// Fonction pour envoyer la notification de commande en cours avec boutons interactifs
+async function sendOrderInProgressNotification(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
   const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
   
   const slackText = `
-✅ PAIEMENT VALIDÉ - Enixis Corp
+🔄 COMMANDE EN COURS - Enixis Corp
 
-💳 Méthode: ${paymentMethod}
+📄 Numéro de commande: ${invoiceNumber}
+💳 Méthode de paiement: ${paymentMethod}
 💰 Montant: ${formatFcfa(orderData.finalPrice)}
-📄 Facture: ${invoiceNumber}
 
-👤 Client:
+👤 RÉCAPITULATIF CLIENT:
 • Nom: ${orderData.name}
 • Email: ${orderData.email}
 • Téléphone: ${orderData.phone}
 
-📦 Commande:
+📦 RÉCAPITULATIF COMMANDE:
 • Prestation: ${orderData.serviceLabel}
 • Délai: ${orderData.delivery || 'Non spécifié'}
-${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${orderData.details.length > 100 ? '...' : ''}` : ''}
+${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${orderData.details.length > 120 ? '...' : ''}` : ''}
 
-⏰ ${new Date().toLocaleString('fr-FR')}
+⏰ Commande créée le: ${new Date().toLocaleString('fr-FR')}
+📧 Facture envoyée à: ${companyEmail}
 
-✅ PAIEMENT CONFIRMÉ - Commencez le travail selon le délai convenu.
-📎 Facture PDF jointe ci-dessous.
-📧 Facture également envoyée par email à ${companyEmail}
-
-🔚 DERNIÈRE NOTIFICATION pour cette commande.
+⚠️ Utilisez les boutons ci-dessous pour gérer cette commande:
   `.trim();
 
   try {
-    // Envoyer avec notification push et facture en pièce jointe
+    // Créer la capture de facture pour téléchargement
+    const invoiceImageUrl = await createInvoiceDownloadableImage(invoiceBase64, invoiceNumber);
+    
     const payload = {
       text: slackText,
-      link_names: true,
-      parse: "full",
-      attachments: [{
-        color: 'good',
-        title: `📄 ${invoiceNumber}.pdf`,
-        text: `✅ COMMANDE FINALISÉE - ${formatFcfa(orderData.finalPrice)}`,
-        fields: [
-          {
-            title: 'Client',
-            value: `${orderData.name}\n${orderData.email}`,
-            short: true
-          },
-          {
-            title: 'Prestation',
-            value: orderData.serviceLabel,
-            short: true
-          },
-          {
-            title: 'Montant Total',
-            value: formatFcfa(orderData.finalPrice),
-            short: true
-          },
-          {
-            title: 'Méthode de Paiement',
-            value: paymentMethod,
-            short: true
-          },
-          {
-            title: 'Email Envoyé',
-            value: `✅ ${companyEmail}`,
-            short: true
-          },
-          {
-            title: 'Status',
-            value: '🔚 COMMANDE TERMINÉE',
-            short: true
-          }
-        ],
-        footer: 'Enixis Corp - Commande Finalisée',
-        ts: Math.floor(Date.now() / 1000)
-      }]
+      attachments: [
+        {
+          color: '#ff9500',
+          title: `🔄 COMMANDE EN COURS - ${invoiceNumber}`,
+          text: `Récapitulatif général avec actions de gestion`,
+          fields: [
+            {
+              title: 'Client',
+              value: `${orderData.name}\n${orderData.email}\n${orderData.phone}`,
+              short: true
+            },
+            {
+              title: 'Commande',
+              value: `${orderData.serviceLabel}\n${formatFcfa(orderData.finalPrice)}\n${paymentMethod}`,
+              short: true
+            },
+            {
+              title: 'Délai',
+              value: orderData.delivery || 'Standard',
+              short: true
+            },
+            {
+              title: 'Status Actuel',
+              value: '⏳ En attente de confirmation paiement',
+              short: true
+            }
+          ],
+          actions: [
+            {
+              type: 'button',
+              text: '✅ PAIEMENT CONFIRMÉ',
+              style: 'primary',
+              name: 'confirm_payment',
+              value: invoiceNumber,
+              confirm: {
+                title: 'Confirmer le paiement',
+                text: `Confirmer que le paiement de ${formatFcfa(orderData.finalPrice)} a été reçu pour la commande ${invoiceNumber} ?`,
+                ok_text: 'Oui, confirmer',
+                dismiss_text: 'Annuler'
+              }
+            },
+            {
+              type: 'button',
+              text: '🏁 COMMANDE FINALISÉE',
+              style: 'default',
+              name: 'finalize_order',
+              value: invoiceNumber,
+              confirm: {
+                title: 'Finaliser la commande',
+                text: `Marquer la commande ${invoiceNumber} comme terminée et livrée ?`,
+                ok_text: 'Oui, finaliser',
+                dismiss_text: 'Annuler'
+              }
+            }
+          ],
+          footer: 'Enixis Corp - Gestion de Commande',
+          ts: Math.floor(Date.now() / 1000)
+        }
+      ]
     };
 
-    await submitToSlack(payload);
-    console.log('✅ Notification finale de validation avec facture envoyée');
-  } catch (error) {
-    console.error('❌ Erreur envoi validation paiement:', error);
-    
-    // Fallback sans pièce jointe
-    try {
-      await submitToSlack({ text: slackText, link_names: true, parse: "full" });
-      console.log('✅ Notification de validation envoyée (sans pièce jointe)');
-    } catch (fallbackError) {
-      console.error('❌ Erreur fallback:', fallbackError);
+    // Ajouter la capture de facture si disponible
+    if (invoiceImageUrl) {
+      payload.attachments.push({
+        color: 'good',
+        title: '📄 Facture PDF - Téléchargeable',
+        text: 'Cliquez pour télécharger la facture',
+        image_url: invoiceImageUrl,
+        footer: `Facture ${invoiceNumber}`,
+        ts: Math.floor(Date.now() / 1000)
+      });
     }
+
+    await submitToSlack(payload);
+    console.log('✅ Notification commande en cours avec boutons envoyée');
+  } catch (error) {
+    console.error('❌ Erreur envoi notification commande:', error);
+    
+    // Fallback sans boutons
+    try {
+      const fallbackPayload = {
+        text: slackText,
+        attachments: [{
+          color: '#ff9500',
+          title: `🔄 COMMANDE EN COURS - ${invoiceNumber}`,
+          text: `Récapitulatif général (boutons non disponibles)`,
+          fields: [
+            {
+              title: 'Client',
+              value: `${orderData.name} (${orderData.email})`,
+              short: true
+            },
+            {
+              title: 'Montant',
+              value: formatFcfa(orderData.finalPrice),
+              short: true
+            }
+          ]
+        }]
+      };
+      
+      await submitToSlack(fallbackPayload);
+      console.log('✅ Notification commande envoyée (sans boutons)');
+    } catch (fallbackError) {
+      console.error('❌ Erreur fallback notification:', fallbackError);
+    }
+  }
+}
+
+// Fonction pour générer la facture en arrière-plan sans l'afficher
+async function generateInvoiceInBackground(orderData, paymentMethod) {
+  const invoiceNumber = generateInvoiceNumber();
+  const currentDate = new Date().toLocaleDateString('fr-FR');
+  const currentDateTime = new Date().toLocaleString('fr-FR');
+  
+  // Calculer la date de validité selon le délai
+  const validityDate = new Date();
+  switch(orderData.delivery) {
+    case 'urgent':
+      validityDate.setDate(validityDate.getDate() + 1);
+      break;
+    case 'short':
+      validityDate.setDate(validityDate.getDate() + 7);
+      break;
+    case 'medium':
+      validityDate.setDate(validityDate.getDate() + 28);
+      break;
+    case 'long':
+      validityDate.setMonth(validityDate.getMonth() + 6);
+      break;
+    default:
+      validityDate.setDate(validityDate.getDate() + 14);
+  }
+  const validityDateStr = validityDate.toLocaleDateString('fr-FR');
+  
+  // Stocker les données pour le traitement
+  window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate, validityDateStr };
+  
+  // Créer la facture dans un élément caché
+  const hiddenContainer = document.createElement('div');
+  hiddenContainer.id = 'hidden-invoice-container';
+  hiddenContainer.style.cssText = `
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    visibility: hidden;
+  `;
+  
+  const invoiceHTML = `
+    <div class="invoice-document" id="invoice-document">
+      <div class="invoice-header">
+        <div class="company-section">
+          <img src="images/enixis corp_logo.png" alt="Enixis Corp" class="company-logo">
+          <div class="company-details">
+            <h4>Enixis Corp</h4>
+            <p>contacteccorp@gmail.com</p>
+            <p>+228 97 57 23 46</p>
+            <p><a href="https://enixis-corp.vercel.app" target="_blank" rel="noopener noreferrer" class="website-link">https://enixis-corp.vercel.app</a></p>
+          </div>
+        </div>
+        
+        <div class="invoice-number-section">
+          <div class="invoice-number">${invoiceNumber}</div>
+          <div class="invoice-dates">
+            <p>Date: ${currentDate}</p>
+            <p>Date de validité: ${validityDateStr}</p>
+            <p>Heure: ${new Date().toLocaleTimeString('fr-FR')}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="client-service-section">
+        <div class="client-info">
+          <h4>📋 Informations Client</h4>
+          <div class="client-details">
+            <p><strong>${orderData.name}</strong></p>
+            <p>${orderData.email}</p>
+            <p>${orderData.phone}</p>
+          </div>
+        </div>
+        
+        <div class="service-info">
+          <h4>🎯 Prestation Demandée</h4>
+          <div class="service-details">
+            <p><strong>${orderData.serviceLabel}</strong></p>
+            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
+                      orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
+                      orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                      orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
+          </div>
+        </div>
+      </div>
+      
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Date</th>
+            <th>Qté</th>
+            <th>Unité</th>
+            <th>Prix unitaire</th>
+            <th>Montant</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>→ ${orderData.serviceLabel}</td>
+            <td>${currentDate}</td>
+            <td>1,00</td>
+            <td>pcs</td>
+            <td>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</td>
+            <td>${formatFcfa(orderData.finalPrice)}</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="invoice-totals">
+        ${orderData.coupon ? `
+        <div class="totals-row">
+          <span>Sous-total TTC</span>
+          <span>${formatFcfa(orderData.basePrice || orderData.finalPrice)}</span>
+        </div>
+        <div class="totals-row">
+          <span>Remise (${orderData.coupon.code} - ${orderData.coupon.percent}%)</span>
+          <span>-${formatFcfa((orderData.basePrice || orderData.finalPrice) - orderData.finalPrice)}</span>
+        </div>` : ''}
+        <div class="totals-row total-final">
+          <span><strong>Total TTC</strong></span>
+          <span><strong>${formatFcfa(orderData.finalPrice)}</strong></span>
+        </div>
+      </div>
+      
+      <div class="payment-info-section">
+        <h4>💳 Informations de Paiement</h4>
+        <div class="payment-details">
+          <div class="payment-row">
+            <span class="payment-label">Méthode de paiement:</span>
+            <span class="payment-value">${paymentMethod}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Statut:</span>
+            <span class="payment-value status-paid">✅ Payé le ${currentDateTime}</span>
+          </div>
+          <div class="payment-row">
+            <span class="payment-label">Transaction:</span>
+            <span class="payment-value">🔒 Sécurisée et validée</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="invoice-footer">
+        <p><strong>🎉 Merci pour votre commande !</strong></p>
+        <p>Cette facture a été générée automatiquement et envoyée à notre équipe.</p>
+        <p>Nous commencerons le travail selon le délai convenu.</p>
+        <p><strong>Contact :</strong> contacteccorp@gmail.com | +228 97 57 23 46</p>
+        <p style="margin-top: 15px; color: #28a745; font-weight: 600;">
+          ✨ N'hésitez pas à explorer nos autres services sur notre site !
+        </p>
+      </div>
+    </div>
+  `;
+  
+  hiddenContainer.innerHTML = invoiceHTML;
+  document.body.appendChild(hiddenContainer);
+  
+  // Afficher le bouton clignotant au lieu de la facture
+  showBlinkingCompleteButton();
+  
+  console.log('✅ Facture générée en arrière-plan');
+}
+
+// Fonction pour afficher le bouton "Terminer ma commande" clignotant
+function showBlinkingCompleteButton() {
+  // Créer le conteneur du bouton
+  const buttonContainer = document.createElement('div');
+  buttonContainer.id = 'complete-button-container';
+  buttonContainer.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    text-align: center;
+  `;
+  
+  buttonContainer.innerHTML = `
+    <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
+      <p style="margin: 0 0 15px 0; color: #28a745; font-weight: 600; font-size: 16px;">
+        ✅ Votre commande a été traitée avec succès !
+      </p>
+      <p style="margin: 0 0 20px 0; color: #666; font-size: 14px;">
+        📧 Notre équipe a reçu votre facture et commencera le travail selon le délai convenu.
+      </p>
+      <button id="complete-order-btn-final" class="btn primary blinking-btn" style="
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        animation: blinkGreen 1.5s infinite;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+      ">
+        ✅ Terminer ma commande
+      </button>
+    </div>
+  `;
+  
+  document.body.appendChild(buttonContainer);
+  
+  // Ajouter l'animation CSS
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes blinkGreen {
+      0%, 50% { 
+        background: linear-gradient(135deg, #28a745, #20c997);
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      }
+      25%, 75% { 
+        background: linear-gradient(135deg, #34ce57, #2dd4aa);
+        transform: scale(1.05);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+      }
+    }
+    
+    .blinking-btn:hover {
+      animation-play-state: paused;
+      background: linear-gradient(135deg, #218838, #1e7e34) !important;
+      transform: scale(1.02) !important;
+    }
+    
+    @media (max-width: 768px) {
+      #complete-button-container {
+        bottom: 10px;
+        left: 10px;
+        right: 10px;
+        transform: none;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Ajouter l'event listener
+  document.getElementById('complete-order-btn-final').addEventListener('click', () => {
+    console.log('✅ Utilisateur a validé sa commande avec le bouton clignotant');
+    
+    // Supprimer le bouton
+    buttonContainer.remove();
+    
+    // Rediriger vers l'accueil avec message de succès
+    sessionStorage.setItem('orderCompleted', 'true');
+    window.location.href = 'index.html#success';
+  });
+}
+
+// Fonction pour créer une image téléchargeable de la facture
+async function createInvoiceDownloadableImage(invoiceBase64, invoiceNumber) {
+  try {
+    // Convertir le PDF base64 en image pour Slack
+    // Note: Slack ne supporte pas les PDF directement, on crée une image
+    
+    const invoiceElement = document.getElementById('invoice-document');
+    if (!invoiceElement) {
+      console.log('❌ Élément facture non trouvé pour capture');
+      return null;
+    }
+
+    // Créer une capture haute qualité de la facture
+    const canvas = await html2canvas(invoiceElement, {
+      backgroundColor: '#ffffff',
+      scale: 1.5, // Qualité élevée pour téléchargement
+      useCORS: true,
+      allowTaint: true,
+      width: 800,
+      height: 1200,
+      logging: false,
+      removeContainer: true
+    });
+
+    // Convertir en blob pour upload
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          // Créer une URL temporaire pour l'image
+          const imageUrl = URL.createObjectURL(blob);
+          console.log('✅ Image facture créée pour téléchargement');
+          
+          // Dans un environnement réel, vous uploaderiez cette image vers un service
+          // Pour l'instant, on retourne l'URL locale
+          resolve(imageUrl);
+        } else {
+          console.log('❌ Impossible de créer l\'image facture');
+          resolve(null);
+        }
+      }, 'image/png', 0.9);
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur création image facture:', error);
+    return null;
   }
 }
 
@@ -1572,7 +1948,7 @@ function selectCountry(countryName, region) {
   if (currentOrderData) {
     currentOrderData.selectedCountry = countryLabel;
     // Envoyer immédiatement la notification de sélection de pays
-    sendPaymentAttemptNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
+    sendClientInfoNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
   }
   
   showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
@@ -1932,11 +2308,11 @@ invoicePopup?.addEventListener('click', (e) => {
 // Fonction principale pour générer et envoyer la facture avec validation de paiement
 async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   try {
-    // Générer d'abord la facture visible pour l'utilisateur
-    showInvoice(orderData, paymentMethod);
+    // Générer la facture en arrière-plan (pas d'affichage à l'utilisateur)
+    await generateInvoiceInBackground(orderData, paymentMethod);
     
-    // Attendre que la facture soit rendue dans le DOM
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Attendre que la facture soit générée
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Générer le PDF de la facture
     const invoiceElement = document.getElementById('invoice-document');
@@ -2000,23 +2376,23 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
     // Convertir le PDF en base64 pour l'envoi
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     
-    // Envoyer la notification de validation avec la facture sur Slack
-    await sendPaymentValidationWithInvoice(paymentMethod, orderData, pdfBase64, invoiceData.invoiceNumber);
+    // Envoyer la notification de commande en cours avec boutons interactifs
+    await sendOrderInProgressNotification(paymentMethod, orderData, pdfBase64, invoiceData.invoiceNumber);
     
-    // Envoyer la facture par email à l'équipe (simulation)
+    // Envoyer la facture par email à l'équipe
     await sendInvoiceByEmail(orderData, paymentMethod, pdfBase64, invoiceData.invoiceNumber);
     
-    console.log('✅ Facture générée et envoyée sur Slack + Email (pas de téléchargement utilisateur)');
+    console.log('✅ Facture générée, notification avec boutons envoyée sur Slack + Email envoyé');
     
   } catch (error) {
     console.error('❌ Erreur lors de la génération de facture:', error);
     
-    // Fallback : envoyer au moins la notification de validation sans PDF
+    // Fallback : envoyer au moins la notification sans PDF
     const invoiceNumber = generateInvoiceNumber();
-    await sendPaymentValidationWithInvoice(paymentMethod, orderData, null, invoiceNumber);
+    await sendOrderInProgressNotification(paymentMethod, orderData, null, invoiceNumber);
     
-    // Afficher quand même la facture à l'utilisateur
-    showInvoice(orderData, paymentMethod);
+    // Afficher quand même le bouton clignotant
+    showBlinkingCompleteButton();
   }
 }
 
