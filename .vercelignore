@@ -1,0 +1,21 @@
+# Fichiers de développement
+node_modules/
+.git/
+.github/
+*.md
+README*
+
+# Fichiers de configuration locale
+.env
+.env.local
+.env.example
+env.example.js
+
+# Fichiers temporaires
+*.tmp
+*.log
+.DS_Store
+Thumbs.db
+
+# Fichiers de build
+build-info.json

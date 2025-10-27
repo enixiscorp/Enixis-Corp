@@ -1,7 +1,11 @@
 console.log('🔧 Build Vercel - Génération des fichiers...');
 
-// Générer env.js avec les variables d'environnement
-const envContent = `// Configuration d'environnement pour Enixis Corp
+const fs = require('fs');
+const path = require('path');
+
+try {
+  // Générer env.js avec les variables d'environnement
+  const envContent = `// Configuration d'environnement pour Enixis Corp
 // Généré automatiquement par Vercel
 
 window.env = {
@@ -14,7 +18,37 @@ window.env = {
   COMPANY_EMAIL: "${process.env.COMPANY_EMAIL || 'contacteccorp@gmail.com'}"
 };`;
 
-require('fs').writeFileSync('env.js', envContent);
-console.log('✅ env.js généré avec succès');
+  // Écrire le fichier env.js
+  fs.writeFileSync('env.js', envContent);
+  console.log('✅ env.js généré avec succès');
 
-console.log('✅ Build terminé avec succès');
+  // Vérifier que les fichiers essentiels existent
+  const requiredFiles = ['index.html', 'demande.html', 'style.css', 'request.js', 'script.js'];
+  
+  for (const file of requiredFiles) {
+    if (fs.existsSync(file)) {
+      console.log(`✅ ${file} trouvé`);
+    } else {
+      console.error(`❌ ${file} manquant`);
+      process.exit(1);
+    }
+  }
+
+  // Créer un fichier de build info
+  const buildInfo = {
+    buildTime: new Date().toISOString(),
+    version: "2.1.0",
+    environment: "production",
+    files: fs.readdirSync('.').filter(f => f.endsWith('.html') || f.endsWith('.js') || f.endsWith('.css'))
+  };
+
+  fs.writeFileSync('build-info.json', JSON.stringify(buildInfo, null, 2));
+  console.log('✅ build-info.json créé');
+
+  console.log('✅ Build terminé avec succès');
+  console.log('📁 Fichiers dans le répertoire de sortie:', buildInfo.files.length);
+
+} catch (error) {
+  console.error('❌ Erreur lors du build:', error);
+  process.exit(1);
+}

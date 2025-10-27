@@ -1,12 +1,13 @@
 {
     "name": "enixis-corp",
-    "version": "1.0.0",
+    "version": "2.1.0",
     "description": "Site web Enixis Corp - Solutions IA, analyse de données et optimisation business",
     "main": "index.html",
     "scripts": {
         "dev": "npx http-server . -p 3000 -o",
-        "build": "echo 'Build completed'",
-        "start": "npx http-server . -p 8080"
+        "build": "node build.js",
+        "start": "npx http-server . -p 8080",
+        "vercel-build": "node build.js"
     },
     "keywords": [
         "ia",
@@ -20,7 +21,10 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/handock-max/Enixis-Corp.git"
+        "url": "https://github.com/enixiscorp/Enixis-Corp.git"
     },
-    "homepage": "https://handock-max.github.io/Enixis-Corp/"
+    "homepage": "https://enixis-corp.vercel.app/",
+    "engines": {
+        "node": ">=14.0.0"
+    }
 }
