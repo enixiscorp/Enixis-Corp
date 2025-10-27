@@ -12,7 +12,7 @@ window.env = {
   USDT_WALLET: "",
   BTC_WALLET: "",
   COMPANY_EMAIL: "contacteccorp@gmail.com",
-  
+
   // Configuration EmailJS pour envoi d'emails réels
   EMAILJS_SERVICE_ID: "",
   EMAILJS_TEMPLATE_ID: "",
