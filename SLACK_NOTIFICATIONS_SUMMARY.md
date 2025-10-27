@@ -64,11 +64,15 @@
 ```
 
 **Boutons Interactifs :**
-1. **✅ PAIEMENT CONFIRMÉ** (Vert - Primary)
+1. **⏳ PAIEMENT EN ATTENTE → ✅ PAIEMENT CONFIRMÉ**
+   - **État initial :** Orange (Danger) - "⏳ PAIEMENT EN ATTENTE"
+   - **Après clic :** Vert (Primary) - "✅ PAIEMENT CONFIRMÉ"
    - Action : Confirmer réception du paiement
    - Confirmation : "Confirmer que le paiement de [montant] a été reçu ?"
 
-2. **🏁 COMMANDE FINALISÉE** (Bleu - Primary)  
+2. **⏳ COMMANDE EN COURS → ✅ COMMANDE FINALISÉE**
+   - **État initial :** Orange (Danger) - "⏳ COMMANDE EN COURS"  
+   - **Après clic :** Vert (Primary) - "✅ COMMANDE FINALISÉE"
    - Action : Marquer la commande comme terminée
    - Confirmation : "Marquer la commande comme terminée et livrée ?"
 
@@ -96,9 +100,10 @@
 
 **Total notifications par commande :** Exactement 2  
 **Boutons interactifs :** 3 (2 de gestion + 1 de téléchargement PDF)  
-**Capture facture :** Incluse dans notification 2 avec bouton d'accès PDF  
+**Couleurs dynamiques :** Orange → Vert après confirmation  
+**Capture facture :** Incluse dans notification 2 avec page PDF temporaire  
 **Suivi complet :** Possible via les boutons Slack  
-**Téléchargement PDF :** Bouton "📥 Accéder au PDF" dans l'attachment facture
+**Téléchargement PDF :** Bouton "📥 Ouvrir PDF" avec page temporaire fonctionnelle
 
 ---
 

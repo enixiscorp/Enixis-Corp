@@ -1113,8 +1113,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
           actions: [
             {
               type: 'button',
-              text: '✅ PAIEMENT CONFIRMÉ',
-              style: 'primary',
+              text: '⏳ PAIEMENT EN ATTENTE',
+              style: 'danger',
               name: 'confirm_payment',
               value: invoiceNumber,
               confirm: {
@@ -1126,8 +1126,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
             },
             {
               type: 'button',
-              text: '🏁 COMMANDE FINALISÉE',
-              style: 'primary',
+              text: '⏳ COMMANDE EN COURS',
+              style: 'danger',
               name: 'finalize_order',
               value: invoiceNumber,
               confirm: {
@@ -1144,29 +1144,27 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    // Ajouter la capture de facture avec bouton de téléchargement si disponible
-    if (invoiceImageUrl) {
+    // Ajouter la capture de facture avec lien de téléchargement si disponible
+    if (invoiceImageUrl && invoiceBase64) {
+      // Créer une page temporaire pour le PDF
+      const pdfPageUrl = await createTemporaryPDFPage(invoiceBase64, invoiceNumber);
+      
       payload.attachments.push({
         color: 'good',
         title: '📄 Facture PDF - Téléchargeable',
-        text: `📄 Facture ${invoiceNumber} - Cliquez sur le bouton pour accéder au PDF`,
+        text: `📄 Facture ${invoiceNumber} - Cliquez sur le lien ci-dessous pour accéder au PDF`,
         image_url: invoiceImageUrl,
         actions: [
           {
             type: 'button',
-            text: '📥 Accéder au PDF',
+            text: '📥 Ouvrir PDF',
             style: 'primary',
-            name: 'access_invoice_pdf',
+            name: 'open_pdf',
             value: invoiceNumber,
-            confirm: {
-              title: 'Accéder à la facture PDF',
-              text: `Ouvrir la facture ${invoiceNumber} ? Le PDF complet est également disponible par email.`,
-              ok_text: 'Ouvrir',
-              dismiss_text: 'Annuler'
-            }
+            url: pdfPageUrl || `https://enixis-corp.vercel.app/demande.html?invoice=${invoiceNumber}`
           }
         ],
-        footer: `Facture ${invoiceNumber}`,
+        footer: `Facture ${invoiceNumber} - Cliquez sur "Ouvrir PDF" pour télécharger`,
         ts: Math.floor(Date.now() / 1000)
       });
     }
@@ -1666,6 +1664,79 @@ async function createPDFDownloadLink(invoiceBase64, invoiceNumber) {
     return url;
   } catch (error) {
     console.error('❌ Erreur création lien PDF:', error);
+    return null;
+  }
+}
+
+// Fonction pour créer une page temporaire avec le PDF
+async function createTemporaryPDFPage(invoiceBase64, invoiceNumber) {
+  try {
+    // Créer une page HTML temporaire avec le PDF intégré
+    const pdfDataUrl = `data:application/pdf;base64,${invoiceBase64}`;
+    
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture ${invoiceNumber} - Enixis Corp</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { text-align: center; margin-bottom: 20px; }
+        .pdf-viewer { width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px; }
+        .download-btn { background: #28a745; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        .download-btn:hover { background: #218838; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 Facture ${invoiceNumber}</h1>
+            <p>Enixis Corp - Solutions IA & Optimisation Business</p>
+        </div>
+        
+        <div class="info">
+            <strong>ℹ️ Information :</strong> Cette facture a été générée automatiquement. 
+            Vous pouvez la visualiser ci-dessous ou la télécharger au format PDF.
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <button class="download-btn" onclick="downloadPDF()">📥 Télécharger PDF</button>
+            <button class="download-btn" onclick="window.print()" style="background: #007bff;">🖨️ Imprimer</button>
+        </div>
+        
+        <embed class="pdf-viewer" src="${pdfDataUrl}" type="application/pdf">
+        
+        <div style="text-align: center; margin-top: 20px; color: #666;">
+            <p>Si le PDF ne s'affiche pas, <a href="${pdfDataUrl}" download="Facture_${invoiceNumber}.pdf">cliquez ici pour le télécharger</a></p>
+        </div>
+    </div>
+    
+    <script>
+        function downloadPDF() {
+            const link = document.createElement('a');
+            link.href = '${pdfDataUrl}';
+            link.download = 'Facture_${invoiceNumber}.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>`;
+    
+    // Créer un blob avec le contenu HTML
+    const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+    const htmlUrl = URL.createObjectURL(htmlBlob);
+    
+    console.log('✅ Page temporaire PDF créée');
+    return htmlUrl;
+    
+  } catch (error) {
+    console.error('❌ Erreur création page PDF:', error);
     return null;
   }
 }
@@ -2628,3 +2699,69 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
 window.copyWalletAddress = copyWalletAddress;
 
 
+// Fonctions pour gérer les changements d'état des boutons Slack (pour future intégration webhook)
+
+// Fonction pour mettre à jour le statut d'un bouton (simulation)
+function updateSlackButtonStatus(buttonName, invoiceNumber, newStatus) {
+  console.log(`🔄 Mise à jour statut bouton: ${buttonName} pour ${invoiceNumber} -> ${newStatus}`);
+  
+  // Dans un environnement réel avec webhook Slack, cette fonction :
+  // 1. Recevrait les événements de clic de bouton depuis Slack
+  // 2. Mettrait à jour le message original avec les nouveaux statuts
+  // 3. Changerait les couleurs des boutons (orange -> vert)
+  
+  const statusUpdates = {
+    'confirm_payment': {
+      text: '✅ PAIEMENT CONFIRMÉ',
+      style: 'primary', // Vert dans Slack
+      color: 'good'
+    },
+    'finalize_order': {
+      text: '✅ COMMANDE FINALISÉE', 
+      style: 'primary', // Vert dans Slack
+      color: 'good'
+    }
+  };
+  
+  return statusUpdates[buttonName] || null;
+}
+
+// Fonction pour créer un message Slack mis à jour (pour webhook)
+function createUpdatedSlackMessage(originalPayload, buttonUpdates) {
+  // Cette fonction serait utilisée par un webhook pour mettre à jour
+  // le message original avec les nouveaux statuts des boutons
+  
+  const updatedPayload = { ...originalPayload };
+  
+  if (updatedPayload.attachments && updatedPayload.attachments[0]) {
+    // Mettre à jour les boutons avec les nouveaux statuts
+    if (updatedPayload.attachments[0].actions) {
+      updatedPayload.attachments[0].actions = updatedPayload.attachments[0].actions.map(action => {
+        if (buttonUpdates[action.name]) {
+          return {
+            ...action,
+            text: buttonUpdates[action.name].text,
+            style: buttonUpdates[action.name].style
+          };
+        }
+        return action;
+      });
+    }
+    
+    // Mettre à jour la couleur de l'attachment si tous les boutons sont confirmés
+    const allConfirmed = Object.keys(buttonUpdates).length >= 2;
+    if (allConfirmed) {
+      updatedPayload.attachments[0].color = 'good';
+    }
+  }
+  
+  return updatedPayload;
+}
+
+// Note: Pour implémenter complètement cette fonctionnalité, il faudrait :
+// 1. Configurer un webhook Slack dans les paramètres de l'app Slack
+// 2. Créer un endpoint serveur pour recevoir les événements de boutons
+// 3. Utiliser l'API Slack pour mettre à jour les messages originaux
+// 4. Gérer l'authentification et les tokens Slack
+
+console.log('📱 Fonctions de gestion des boutons Slack chargées (webhook requis pour activation complète)');
