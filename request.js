@@ -459,7 +459,7 @@ formEl?.addEventListener('submit', async (e) => {
     delivery
   }, async () => {
     try {
-      await submitToSlack({ text: slackText });
+      // Pas de notification Slack ici - seulement les 2 notifications principales lors du paiement
       noteEl.textContent = 'Votre demande a été envoyée. Merci !';
       resetRequestForm();
     } catch {
@@ -610,7 +610,7 @@ function showPaymentOptions(country) {
   const amount = currentOrderData.finalPrice;
   const amountText = formatFcfa(amount);
 
-  // Envoyer notification seulement pour le Togo (paiement direct)
+  // Envoyer la première notification pour le Togo (informations client et pays)
   if (country === 'togo') {
     const countryLabel = '🇹🇬 Togo';
     sendClientInfoNotification(countryLabel, amount, currentOrderData);
@@ -1127,7 +1127,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
             {
               type: 'button',
               text: '🏁 COMMANDE FINALISÉE',
-              style: 'default',
+              style: 'primary',
               name: 'finalize_order',
               value: invoiceNumber,
               confirm: {
@@ -1857,8 +1857,7 @@ Merci !`);
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(whatsappUrl, '_blank');
   
-  // Envoyer notification Slack
-  sendWhatsAppNotification(currentOrderData);
+  // Pas de notification Slack pour WhatsApp - seulement les 2 notifications principales
 });
 
 // Listes de pays
