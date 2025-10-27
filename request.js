@@ -725,8 +725,7 @@ function handleFloozPayment(amount) {
 
   showAlert(instructions);
 
-  // Envoyer notification Slack
-  sendPaymentNotification('Flooz', amount, currentOrderData);
+  // Pas de notification ici - sera envoyée avec la validation de paiement
 
   // Ouvrir l'application de téléphone avec le code USSD
   setTimeout(() => {
@@ -773,8 +772,7 @@ function handleMixxPayment(amount) {
 
   showAlert(instructions);
 
-  // Envoyer notification Slack
-  sendPaymentNotification('Mixx by Yas', amount, currentOrderData);
+  // Pas de notification ici - sera envoyée avec la validation de paiement
 
   // Ouvrir l'application de téléphone avec le code USSD
   setTimeout(() => {
@@ -881,8 +879,7 @@ function showCryptoPayment(cryptoType, amount) {
     copyBtn.addEventListener('click', () => {
       addressCopied = true;
       
-      // Envoyer seulement la notification de tentative de paiement
-      sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
+      // Pas de notification ici - sera envoyée avec la validation de paiement
       
       // Générer et envoyer la facture avec validation de paiement après 3 secondes
       setTimeout(() => {
@@ -899,8 +896,7 @@ function showCryptoPayment(cryptoType, amount) {
   // Fallback : si l'utilisateur n'a pas copié après 30 secondes, générer quand même
   setTimeout(() => {
     if (!addressCopied) {
-      // Envoyer seulement la notification de paiement (fallback)
-      sendPaymentNotification(`${cryptoType} (${network}) - Sans copie d'adresse`, amount, currentOrderData);
+      // Pas de notification ici - sera envoyée avec la validation de paiement
       
       hideCryptoPayment();
       generateAndSendInvoiceWithValidation(currentOrderData, `${cryptoType} (${network})`);
@@ -1031,36 +1027,7 @@ async function sendWhatsAppNotification(orderData) {
   }
 }
 
-// Fonction pour envoyer la notification de paiement à Slack avec facture
-async function sendPaymentNotification(paymentMethod, amount, orderData) {
-  const slackText = `
-🔔 TENTATIVE DE PAIEMENT - Enixis Corp
-
-💳 Méthode: ${paymentMethod}
-💰 Montant: ${formatFcfa(amount)}
-
-👤 Client:
-• Nom: ${orderData.name}
-• Email: ${orderData.email}
-• Téléphone: ${orderData.phone}
-
-📦 Commande:
-• Prestation: ${orderData.serviceLabel}
-• Délai: ${orderData.delivery || 'Non spécifié'}
-
-⏰ ${new Date().toLocaleString('fr-FR')}
-
-⚠️ Vérifiez la réception du paiement et confirmez la commande.
-📄 La facture sera générée et envoyée automatiquement dans quelques secondes.
-  `.trim();
-
-  try {
-    await submitToSlack({ text: slackText });
-    console.log('✅ Notification de paiement envoyée');
-  } catch (error) {
-    console.error('❌ Erreur envoi notification paiement:', error);
-  }
-}
+// Fonction sendPaymentNotification supprimée - remplacée par sendPaymentValidationWithInvoice
 
 // Fonction pour envoyer la notification de validation de paiement avec facture
 async function sendPaymentValidationWithInvoice(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
@@ -1151,18 +1118,64 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
   }
 }
 
+// Fonction pour envoyer un email réel avec EmailJS
+async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, orderData) {
+  try {
+    // Configuration EmailJS (à configurer dans les variables d'environnement)
+    const emailjsConfig = {
+      serviceId: (window.env && window.env.EMAILJS_SERVICE_ID) || 'service_enixis',
+      templateId: (window.env && window.env.EMAILJS_TEMPLATE_ID) || 'template_invoice',
+      publicKey: (window.env && window.env.EMAILJS_PUBLIC_KEY) || ''
+    };
+
+    // Vérifier si EmailJS est disponible
+    if (typeof emailjs === 'undefined') {
+      throw new Error('EmailJS non disponible');
+    }
+
+    // Initialiser EmailJS
+    emailjs.init(emailjsConfig.publicKey);
+
+    // Préparer les données pour le template
+    const templateParams = {
+      to_email: toEmail,
+      subject: subject,
+      message: body,
+      invoice_number: invoiceNumber,
+      client_name: orderData.name,
+      client_email: orderData.email,
+      client_phone: orderData.phone,
+      service: orderData.serviceLabel,
+      amount: formatFcfa(orderData.finalPrice),
+      payment_method: orderData.paymentMethod || 'Non spécifié',
+      date: new Date().toLocaleString('fr-FR'),
+      pdf_attachment: pdfBase64 // Note: EmailJS a des limitations sur les pièces jointes
+    };
+
+    // Envoyer l'email
+    const response = await emailjs.send(
+      emailjsConfig.serviceId,
+      emailjsConfig.templateId,
+      templateParams
+    );
+
+    console.log('✅ Email envoyé via EmailJS:', response);
+    return response;
+
+  } catch (error) {
+    console.error('❌ Erreur EmailJS:', error);
+    throw error;
+  }
+}
+
 // Fonction pour envoyer la facture par email à l'équipe
 async function sendInvoiceByEmail(orderData, paymentMethod, invoiceBase64, invoiceNumber) {
   const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
   
   try {
-    // Dans un environnement réel, ceci ferait appel à un service backend pour envoyer l'email
-    // Pour l'instant, on simule l'envoi et on log les informations
-    
-    const emailData = {
-      to: companyEmail,
-      subject: `📄 Nouvelle Facture ${invoiceNumber} - Paiement Validé`,
-      body: `
+    // Préparer les données pour l'envoi d'email réel
+    const emailSubject = `📄 Nouvelle Facture ${invoiceNumber} - Paiement Validé`;
+    const emailBody = `
 Bonjour équipe Enixis Corp,
 
 Une nouvelle facture a été générée suite à la validation d'un paiement.
@@ -1185,34 +1198,26 @@ La facture PDF est jointe à cet email.
 
 Cordialement,
 Système automatisé Enixis Corp
-      `.trim(),
-      attachment: {
-        filename: `Facture_${invoiceNumber}.pdf`,
-        content: invoiceBase64,
-        type: 'application/pdf'
-      }
-    };
-    
-    // Log pour simulation (en production, remplacer par un vrai service d'email)
-    console.log('📧 Email simulé envoyé à:', companyEmail);
-    console.log('📄 Sujet:', emailData.subject);
-    console.log('📎 Pièce jointe:', emailData.attachment.filename);
-    
-    // Envoyer une notification Slack confirmant l'envoi email
-    const emailConfirmationText = `
-📧 EMAIL ENVOYÉ - Enixis Corp
-
-✅ Facture ${invoiceNumber} envoyée par email à ${companyEmail}
-
-📎 Pièce jointe: Facture_${invoiceNumber}.pdf
-👤 Client: ${orderData.name}
-💰 Montant: ${formatFcfa(orderData.finalPrice)}
-
-⚠️ Vérifiez votre boîte email et transférez la facture au client.
     `.trim();
+
+    // Envoi d'email réel via EmailJS
+    try {
+      await sendRealEmail(companyEmail, emailSubject, emailBody, invoiceBase64, invoiceNumber, orderData);
+      console.log('✅ Email envoyé avec succès à:', companyEmail);
+      
+    } catch (emailError) {
+      console.error('❌ Erreur envoi email:', emailError);
+      
+      // Fallback: ouvrir le client email par défaut
+      const mailtoLink = `mailto:${companyEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+      if (typeof window !== 'undefined') {
+        window.open(mailtoLink, '_blank');
+        console.log('📧 Client email ouvert en fallback');
+      }
+    }
     
-    await submitToSlack({ text: emailConfirmationText });
-    console.log('✅ Confirmation d\'envoi email envoyée sur Slack');
+    // Email envoyé - pas de notification Slack supplémentaire
+    console.log('✅ Email envoyé à:', companyEmail);
     
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi email:', error);
