@@ -95,11 +95,37 @@
 ## ✅ **Vérification**
 
 **Total notifications par commande :** Exactement 2  
-**Boutons interactifs :** 2 (Vert + Bleu)  
-**Capture facture :** Incluse dans notification 2  
-**Suivi complet :** Possible via les boutons Slack
+**Boutons interactifs :** 3 (2 de gestion + 1 de téléchargement PDF)  
+**Capture facture :** Incluse dans notification 2 avec bouton d'accès PDF  
+**Suivi complet :** Possible via les boutons Slack  
+**Téléchargement PDF :** Bouton "📥 Accéder au PDF" dans l'attachment facture
 
 ---
 
 **Status :** ✅ Configuré selon spécifications  
 **Dernière mise à jour :** Octobre 2025
+#
+# 📱 **Comportement du Pop-up de Synthèse**
+
+### ✅ **Pop-up Statique - Contrôle Utilisateur**
+- **Affichage :** Dès la validation du paiement
+- **Contenu :** Récapitulatif complet de la commande
+- **Bouton :** "✅ Terminer ma commande" (clignotant)
+- **Fermeture :** Impossible sans clic sur le bouton
+- **Redirection :** Uniquement après clic utilisateur
+
+### 🚫 **Pas de Redirection Automatique**
+- ❌ **Supprimé :** `setTimeout(() => window.location.href = 'index.html', 2000)`
+- ❌ **Supprimé :** Toutes les redirections automatiques
+- ✅ **Contrôle total :** L'utilisateur décide quand finaliser
+
+### 🎯 **Animation du Bouton**
+- **Animation :** `pulseGreen` (clignotement vert)
+- **Durée :** 2 secondes en boucle
+- **Effet hover :** Animation en pause + changement de couleur
+- **Responsive :** Adapté mobile et desktop
+
+---
+
+**Dernière mise à jour :** Octobre 2025 - v3.0  
+**Changements :** Bouton PDF + Pop-up statique obligatoire

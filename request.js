@@ -1144,13 +1144,28 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    // Ajouter la capture de facture si disponible
+    // Ajouter la capture de facture avec bouton de téléchargement si disponible
     if (invoiceImageUrl) {
       payload.attachments.push({
         color: 'good',
         title: '📄 Facture PDF - Téléchargeable',
-        text: 'Cliquez pour télécharger la facture',
+        text: `📄 Facture ${invoiceNumber} - Cliquez sur le bouton pour accéder au PDF`,
         image_url: invoiceImageUrl,
+        actions: [
+          {
+            type: 'button',
+            text: '📥 Accéder au PDF',
+            style: 'primary',
+            name: 'access_invoice_pdf',
+            value: invoiceNumber,
+            confirm: {
+              title: 'Accéder à la facture PDF',
+              text: `Ouvrir la facture ${invoiceNumber} ? Le PDF complet est également disponible par email.`,
+              ok_text: 'Ouvrir',
+              dismiss_text: 'Annuler'
+            }
+          }
+        ],
         footer: `Facture ${invoiceNumber}`,
         ts: Math.floor(Date.now() / 1000)
       });
@@ -1632,6 +1647,27 @@ function showBlinkingCompleteButton() {
     sessionStorage.setItem('orderCompleted', 'true');
     window.location.href = 'index.html#success';
   });
+}
+
+// Fonction pour créer un lien de téléchargement PDF pour Slack
+async function createPDFDownloadLink(invoiceBase64, invoiceNumber) {
+  try {
+    // Créer un blob PDF à partir du base64
+    const binaryString = atob(invoiceBase64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    
+    console.log('✅ Lien de téléchargement PDF créé');
+    return url;
+  } catch (error) {
+    console.error('❌ Erreur création lien PDF:', error);
+    return null;
+  }
 }
 
 // Fonction pour créer une image téléchargeable de la facture
