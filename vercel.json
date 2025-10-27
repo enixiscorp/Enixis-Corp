@@ -4,19 +4,14 @@
   "outputDirectory": ".",
   "installCommand": "echo 'No dependencies to install'",
   "framework": null,
-  "functions": {},
-  "routes": [
+  "rewrites": [
     {
-      "src": "/demande.html",
-      "dest": "/demande.html"
+      "source": "/",
+      "destination": "/index.html"
     },
     {
-      "src": "/",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/$1"
+      "source": "/demande",
+      "destination": "/demande.html"
     }
   ],
   "headers": [
@@ -34,6 +29,19 @@
         {
           "key": "X-XSS-Protection",
           "value": "1; mode=block"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*).html",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600"
         }
       ]
     }
