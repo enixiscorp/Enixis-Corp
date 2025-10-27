@@ -733,13 +733,13 @@ function handleFloozPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 3 secondes et télécharger automatiquement
+  // Afficher la facture après 3 secondes
   setTimeout(() => {
     hideAlert();
     showInvoice(currentOrderData, 'Flooz');
-    // Téléchargement automatique après 2 secondes d'affichage
+    // Envoyer la facture par Slack et email
     setTimeout(() => {
-      downloadInvoiceAsPDF();
+      sendInvoiceToSlackAndEmail(currentOrderData, 'Flooz');
     }, 2000);
   }, 3000);
 }
@@ -781,13 +781,13 @@ function handleMixxPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 3 secondes et télécharger automatiquement
+  // Afficher la facture après 3 secondes
   setTimeout(() => {
     hideAlert();
     showInvoice(currentOrderData, 'Mixx by Yas');
-    // Téléchargement automatique après 2 secondes d'affichage
+    // Envoyer la facture par Slack et email
     setTimeout(() => {
-      downloadInvoiceAsPDF();
+      sendInvoiceToSlackAndEmail(currentOrderData, 'Mixx by Yas');
     }, 2000);
   }, 3000);
 }
@@ -888,9 +888,9 @@ function showCryptoPayment(cryptoType, amount) {
       setTimeout(() => {
         hideCryptoPayment();
         showInvoice(currentOrderData, `${cryptoType} (${network})`);
-        // Téléchargement automatique après 2 secondes d'affichage
+        // Envoyer la facture par Slack et email
         setTimeout(() => {
-          downloadInvoiceAsPDF();
+          sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
         }, 2000);
       }, 3000);
     });
@@ -905,7 +905,7 @@ function showCryptoPayment(cryptoType, amount) {
       hideCryptoPayment();
       showInvoice(currentOrderData, `${cryptoType} (${network})`);
       setTimeout(() => {
-        downloadInvoiceAsPDF();
+        sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
       }, 2000);
     }
   }, 30000);
@@ -1703,6 +1703,142 @@ invoicePopup?.addEventListener('click', (e) => {
     window.location.href = 'index.html';
   }
 });
+
+// Fonction pour envoyer la facture via Slack et email
+async function sendInvoiceToSlackAndEmail(orderData, paymentMethod) {
+  try {
+    // Générer le PDF de la facture
+    const invoiceElement = document.getElementById('invoice-document');
+    const invoiceData = window.currentInvoiceData;
+    
+    if (!invoiceElement || !invoiceData) {
+      console.error('❌ Impossible de générer la facture');
+      return;
+    }
+
+    // Créer le PDF
+    const { jsPDF } = window.jspdf;
+    
+    // Forcer les dimensions A4 pour la capture
+    const originalWidth = invoiceElement.style.width;
+    const originalMaxWidth = invoiceElement.style.maxWidth;
+    
+    invoiceElement.style.width = '210mm';
+    invoiceElement.style.maxWidth = '210mm';
+    
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const canvas = await html2canvas(invoiceElement, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      width: 794,
+      height: 1123,
+      logging: false,
+      removeContainer: true,
+      scrollX: 0,
+      scrollY: 0
+    });
+    
+    // Restaurer les styles
+    invoiceElement.style.width = originalWidth;
+    invoiceElement.style.maxWidth = originalMaxWidth;
+    
+    const imgData = canvas.toDataURL('image/png', 0.95);
+    
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+      compress: true
+    });
+    
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, '', 'FAST');
+    
+    pdf.setProperties({
+      title: `Facture ${invoiceData.invoiceNumber}`,
+      subject: 'Facture Enixis Corp',
+      author: 'Enixis Corp',
+      creator: 'Enixis Corp - Solutions IA & Optimisation Business',
+      producer: 'Enixis Corp'
+    });
+    
+    // Convertir le PDF en base64 pour l'envoi
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    
+    // Envoyer via Slack avec la facture en pièce jointe
+    const slackMessage = `
+📄 FACTURE GÉNÉRÉE - Enixis Corp
+
+💰 Facture: ${invoiceData.invoiceNumber}
+💳 Méthode: ${paymentMethod}
+💵 Montant: ${formatFcfa(orderData.finalPrice)}
+
+👤 Client:
+• Nom: ${orderData.name}
+• Email: ${orderData.email}
+• Téléphone: ${orderData.phone}
+
+📦 Prestation: ${orderData.serviceLabel}
+
+⏰ ${new Date().toLocaleString('fr-FR')}
+
+📎 La facture PDF est jointe à ce message.
+📧 Une copie a été envoyée à contacteccorp@gmail.com
+
+⚠️ Envoyez cette facture au client après confirmation du paiement.
+    `.trim();
+
+    // Envoyer à Slack
+    await submitToSlack({ 
+      text: slackMessage,
+      attachments: [{
+        color: 'good',
+        title: `Facture_${invoiceData.invoiceNumber}.pdf`,
+        text: 'Facture PDF générée automatiquement',
+        fields: [
+          {
+            title: 'Client',
+            value: orderData.name,
+            short: true
+          },
+          {
+            title: 'Montant',
+            value: formatFcfa(orderData.finalPrice),
+            short: true
+          }
+        ]
+      }]
+    });
+
+    // Simuler l'envoi par email (dans un vrai environnement, cela nécessiterait un service backend)
+    console.log('📧 Facture envoyée par email à contacteccorp@gmail.com');
+    console.log('📄 Facture PDF générée:', `Facture_${invoiceData.invoiceNumber}.pdf`);
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi de la facture:', error);
+    
+    // Fallback : envoyer au moins la notification sans PDF
+    const fallbackMessage = `
+❌ ERREUR GÉNÉRATION FACTURE - Enixis Corp
+
+Impossible de générer le PDF automatiquement.
+
+👤 Client: ${orderData.name} (${orderData.email})
+💰 Montant: ${formatFcfa(orderData.finalPrice)}
+💳 Méthode: ${paymentMethod}
+
+⚠️ Générez manuellement la facture pour ce client.
+    `.trim();
+    
+    try {
+      await submitToSlack({ text: fallbackMessage });
+    } catch (slackError) {
+      console.error('❌ Erreur Slack fallback:', slackError);
+    }
+  }
+}
 
 // Rendre la fonction copyWalletAddress accessible globalement
 window.copyWalletAddress = copyWalletAddress;

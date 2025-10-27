@@ -10,5 +10,6 @@ window.env = {
   FLOOZ_PHONE: "",
   MIXX_PHONE: "",
   USDT_WALLET: "",
-  BTC_WALLET: ""
+  BTC_WALLET: "",
+  COMPANY_EMAIL: "contacteccorp@gmail.com"
 };
