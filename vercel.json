@@ -4,6 +4,11 @@
   "outputDirectory": ".",
   "installCommand": "echo 'No dependencies to install'",
   "framework": null,
+  "functions": {
+    "api/slack-webhook.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "rewrites": [
     {
       "source": "/",

@@ -18,7 +18,8 @@ window.env = {
   COMPANY_EMAIL: "${process.env.COMPANY_EMAIL || 'contacteccorp@gmail.com'}",
   EMAILJS_SERVICE_ID: "${process.env.EMAILJS_SERVICE_ID || ''}",
   EMAILJS_TEMPLATE_ID: "${process.env.EMAILJS_TEMPLATE_ID || ''}",
-  EMAILJS_PUBLIC_KEY: "${process.env.EMAILJS_PUBLIC_KEY || ''}"
+  EMAILJS_PUBLIC_KEY: "${process.env.EMAILJS_PUBLIC_KEY || ''}",
+  SLACK_WEBHOOK_ENDPOINT: "${process.env.VERCEL_URL ? 'https://' + process.env.VERCEL_URL + '/api/slack-webhook' : 'https://enixis-corp.vercel.app/api/slack-webhook'}"
 };`;
 
   // Écrire le fichier env.js
