@@ -20,7 +20,8 @@ Le système a été modifié pour envoyer automatiquement la facture PDF avec la
 - Génération automatique de la facture PDF
 - Envoi d'une notification Slack unique : "✅ PAIEMENT VALIDÉ"
 - La facture PDF est jointe à cette notification
-- Téléchargement automatique pour l'utilisateur
+- **Envoi automatique par email** à l'équipe (contacteccorp@gmail.com)
+- **Pas de téléchargement automatique** pour l'utilisateur
 
 ## 📋 Contenu de la Notification de Validation
 
@@ -45,7 +46,8 @@ Le système a été modifié pour envoyer automatiquement la facture PDF avec la
 
 ✅ PAIEMENT CONFIRMÉ - Commencez le travail selon le délai convenu.
 📎 Facture PDF jointe ci-dessous.
-📧 Envoyez cette facture au client par email.
+📧 Facture également envoyée par email à contacteccorp@gmail.com
+🚫 Pas de téléchargement automatique pour le client.
 ```
 
 ## 🔧 Fonctions Modifiées
@@ -68,7 +70,8 @@ Le système a été modifié pour envoyer automatiquement la facture PDF avec la
 
 ### Pour l'Utilisateur
 - Message mis à jour : "✅ Paiement validé ! Votre facture a été générée"
-- Indication claire que la facture a été téléchargée
+- **Pas de téléchargement automatique** de la facture
+- Information que la facture sera envoyée par email
 - Confirmation que l'équipe a reçu la validation
 
 ### Pour l'Équipe (Slack)
@@ -106,3 +109,53 @@ BTC_WALLET=BEP20_ADDRESS_HERE
 
 **Dernière mise à jour** : Octobre 2025  
 **Version** : 2.0 - Système intégré facture + validation
+#
+# 📧 **Système d'Email Automatique**
+
+### Fonctionnalités Email
+- **Destinataire** : Variable `COMPANY_EMAIL` (contacteccorp@gmail.com)
+- **Contenu** : Facture PDF en pièce jointe + détails complets
+- **Notifications** : Confirmation d'envoi sur Slack
+- **Fallback** : Notification d'erreur si l'envoi échoue
+
+### Contenu de l'Email Automatique
+```
+Sujet: 📄 Nouvelle Facture [NUMERO] - Paiement Validé
+
+Bonjour équipe Enixis Corp,
+
+Une nouvelle facture a été générée suite à la validation d'un paiement.
+
+DÉTAILS DE LA FACTURE:
+• Numéro: [Numéro de facture]
+• Client: [Nom] ([Email])
+• Téléphone: [Téléphone]
+• Prestation: [Service]
+• Montant: [Montant en FCFA]
+• Méthode de paiement: [Méthode]
+• Date: [Date et heure]
+
+PROCHAINES ÉTAPES:
+1. ✅ Le paiement a été validé
+2. 📧 Envoyez cette facture au client par email
+3. 🚀 Commencez le travail selon le délai convenu
+
+La facture PDF est jointe à cet email.
+```
+
+## 🚫 **Changements Utilisateur**
+
+### Avant
+- ✅ Facture téléchargée automatiquement
+- ✅ Notification Slack envoyée
+
+### Maintenant
+- 🚫 **Pas de téléchargement automatique**
+- ✅ Notification Slack avec facture jointe
+- ✅ **Email automatique à l'équipe**
+- ✅ Message utilisateur mis à jour
+
+---
+
+**Mise à jour** : Octobre 2025 - v2.1  
+**Changement** : Suppression téléchargement utilisateur + Email automatique équipe

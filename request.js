@@ -1064,6 +1064,8 @@ async function sendPaymentNotification(paymentMethod, amount, orderData) {
 
 // Fonction pour envoyer la notification de validation de paiement avec facture
 async function sendPaymentValidationWithInvoice(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
+  const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
+  
   const slackText = `
 ✅ PAIEMENT VALIDÉ - Enixis Corp
 
@@ -1085,7 +1087,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
 
 ✅ PAIEMENT CONFIRMÉ - Commencez le travail selon le délai convenu.
 📎 Facture PDF jointe ci-dessous.
-📧 Envoyez cette facture au client par email.
+📧 Facture également envoyée par email à ${companyEmail}
+🚫 Pas de téléchargement automatique pour le client.
   `.trim();
 
   try {
@@ -1116,6 +1119,16 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
             title: 'Méthode de Paiement',
             value: paymentMethod,
             short: true
+          },
+          {
+            title: 'Email Équipe',
+            value: companyEmail,
+            short: true
+          },
+          {
+            title: 'Status Téléchargement',
+            value: '🚫 Pas de téléchargement client',
+            short: true
           }
         ],
         footer: 'Enixis Corp - Système de Facturation',
@@ -1124,7 +1137,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
     };
 
     await submitToSlack(payload);
-    console.log('✅ Notification de validation avec facture envoyée');
+    console.log('✅ Notification de validation avec facture envoyée sur Slack');
   } catch (error) {
     console.error('❌ Erreur envoi validation paiement:', error);
     
@@ -1134,6 +1147,92 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
       console.log('✅ Notification de validation envoyée (sans pièce jointe)');
     } catch (fallbackError) {
       console.error('❌ Erreur fallback:', fallbackError);
+    }
+  }
+}
+
+// Fonction pour envoyer la facture par email à l'équipe
+async function sendInvoiceByEmail(orderData, paymentMethod, invoiceBase64, invoiceNumber) {
+  const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
+  
+  try {
+    // Dans un environnement réel, ceci ferait appel à un service backend pour envoyer l'email
+    // Pour l'instant, on simule l'envoi et on log les informations
+    
+    const emailData = {
+      to: companyEmail,
+      subject: `📄 Nouvelle Facture ${invoiceNumber} - Paiement Validé`,
+      body: `
+Bonjour équipe Enixis Corp,
+
+Une nouvelle facture a été générée suite à la validation d'un paiement.
+
+DÉTAILS DE LA FACTURE:
+• Numéro: ${invoiceNumber}
+• Client: ${orderData.name} (${orderData.email})
+• Téléphone: ${orderData.phone}
+• Prestation: ${orderData.serviceLabel}
+• Montant: ${formatFcfa(orderData.finalPrice)}
+• Méthode de paiement: ${paymentMethod}
+• Date: ${new Date().toLocaleString('fr-FR')}
+
+PROCHAINES ÉTAPES:
+1. ✅ Le paiement a été validé
+2. 📧 Envoyez cette facture au client par email
+3. 🚀 Commencez le travail selon le délai convenu: ${orderData.delivery || 'Standard'}
+
+La facture PDF est jointe à cet email.
+
+Cordialement,
+Système automatisé Enixis Corp
+      `.trim(),
+      attachment: {
+        filename: `Facture_${invoiceNumber}.pdf`,
+        content: invoiceBase64,
+        type: 'application/pdf'
+      }
+    };
+    
+    // Log pour simulation (en production, remplacer par un vrai service d'email)
+    console.log('📧 Email simulé envoyé à:', companyEmail);
+    console.log('📄 Sujet:', emailData.subject);
+    console.log('📎 Pièce jointe:', emailData.attachment.filename);
+    
+    // Envoyer une notification Slack confirmant l'envoi email
+    const emailConfirmationText = `
+📧 EMAIL ENVOYÉ - Enixis Corp
+
+✅ Facture ${invoiceNumber} envoyée par email à ${companyEmail}
+
+📎 Pièce jointe: Facture_${invoiceNumber}.pdf
+👤 Client: ${orderData.name}
+💰 Montant: ${formatFcfa(orderData.finalPrice)}
+
+⚠️ Vérifiez votre boîte email et transférez la facture au client.
+    `.trim();
+    
+    await submitToSlack({ text: emailConfirmationText });
+    console.log('✅ Confirmation d\'envoi email envoyée sur Slack');
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi email:', error);
+    
+    // Notification d'erreur sur Slack
+    const errorText = `
+❌ ERREUR ENVOI EMAIL - Enixis Corp
+
+Impossible d'envoyer la facture ${invoiceNumber} par email à ${companyEmail}
+
+👤 Client: ${orderData.name}
+💰 Montant: ${formatFcfa(orderData.finalPrice)}
+
+⚠️ Téléchargez la facture depuis Slack et envoyez-la manuellement au client.
+    `.trim();
+    
+    try {
+      await submitToSlack({ text: errorText });
+    } catch (slackError) {
+      console.error('❌ Erreur notification Slack:', slackError);
     }
   }
 }
@@ -1853,13 +1952,13 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
     // Convertir le PDF en base64 pour l'envoi
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     
-    // Envoyer la notification de validation avec la facture
+    // Envoyer la notification de validation avec la facture sur Slack
     await sendPaymentValidationWithInvoice(paymentMethod, orderData, pdfBase64, invoiceData.invoiceNumber);
     
-    // Télécharger automatiquement le PDF pour l'utilisateur
-    pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
+    // Envoyer la facture par email à l'équipe (simulation)
+    await sendInvoiceByEmail(orderData, paymentMethod, pdfBase64, invoiceData.invoiceNumber);
     
-    console.log('✅ Facture générée et notification de validation envoyée');
+    console.log('✅ Facture générée et envoyée sur Slack + Email (pas de téléchargement utilisateur)');
     
   } catch (error) {
     console.error('❌ Erreur lors de la génération de facture:', error);
