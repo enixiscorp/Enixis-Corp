@@ -131,5 +131,23 @@ https://abc123.ngrok.io/api/slack-webhook
 
 ---
 
-**Status** : ⚙️ Configuration requise  
+## 🚨 **Correction Déploiement Vercel**
+
+### **Problème Résolu**
+```
+Error: Function Runtimes must have a valid version, for example `now-php@1.0.0`
+```
+
+### **Solution Appliquée**
+- ❌ **Supprimé** : Configuration `functions` invalide dans `vercel.json`
+- ✅ **Correction** : Les functions dans `/api/` sont auto-détectées par Vercel
+- ✅ **Ajouté** : Endpoint de test `/api/test` pour vérifier le fonctionnement
+
+### **Test du Déploiement**
+1. **Endpoint de test** : `https://enixis-corp.vercel.app/api/test`
+2. **Webhook Slack** : `https://enixis-corp.vercel.app/api/slack-webhook`
+
+---
+
+**Status** : ✅ Déploiement corrigé  
 **Priorité** : Haute - Fonctionnalité clé pour le suivi des commandes
