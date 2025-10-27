@@ -17,7 +17,7 @@ window.env = {
   EMAILJS_SERVICE_ID: "",
   EMAILJS_TEMPLATE_ID: "",
   EMAILJS_PUBLIC_KEY: "",
-  
+
   // Configuration Slack Webhook pour boutons interactifs
   SLACK_WEBHOOK_ENDPOINT: "https://enixis-corp.vercel.app/api/slack-webhook"
 };

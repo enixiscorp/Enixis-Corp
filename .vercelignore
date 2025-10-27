@@ -19,3 +19,6 @@ Thumbs.db
 
 # Fichiers de build
 build-info.json
+
+# Fichiers de référence (non utilisés en production)
+slack-webhook-handler.js
