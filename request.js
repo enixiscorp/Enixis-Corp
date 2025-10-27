@@ -736,10 +736,7 @@ function handleFloozPayment(amount) {
   setTimeout(() => {
     hideAlert();
     generateAndSendInvoiceWithValidation(currentOrderData, 'Flooz');
-    // Rediriger vers l'accueil après envoi
-    setTimeout(() => {
-      window.location.href = 'index.html';
-    }, 2000);
+    // Pas de redirection automatique - attendre le clic utilisateur
   }, 3000);
 }
 
@@ -783,10 +780,7 @@ function handleMixxPayment(amount) {
   setTimeout(() => {
     hideAlert();
     generateAndSendInvoiceWithValidation(currentOrderData, 'Mixx by Yas');
-    // Rediriger vers l'accueil après envoi
-    setTimeout(() => {
-      window.location.href = 'index.html';
-    }, 2000);
+    // Pas de redirection automatique - attendre le clic utilisateur
   }, 3000);
 }
 
@@ -885,10 +879,7 @@ function showCryptoPayment(cryptoType, amount) {
       setTimeout(() => {
         hideCryptoPayment();
         generateAndSendInvoiceWithValidation(currentOrderData, `${cryptoType} (${network})`);
-        // Rediriger vers l'accueil après envoi
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2000);
+        // Pas de redirection automatique - attendre le clic utilisateur
       }, 3000);
     });
   }
@@ -900,10 +891,7 @@ function showCryptoPayment(cryptoType, amount) {
       
       hideCryptoPayment();
       generateAndSendInvoiceWithValidation(currentOrderData, `${cryptoType} (${network})`);
-      // Rediriger vers l'accueil après envoi
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 2000);
+      // Pas de redirection automatique - attendre le clic utilisateur
     }
   }, 30000);
 }
@@ -1363,13 +1351,202 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
   hiddenContainer.innerHTML = invoiceHTML;
   document.body.appendChild(hiddenContainer);
   
-  // Afficher le bouton clignotant au lieu de la facture
-  showBlinkingCompleteButton();
-  
-  console.log('✅ Facture générée en arrière-plan');
+  console.log('✅ Facture générée en arrière-plan pour traitement');
 }
 
-// Fonction pour afficher le bouton "Terminer ma commande" clignotant
+// Fonction pour afficher le pop-up de synthèse statique
+function showOrderSummaryPopup(orderData, paymentMethod) {
+  // Créer le pop-up de synthèse
+  const summaryPopup = document.createElement('div');
+  summaryPopup.id = 'order-summary-popup';
+  summaryPopup.className = 'popup-overlay';
+  summaryPopup.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+  `;
+  
+  const invoiceNumber = window.currentInvoiceData ? window.currentInvoiceData.invoiceNumber : generateInvoiceNumber();
+  
+  summaryPopup.innerHTML = `
+    <div class="popup-content" style="
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+    ">
+      <div class="popup-header" style="text-align: center; margin-bottom: 25px;">
+        <div style="
+          width: 60px;
+          height: 60px;
+          background: linear-gradient(135deg, #28a745, #20c997);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto 15px auto;
+          font-size: 24px;
+        ">✅</div>
+        <h3 style="color: #28a745; margin: 0; font-size: 24px; font-weight: 600;">
+          Paiement Validé !
+        </h3>
+        <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">
+          Votre commande a été traitée avec succès
+        </p>
+      </div>
+      
+      <div class="summary-content" style="margin-bottom: 25px;">
+        <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+          <h4 style="margin: 0 0 15px 0; color: #333; font-size: 16px;">📄 Récapitulatif de votre commande</h4>
+          <div style="display: grid; gap: 10px;">
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Numéro de commande:</span>
+              <span style="font-weight: 600; color: #333;">${invoiceNumber}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Client:</span>
+              <span style="font-weight: 600; color: #333;">${orderData.name}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Email:</span>
+              <span style="font-weight: 600; color: #333;">${orderData.email}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Prestation:</span>
+              <span style="font-weight: 600; color: #333;">${orderData.serviceLabel}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Montant:</span>
+              <span style="font-weight: 600; color: #28a745;">${formatFcfa(orderData.finalPrice)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="color: #666;">Méthode de paiement:</span>
+              <span style="font-weight: 600; color: #333;">${paymentMethod}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, #e3f2fd, #f3e5f5); padding: 20px; border-radius: 10px; border-left: 4px solid #28a745;">
+          <h4 style="margin: 0 0 10px 0; color: #28a745; font-size: 16px;">✅ Prochaines étapes</h4>
+          <ul style="margin: 0; padding-left: 20px; color: #666;">
+            <li>📧 Votre facture a été envoyée à notre équipe</li>
+            <li>🚀 Nous commencerons le travail selon le délai convenu</li>
+            <li>📄 Vous recevrez votre facture par email</li>
+            <li>💬 Notre équipe vous contactera si nécessaire</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div style="text-align: center;">
+        <p style="color: #dc3545; font-weight: 600; margin-bottom: 20px; font-size: 16px;">
+          ⚠️ IMPORTANT : Cliquez sur le bouton ci-dessous pour finaliser votre commande
+        </p>
+        <button id="complete-order-final-btn" style="
+          background: linear-gradient(135deg, #28a745, #20c997);
+          color: white;
+          border: none;
+          padding: 15px 40px;
+          border-radius: 10px;
+          font-size: 18px;
+          font-weight: 600;
+          cursor: pointer;
+          animation: pulseGreen 2s infinite;
+          box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+          transition: all 0.3s ease;
+          width: 100%;
+          max-width: 300px;
+        ">
+          ✅ Terminer ma commande
+        </button>
+        <p style="color: #666; margin-top: 15px; font-size: 14px;">
+          Cette action vous redirigera vers la page d'accueil
+        </p>
+      </div>
+    </div>
+  `;
+  
+  // Ajouter l'animation CSS
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes pulseGreen {
+      0% { 
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      }
+      50% { 
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+      }
+      100% { 
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+      }
+    }
+    
+    #complete-order-final-btn:hover {
+      animation-play-state: paused;
+      background: linear-gradient(135deg, #218838, #1e7e34) !important;
+      transform: scale(1.05) !important;
+    }
+    
+    @media (max-width: 768px) {
+      #order-summary-popup .popup-content {
+        margin: 20px;
+        padding: 20px;
+        max-height: calc(100vh - 40px);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+  
+  // Ajouter au DOM
+  document.body.appendChild(summaryPopup);
+  
+  // Empêcher la fermeture du pop-up
+  document.body.style.overflow = 'hidden';
+  
+  // Ajouter l'event listener pour le bouton
+  document.getElementById('complete-order-final-btn').addEventListener('click', () => {
+    console.log('✅ Utilisateur a finalisé sa commande via le pop-up de synthèse');
+    
+    // Supprimer le pop-up
+    summaryPopup.remove();
+    document.body.style.overflow = '';
+    
+    // Rediriger vers l'accueil avec message de succès
+    sessionStorage.setItem('orderCompleted', 'true');
+    window.location.href = 'index.html#success';
+  });
+  
+  // Empêcher la fermeture en cliquant à l'extérieur
+  summaryPopup.addEventListener('click', (e) => {
+    if (e.target === summaryPopup) {
+      // Faire clignoter le bouton pour attirer l'attention
+      const btn = document.getElementById('complete-order-final-btn');
+      if (btn) {
+        btn.style.animation = 'pulseGreen 0.5s ease-in-out 3';
+        setTimeout(() => {
+          btn.style.animation = 'pulseGreen 2s infinite';
+        }, 1500);
+      }
+    }
+  });
+}
+
+// Fonction pour afficher le bouton "Terminer ma commande" clignotant (DEPRECATED - remplacée par showOrderSummaryPopup)
 function showBlinkingCompleteButton() {
   // Créer le conteneur du bouton
   const buttonContainer = document.createElement('div');
@@ -1996,6 +2173,19 @@ cryptoPopup?.addEventListener('click', (e) => { if (e.target === cryptoPopup) hi
 // Gestion des touches Escape pour tous les pop-ups
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    // Empêcher la fermeture du pop-up de synthèse avec Escape
+    if (document.getElementById('order-summary-popup')) {
+      // Faire clignoter le bouton pour attirer l'attention
+      const btn = document.getElementById('complete-order-final-btn');
+      if (btn) {
+        btn.style.animation = 'pulseGreen 0.5s ease-in-out 3';
+        setTimeout(() => {
+          btn.style.animation = 'pulseGreen 2s infinite';
+        }, 1500);
+      }
+      return; // Ne pas traiter les autres pop-ups
+    }
+    
     if (invoicePopup?.style.display === 'flex') {
       // Rediriger vers l'accueil au lieu de fermer
       window.location.href = 'index.html';
@@ -2308,7 +2498,10 @@ invoicePopup?.addEventListener('click', (e) => {
 // Fonction principale pour générer et envoyer la facture avec validation de paiement
 async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   try {
-    // Générer la facture en arrière-plan (pas d'affichage à l'utilisateur)
+    // Afficher le pop-up de synthèse avec le bouton "Terminer ma commande"
+    showOrderSummaryPopup(orderData, paymentMethod);
+    
+    // Générer la facture en arrière-plan
     await generateInvoiceInBackground(orderData, paymentMethod);
     
     // Attendre que la facture soit générée
@@ -2391,8 +2584,8 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
     const invoiceNumber = generateInvoiceNumber();
     await sendOrderInProgressNotification(paymentMethod, orderData, null, invoiceNumber);
     
-    // Afficher quand même le bouton clignotant
-    showBlinkingCompleteButton();
+    // Afficher quand même le pop-up de synthèse
+    showOrderSummaryPopup(orderData, paymentMethod);
   }
 }
 
