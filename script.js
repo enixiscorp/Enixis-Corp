@@ -391,3 +391,148 @@ updatePartnersCarousel();
 updateTestimonialsCarousel();
 
 
+// Gestion du message de succès après commande
+document.addEventListener('DOMContentLoaded', function() {
+  // Vérifier si une commande a été complétée
+  if (sessionStorage.getItem('orderCompleted') === 'true') {
+    // Supprimer le flag
+    sessionStorage.removeItem('orderCompleted');
+    
+    // Afficher un message de succès
+    showSuccessMessage();
+    
+    // Faire défiler vers le haut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+
+function showSuccessMessage() {
+  // Créer le message de succès
+  const successDiv = document.createElement('div');
+  successDiv.className = 'success-notification';
+  successDiv.innerHTML = `
+    <div class="success-content">
+      <div class="success-icon">✅</div>
+      <div class="success-text">
+        <h3>Commande Finalisée avec Succès !</h3>
+        <p>Votre demande a été traitée et notre équipe a été notifiée.</p>
+        <p>Vous recevrez votre facture par email dans les plus brefs délais.</p>
+      </div>
+      <button class="success-close" onclick="closeSuccessMessage()">×</button>
+    </div>
+  `;
+  
+  // Ajouter les styles
+  successDiv.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(40, 167, 69, 0.3);
+    max-width: 400px;
+    animation: slideInRight 0.5s ease-out;
+    backdrop-filter: blur(10px);
+  `;
+  
+  // Ajouter au DOM
+  document.body.appendChild(successDiv);
+  
+  // Fermer automatiquement après 8 secondes
+  setTimeout(() => {
+    closeSuccessMessage();
+  }, 8000);
+}
+
+function closeSuccessMessage() {
+  const notification = document.querySelector('.success-notification');
+  if (notification) {
+    notification.style.animation = 'slideOutRight 0.3s ease-in';
+    setTimeout(() => {
+      notification.remove();
+    }, 300);
+  }
+}
+
+// Ajouter les animations CSS
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  .success-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+  }
+  
+  .success-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  
+  .success-text h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  
+  .success-text p {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    opacity: 0.9;
+  }
+  
+  .success-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.2s;
+    flex-shrink: 0;
+  }
+  
+  .success-close:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  @media (max-width: 768px) {
+    .success-notification {
+      top: 10px !important;
+      right: 10px !important;
+      left: 10px !important;
+      max-width: none !important;
+    }
+  }
+`;
+document.head.appendChild(style);

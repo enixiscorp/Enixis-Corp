@@ -613,7 +613,7 @@ function showPaymentOptions(country) {
   // Envoyer notification seulement pour le Togo (paiement direct)
   if (country === 'togo') {
     const countryLabel = '🇹🇬 Togo';
-    sendCountrySelectionNotification(countryLabel, amount, currentOrderData);
+    sendPaymentAttemptNotification(countryLabel, amount, currentOrderData);
   }
 
   paymentInfo.innerHTML = `
@@ -961,15 +961,15 @@ function copyWalletAddress() {
   }
 }
 
-// Fonction pour envoyer la notification de sélection de pays à Slack
-async function sendCountrySelectionNotification(country, amount, orderData) {
+// Fonction pour envoyer la notification de tentative de paiement (sélection pays)
+async function sendPaymentAttemptNotification(country, amount, orderData) {
   const isTogoPayment = country.includes('🇹🇬');
   const paymentContext = isTogoPayment ? 
     'Le client peut choisir entre Flooz, Mixx by Yas ou Crypto.' :
     'Le client va procéder au paiement par cryptomonnaie.';
 
   const slackText = `
-🌍 SÉLECTION DE PAYS - Enixis Corp
+🔔 TENTATIVE DE PAIEMENT - Enixis Corp
 
 🏳️ Pays sélectionné: ${country}
 💰 Montant: ${formatFcfa(amount)}
@@ -986,14 +986,22 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
 
 ⏰ ${new Date().toLocaleString('fr-FR')}
 
-ℹ️ ${paymentContext}
+🔄 ${paymentContext}
+⚠️ En attente de validation du paiement...
   `.trim();
 
   try {
-    await submitToSlack({ text: slackText });
-    console.log('✅ Notification de sélection de pays envoyée');
+    // Utiliser @channel pour notification push
+    const payload = {
+      text: slackText,
+      link_names: true,
+      parse: "full"
+    };
+    
+    await submitToSlack(payload);
+    console.log('✅ Notification de tentative de paiement envoyée');
   } catch (error) {
-    console.error('❌ Erreur envoi notification pays:', error);
+    console.error('❌ Erreur envoi notification tentative:', error);
   }
 }
 
@@ -1055,17 +1063,20 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
 ✅ PAIEMENT CONFIRMÉ - Commencez le travail selon le délai convenu.
 📎 Facture PDF jointe ci-dessous.
 📧 Facture également envoyée par email à ${companyEmail}
-🚫 Pas de téléchargement automatique pour le client.
+
+🔚 DERNIÈRE NOTIFICATION pour cette commande.
   `.trim();
 
   try {
-    // Envoyer avec la facture en pièce jointe
+    // Envoyer avec notification push et facture en pièce jointe
     const payload = {
       text: slackText,
+      link_names: true,
+      parse: "full",
       attachments: [{
         color: 'good',
         title: `📄 ${invoiceNumber}.pdf`,
-        text: `Facture générée automatiquement - ${formatFcfa(orderData.finalPrice)}`,
+        text: `✅ COMMANDE FINALISÉE - ${formatFcfa(orderData.finalPrice)}`,
         fields: [
           {
             title: 'Client',
@@ -1088,29 +1099,29 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
             short: true
           },
           {
-            title: 'Email Équipe',
-            value: companyEmail,
+            title: 'Email Envoyé',
+            value: `✅ ${companyEmail}`,
             short: true
           },
           {
-            title: 'Status Téléchargement',
-            value: '🚫 Pas de téléchargement client',
+            title: 'Status',
+            value: '🔚 COMMANDE TERMINÉE',
             short: true
           }
         ],
-        footer: 'Enixis Corp - Système de Facturation',
+        footer: 'Enixis Corp - Commande Finalisée',
         ts: Math.floor(Date.now() / 1000)
       }]
     };
 
     await submitToSlack(payload);
-    console.log('✅ Notification de validation avec facture envoyée sur Slack');
+    console.log('✅ Notification finale de validation avec facture envoyée');
   } catch (error) {
     console.error('❌ Erreur envoi validation paiement:', error);
     
     // Fallback sans pièce jointe
     try {
-      await submitToSlack({ text: slackText });
+      await submitToSlack({ text: slackText, link_names: true, parse: "full" });
       console.log('✅ Notification de validation envoyée (sans pièce jointe)');
     } catch (fallbackError) {
       console.error('❌ Erreur fallback:', fallbackError);
@@ -1121,24 +1132,39 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 100)}${ord
 // Fonction pour envoyer un email réel avec EmailJS
 async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, orderData) {
   try {
-    // Configuration EmailJS (à configurer dans les variables d'environnement)
+    // Configuration EmailJS depuis les variables d'environnement
     const emailjsConfig = {
       serviceId: (window.env && window.env.EMAILJS_SERVICE_ID) || 'service_enixis',
       templateId: (window.env && window.env.EMAILJS_TEMPLATE_ID) || 'template_invoice',
       publicKey: (window.env && window.env.EMAILJS_PUBLIC_KEY) || ''
     };
 
+    console.log('📧 Configuration EmailJS:', {
+      serviceId: emailjsConfig.serviceId,
+      templateId: emailjsConfig.templateId,
+      publicKeyPresent: !!emailjsConfig.publicKey
+    });
+
     // Vérifier si EmailJS est disponible
     if (typeof emailjs === 'undefined') {
-      throw new Error('EmailJS non disponible');
+      console.error('❌ EmailJS non chargé');
+      throw new Error('EmailJS non disponible - bibliothèque non chargée');
+    }
+
+    // Vérifier la configuration
+    if (!emailjsConfig.publicKey) {
+      console.error('❌ Clé publique EmailJS manquante');
+      throw new Error('Configuration EmailJS incomplète - clé publique manquante');
     }
 
     // Initialiser EmailJS
     emailjs.init(emailjsConfig.publicKey);
+    console.log('✅ EmailJS initialisé avec succès');
 
     // Préparer les données pour le template
     const templateParams = {
       to_email: toEmail,
+      to_name: 'Équipe Enixis Corp',
       subject: subject,
       message: body,
       invoice_number: invoiceNumber,
@@ -1147,10 +1173,12 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
       client_phone: orderData.phone,
       service: orderData.serviceLabel,
       amount: formatFcfa(orderData.finalPrice),
-      payment_method: orderData.paymentMethod || 'Non spécifié',
+      payment_method: 'Validé',
       date: new Date().toLocaleString('fr-FR'),
-      pdf_attachment: pdfBase64 // Note: EmailJS a des limitations sur les pièces jointes
+      from_name: 'Système Enixis Corp'
     };
+
+    console.log('📧 Envoi email avec params:', templateParams);
 
     // Envoyer l'email
     const response = await emailjs.send(
@@ -1163,7 +1191,7 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
     return response;
 
   } catch (error) {
-    console.error('❌ Erreur EmailJS:', error);
+    console.error('❌ Erreur EmailJS détaillée:', error);
     throw error;
   }
 }
@@ -1544,7 +1572,7 @@ function selectCountry(countryName, region) {
   if (currentOrderData) {
     currentOrderData.selectedCountry = countryLabel;
     // Envoyer immédiatement la notification de sélection de pays
-    sendCountrySelectionNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
+    sendPaymentAttemptNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
   }
   
   showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
@@ -1875,14 +1903,29 @@ async function downloadInvoiceAsPDF() {
 const completeOrderBtn = document.getElementById('complete-order-btn');
 
 completeOrderBtn?.addEventListener('click', () => {
-  // Rediriger vers la page d'accueil
-  window.location.href = 'index.html';
+  // L'utilisateur valide manuellement sa commande
+  console.log('✅ Utilisateur a validé sa commande manuellement');
+  
+  // Rediriger vers la page d'accueil avec un message de succès
+  sessionStorage.setItem('orderCompleted', 'true');
+  window.location.href = 'index.html#success';
 });
 
-// Garder la possibilité de fermer en cliquant à l'extérieur
+// Empêcher la fermeture accidentelle - l'utilisateur doit cliquer sur le bouton
 invoicePopup?.addEventListener('click', (e) => { 
   if (e.target === invoicePopup) {
-    window.location.href = 'index.html';
+    // Ne pas fermer automatiquement - afficher un message
+    const completeBtn = document.getElementById('complete-order-btn');
+    if (completeBtn) {
+      completeBtn.style.animation = 'pulse 1s ease-in-out 3';
+      completeBtn.style.background = '#28a745';
+      completeBtn.style.transform = 'scale(1.05)';
+      
+      setTimeout(() => {
+        completeBtn.style.animation = '';
+        completeBtn.style.transform = '';
+      }, 3000);
+    }
   }
 });
 

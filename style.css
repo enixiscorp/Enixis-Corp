@@ -1681,4 +1681,98 @@ tyle pour le lien du site web dans la facture */
     font-size: 0.8em;
     color: #666;
   }
+}/
+* Optimisations de performance et chargement */
+body {
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Animation du bouton "Terminer ma commande" */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.complete-order-btn {
+  transition: all 0.3s ease;
+}
+
+.complete-order-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Optimisation des images - Les attributs loading et decoding sont HTML, pas CSS */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Optimisation des popups */
+.popup-overlay {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+.popup-content {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Optimisation du formulaire */
+.contact-form {
+  contain: layout style;
+}
+
+/* Optimisation des transitions */
+* {
+  box-sizing: border-box;
+}
+
+/* Amélioration de la responsivité mobile */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+  
+  .popup-content {
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+  }
+  
+  .invoice-content {
+    max-height: calc(100vh - 40px);
+  }
+}
+
+/* Optimisation pour les connexions lentes */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Amélioration du contraste pour l'accessibilité */
+@media (prefers-contrast: high) {
+  .btn {
+    border: 2px solid currentColor;
+  }
+  
+  .popup-content {
+    border: 2px solid #333;
+  }
+}
+
+/* Optimisation pour les écrans haute densité */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .payment-logo-img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
 }

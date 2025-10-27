@@ -3,12 +3,22 @@
 
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Soumettre ma demande – Enixis Corp</title>
   <meta name="description"
     content="Soumettre une demande de prestation Enixis Corp avec estimation de prix et envoi Slack.">
   <meta name="theme-color" content="#0A0F2C">
   <link rel="canonical" href="https://enixis-corp.vercel.app/demande.html">
+  
+  <!-- Optimisations de performance -->
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://hooks.slack.com">
+  
+  <!-- Préchargement des ressources critiques -->
+  <link rel="preload" href="style.css" as="style">
+  <link rel="preload" href="request.js" as="script">
+  <link rel="preload" href="env.js" as="script">
   <meta property="og:title" content="Soumettre ma demande – Enixis Corp">
   <meta property="og:description" content="Soumettre une demande de prestation Enixis Corp avec estimation de prix et envoi Slack.">
   <meta property="og:type" content="website">
@@ -28,12 +38,12 @@
   <link rel="apple-touch-icon" href="images/favikon_enixis corp.png">
   <link rel="shortcut icon" href="favicon.ico">
   
-  <!-- Bibliothèques pour génération PDF/Image -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Bibliothèques pour génération PDF/Image - Chargement différé -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
   
-  <!-- EmailJS pour envoi d'emails -->
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- EmailJS pour envoi d'emails - Chargement différé -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
 </head>
 
 <body>
@@ -269,15 +279,41 @@
         <p style="text-align: center; color: #666; font-size: 0.9rem;">
           📄 Vous recevrez votre facture par email dans les plus brefs délais
         </p>
-        <p style="text-align: center; color: #666; font-size: 0.9rem;">
-          Cliquez sur "Terminer ma commande" pour retourner à l'accueil
+        <p style="text-align: center; color: #dc3545; font-weight: 600; font-size: 0.95rem; margin-top: 15px;">
+          ⚠️ IMPORTANT : Cliquez sur "Terminer ma commande" pour finaliser votre commande
+        </p>
+        <p style="text-align: center; color: #666; font-size: 0.85rem;">
+          Cette action confirmera votre commande et vous redirigera vers l'accueil
         </p>
       </div>
     </div>
   </div>
 
+  <!-- Scripts critiques -->
   <script src="env.js"></script>
   <script src="request.js" defer></script>
+  
+  <!-- Optimisation du chargement -->
+  <script>
+    // Préchargement des images critiques
+    const criticalImages = [
+      'images/moov_money_enixis.png',
+      'images/mixx_by_yas_enixis.png',
+      'images/enixis corp_logo.png'
+    ];
+    
+    criticalImages.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+    
+    // Optimisation du rendu
+    document.addEventListener('DOMContentLoaded', function() {
+      // Masquer le contenu jusqu'au chargement complet
+      document.body.style.visibility = 'visible';
+      document.body.style.opacity = '1';
+    });
+  </script>
 </body>
 
 </html>
