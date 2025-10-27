@@ -733,13 +733,13 @@ function handleFloozPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 3 secondes
+  // Envoyer la facture par Slack et email après 3 secondes (sans affichage à l'utilisateur)
   setTimeout(() => {
     hideAlert();
-    showInvoice(currentOrderData, 'Flooz');
-    // Envoyer la facture par Slack et email
+    sendInvoiceToSlackAndEmail(currentOrderData, 'Flooz');
+    // Rediriger vers l'accueil après envoi
     setTimeout(() => {
-      sendInvoiceToSlackAndEmail(currentOrderData, 'Flooz');
+      window.location.href = 'index.html';
     }, 2000);
   }, 3000);
 }
@@ -781,13 +781,13 @@ function handleMixxPayment(amount) {
     window.location.href = `tel:${encodeURIComponent(ussdCode)}`;
   }, 2000);
 
-  // Afficher la facture après 3 secondes
+  // Envoyer la facture par Slack et email après 3 secondes (sans affichage à l'utilisateur)
   setTimeout(() => {
     hideAlert();
-    showInvoice(currentOrderData, 'Mixx by Yas');
-    // Envoyer la facture par Slack et email
+    sendInvoiceToSlackAndEmail(currentOrderData, 'Mixx by Yas');
+    // Rediriger vers l'accueil après envoi
     setTimeout(() => {
-      sendInvoiceToSlackAndEmail(currentOrderData, 'Mixx by Yas');
+      window.location.href = 'index.html';
     }, 2000);
   }, 3000);
 }
@@ -884,13 +884,13 @@ function showCryptoPayment(cryptoType, amount) {
       // Envoyer seulement la notification de tentative de paiement
       sendPaymentNotification(`${cryptoType} (${network})`, amount, currentOrderData);
       
-      // Générer la facture après 3 secondes une fois l'adresse copiée
+      // Envoyer la facture par Slack et email après 3 secondes (sans affichage à l'utilisateur)
       setTimeout(() => {
         hideCryptoPayment();
-        showInvoice(currentOrderData, `${cryptoType} (${network})`);
-        // Envoyer la facture par Slack et email
+        sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
+        // Rediriger vers l'accueil après envoi
         setTimeout(() => {
-          sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
+          window.location.href = 'index.html';
         }, 2000);
       }, 3000);
     });
@@ -903,9 +903,10 @@ function showCryptoPayment(cryptoType, amount) {
       sendPaymentNotification(`${cryptoType} (${network}) - Sans copie d'adresse`, amount, currentOrderData);
       
       hideCryptoPayment();
-      showInvoice(currentOrderData, `${cryptoType} (${network})`);
+      sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
+      // Rediriger vers l'accueil après envoi
       setTimeout(() => {
-        sendInvoiceToSlackAndEmail(currentOrderData, `${cryptoType} (${network})`);
+        window.location.href = 'index.html';
       }, 2000);
     }
   }, 30000);
@@ -1030,7 +1031,7 @@ async function sendWhatsAppNotification(orderData) {
   }
 }
 
-// Fonction pour envoyer la notification de paiement à Slack
+// Fonction pour envoyer la notification de paiement à Slack avec facture
 async function sendPaymentNotification(paymentMethod, amount, orderData) {
   const slackText = `
 🔔 TENTATIVE DE PAIEMENT - Enixis Corp
@@ -1050,6 +1051,7 @@ async function sendPaymentNotification(paymentMethod, amount, orderData) {
 ⏰ ${new Date().toLocaleString('fr-FR')}
 
 ⚠️ Vérifiez la réception du paiement et confirmez la commande.
+📄 La facture sera générée et envoyée automatiquement dans quelques secondes.
   `.trim();
 
   try {
