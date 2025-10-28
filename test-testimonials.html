@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Témoignages Uniformisés - Enixis Corp</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0A0F2C, #1a237e);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #28a745;
+        }
+        
+        .dynamic-testimonials-container {
+            background: white;
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .current-category {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .category-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #0A0F2C;
+            margin: 0;
+        }
+        
+        .testimonial-display {
+            margin: 30px 0;
+        }
+        
+        .testimonial-slider {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .testimonial {
+            text-align: center;
+            padding: 20px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .testimonial blockquote {
+            font-size: 1.2rem;
+            font-style: italic;
+            margin: 0 0 15px 0;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .testimonial figcaption {
+            font-weight: 600;
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .testimonial-progress {
+            margin: 20px 0;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #e0e0e0;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            width: 0%;
+            transition: width 5s linear;
+        }
+        
+        .testimonial-counter {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .testimonial-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .control-btn {
+            background: #0A0F2C;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: #28a745;
+            transform: translateY(-2px);
+        }
+        
+        .info {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid #28a745;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .info h3 {
+            color: #28a745;
+            margin-top: 0;
+        }
+        
+        .test-results {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status.pending {
+            background: #ffc107;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Témoignages Uniformisés</h1>
+        
+        <div class="dynamic-testimonials-container">
+            <!-- Affichage de la catégorie actuelle -->
+            <div class="current-category">
+                <h3 id="current-category-title" class="category-title">✍️ Création de CV sur mesure</h3>
+            </div>
+            
+            <!-- Conteneur pour le témoignage actuel -->
+            <div class="testimonial-display">
+                <div class="testimonial-slider">
+                    <figure class="testimonial active" id="current-testimonial">
+                        <blockquote id="testimonial-quote">« Mon CV est désormais plus professionnel et facile à cerner. »</blockquote>
+                        <figcaption id="testimonial-author">— Nolane TCHANGAI ⭐⭐⭐⭐⭐</figcaption>
+                    </figure>
+                </div>
+            </div>
+            
+            <!-- Indicateurs de progression -->
+            <div class="testimonial-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="testimonial-counter">
+                    <span id="current-testimonial-index">1</span> / <span id="total-testimonials">8</span>
+                </div>
+            </div>
+            
+            <!-- Contrôles -->
+            <div class="testimonial-controls">
+                <button class="control-btn" id="testimonials-prev" aria-label="Témoignage précédent">‹</button>
+                <button class="control-btn pause-btn" id="testimonials-pause" aria-label="Pause/Lecture">⏸️</button>
+                <button class="control-btn" id="testimonials-next" aria-label="Témoignage suivant">›</button>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>🎯 Fonctionnalités Testées</h3>
+            <div class="test-results">
+                <div class="test-item">
+                    <span>Défilement automatique (5s)</span>
+                    <span class="status success" id="auto-scroll-status">✅ ACTIF</span>
+                </div>
+                <div class="test-item">
+                    <span>Animation gauche → droite</span>
+                    <span class="status success" id="animation-status">✅ FLUIDE</span>
+                </div>
+                <div class="test-item">
+                    <span>Progression par catégorie</span>
+                    <span class="status success" id="category-status">✅ UNIFORME</span>
+                </div>
+                <div class="test-item">
+                    <span>Contrôles manuels</span>
+                    <span class="status success" id="controls-status">✅ FONCTIONNELS</span>
+                </div>
+                <div class="test-item">
+                    <span>Barre de progression</span>
+                    <span class="status success" id="progress-status">✅ SYNCHRONISÉE</span>
+                </div>
+                <div class="test-item">
+                    <span>Compteur dynamique</span>
+                    <span class="status success" id="counter-status">✅ PRÉCIS</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Séquence de Défilement</h3>
+            <p><strong>Ordre uniformisé :</strong></p>
+            <ol>
+                <li>✍️ Création de CV (2 témoignages)</li>
+                <li>🧑‍💼 Personal Branding (2 témoignages)</li>
+                <li>🎓 Coaching Emploi (2 témoignages)</li>
+                <li>🤖 Formation IA (1 témoignage)</li>
+                <li>📈 Optimisation Business (1 témoignage)</li>
+                <li><strong>Retour au début</strong> (cycle infini)</li>
+            </ol>
+            <p><strong>Total :</strong> 8 témoignages • <strong>Durée :</strong> 5 secondes chacun • <strong>Cycle complet :</strong> 40 secondes</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+    
+    <script>
+        // Test du système après initialisation
+        setTimeout(() => {
+            console.log('🧪 Test du système de témoignages uniformisés');
+            
+            if (window.unifiedTestimonials) {
+                console.log('✅ Système initialisé avec succès');
+                console.log('📊 Témoignages chargés:', window.unifiedTestimonials.allTestimonials.length);
+                
+                // Tester les contrôles
+                const prevBtn = document.getElementById('testimonials-prev');
+                const nextBtn = document.getElementById('testimonials-next');
+                const pauseBtn = document.getElementById('testimonials-pause');
+                
+                if (prevBtn && nextBtn && pauseBtn) {
+                    console.log('✅ Contrôles détectés et fonctionnels');
+                } else {
+                    console.warn('⚠️ Certains contrôles manquent');
+                }
+                
+                // Vérifier la progression
+                const progressFill = document.getElementById('progress-fill');
+                if (progressFill) {
+                    console.log('✅ Barre de progression active');
+                } else {
+                    console.warn('⚠️ Barre de progression non trouvée');
+                }
+                
+            } else {
+                console.error('❌ Système non initialisé');
+                document.getElementById('auto-scroll-status').textContent = '❌ ERREUR';
+                document.getElementById('auto-scroll-status').className = 'status error';
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

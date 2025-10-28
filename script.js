@@ -535,4 +535,279 @@ style.textContent = `
     }
   }
 `;
-document.head.appendChild(style);
+document.head.appendChild(style);/
+// Système de témoignages dynamiques uniformisé - Défilement gauche vers droite par catégorie
+const TESTIMONIALS_DATA = {
+  'cv_creation': {
+    title: '✍️ Création de CV sur mesure',
+    testimonials: [
+      {
+        quote: '« Mon CV est désormais plus professionnel et facile à cerner. »',
+        author: '— Nolane TCHANGAI ⭐⭐⭐⭐⭐'
+      },
+      {
+        quote: '« Dynamisme, disponibilité et rapidité professionnelle : tout était réuni. »',
+        author: '— Ella Joselyne ANANI ⭐⭐⭐⭐⭐'
+      }
+    ]
+  },
+  'personal_branding': {
+    title: '🧑‍💼 Personal Branding & LinkedIn',
+    testimonials: [
+      {
+        quote: '« Mon profil LinkedIn est devenu plus attractif, je reçois plus de demandes de connexion et même des recommandations de compétences. »',
+        author: '— Afivi Ruth N\'TCHOU ⭐⭐⭐⭐⭐'
+      },
+      {
+        quote: '« J\'ai beaucoup apprécié les détails précis, clairs et innovants. »',
+        author: '— MOUSTAPHA Mohamed Sahid 😍'
+      }
+    ]
+  },
+  'coaching_emploi': {
+    title: '🎓 Formation Coaching Emploi',
+    testimonials: [
+      {
+        quote: '« Expérience extrêmement satisfaisante : coaching interactif, enrichissant et adapté. Les simulations d\'entretien m\'ont donné confiance pour affronter le marché de l\'emploi. Je recommande vivement. »',
+        author: '— METOHO-EKE Darlingston Gilles ⭐⭐⭐⭐⭐'
+      },
+      {
+        quote: '« Être coachée la veille d\'un entretien m\'a permis d\'arriver prête et de réussir brillamment mon interview. »',
+        author: '— Arielle Carla Anglina LEMBO ⭐⭐⭐⭐⭐'
+      }
+    ]
+  },
+  'formation_ia': {
+    title: '🤖 Formation IA',
+    testimonials: [
+      {
+        quote: '« Formation très enrichissante sur l\'IA. J\'ai appris à utiliser des outils que je ne connaissais pas. »',
+        author: '— Client Formation IA ⭐⭐⭐⭐⭐'
+      }
+    ]
+  },
+  'optimisation_business': {
+    title: '📈 Optimisation Business',
+    testimonials: [
+      {
+        quote: '« Nos processus ont été considérablement améliorés grâce à leurs recommandations. »',
+        author: '— Entreprise Cliente ⭐⭐⭐⭐⭐'
+      }
+    ]
+  }
+};
+
+// Classe de témoignages dynamiques uniformisée avec défilement fluide gauche → droite
+class UnifiedTestimonials {
+  constructor() {
+    this.categories = Object.keys(TESTIMONIALS_DATA);
+    this.allTestimonials = this.flattenTestimonials();
+    this.currentIndex = 0;
+    this.isPlaying = true;
+    this.interval = null;
+    this.animationDuration = 5000; // 5 secondes par témoignage
+    
+    this.init();
+  }
+  
+  // Aplatir tous les témoignages avec leurs catégories
+  flattenTestimonials() {
+    const flattened = [];
+    Object.entries(TESTIMONIALS_DATA).forEach(([categoryKey, categoryData]) => {
+      categoryData.testimonials.forEach(testimonial => {
+        flattened.push({
+          ...testimonial,
+          category: categoryData.title,
+          categoryKey: categoryKey
+        });
+      });
+    });
+    return flattened;
+  }
+  
+  init() {
+    this.updateTotalCounter();
+    this.displayCurrentTestimonial();
+    this.startAutoPlay();
+    this.bindEvents();
+    console.log('✅ Système de témoignages uniformisé initialisé:', this.allTestimonials.length, 'témoignages');
+  }
+  
+  bindEvents() {
+    const prevBtn = document.getElementById('testimonials-prev');
+    const nextBtn = document.getElementById('testimonials-next');
+    const pauseBtn = document.getElementById('testimonials-pause');
+    
+    prevBtn?.addEventListener('click', () => this.previousTestimonial());
+    nextBtn?.addEventListener('click', () => this.nextTestimonial());
+    pauseBtn?.addEventListener('click', () => this.togglePlayPause());
+  }
+  
+  getCurrentTestimonial() {
+    return this.allTestimonials[this.currentIndex];
+  }
+  
+  displayCurrentTestimonial() {
+    const testimonial = this.getCurrentTestimonial();
+    if (!testimonial) return;
+    
+    // Éléments DOM
+    const categoryTitle = document.getElementById('current-category-title');
+    const quote = document.getElementById('testimonial-quote');
+    const author = document.getElementById('testimonial-author');
+    const testimonialEl = document.getElementById('current-testimonial');
+    
+    if (!categoryTitle || !quote || !author || !testimonialEl) {
+      console.warn('⚠️ Éléments DOM des témoignages non trouvés');
+      return;
+    }
+    
+    // Animation de sortie fluide (gauche)
+    testimonialEl.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    testimonialEl.style.opacity = '0';
+    testimonialEl.style.transform = 'translateX(-50px)';
+    
+    setTimeout(() => {
+      // Mettre à jour le contenu
+      categoryTitle.textContent = testimonial.category;
+      quote.textContent = testimonial.quote;
+      author.textContent = testimonial.author;
+      
+      // Animation d'entrée fluide (droite)
+      testimonialEl.style.transform = 'translateX(50px)';
+      
+      setTimeout(() => {
+        testimonialEl.style.opacity = '1';
+        testimonialEl.style.transform = 'translateX(0)';
+      }, 50);
+      
+    }, 400);
+    
+    // Mettre à jour le compteur
+    this.updateCounter();
+  }
+  
+  updateCounter() {
+    const currentIndex = document.getElementById('current-testimonial-index');
+    if (currentIndex) {
+      currentIndex.textContent = this.currentIndex + 1;
+    }
+  }
+  
+  updateTotalCounter() {
+    const totalEl = document.getElementById('total-testimonials');
+    if (totalEl) {
+      totalEl.textContent = this.allTestimonials.length;
+    }
+  }
+  
+  nextTestimonial() {
+    this.currentIndex = (this.currentIndex + 1) % this.allTestimonials.length;
+    this.displayCurrentTestimonial();
+    this.resetProgress();
+  }
+  
+  previousTestimonial() {
+    this.currentIndex = this.currentIndex === 0 ? 
+      this.allTestimonials.length - 1 : this.currentIndex - 1;
+    this.displayCurrentTestimonial();
+    this.resetProgress();
+  }
+  
+  startAutoPlay() {
+    if (this.interval) clearInterval(this.interval);
+    
+    if (!this.isPlaying) return;
+    
+    // Démarrer la barre de progression
+    this.startProgress();
+    
+    // Auto-play toutes les 5 secondes
+    this.interval = setInterval(() => {
+      if (this.isPlaying) {
+        this.nextTestimonial();
+      }
+    }, this.animationDuration);
+  }
+  
+  startProgress() {
+    const progressFill = document.getElementById('progress-fill');
+    if (!progressFill) return;
+    
+    // Reset immédiat
+    progressFill.style.transition = 'none';
+    progressFill.style.width = '0%';
+    
+    // Animer la barre de progression sur 5 secondes
+    setTimeout(() => {
+      progressFill.style.transition = `width ${this.animationDuration}ms linear`;
+      progressFill.style.width = '100%';
+    }, 50);
+  }
+  
+  resetProgress() {
+    const progressFill = document.getElementById('progress-fill');
+    if (progressFill) {
+      progressFill.style.transition = 'none';
+      progressFill.style.width = '0%';
+      
+      if (this.isPlaying) {
+        setTimeout(() => {
+          progressFill.style.transition = `width ${this.animationDuration}ms linear`;
+          progressFill.style.width = '100%';
+        }, 50);
+      }
+    }
+  }
+  
+  togglePlayPause() {
+    this.isPlaying = !this.isPlaying;
+    const pauseBtn = document.getElementById('testimonials-pause');
+    
+    if (pauseBtn) {
+      pauseBtn.textContent = this.isPlaying ? '⏸️' : '▶️';
+      pauseBtn.setAttribute('aria-label', this.isPlaying ? 'Pause' : 'Lecture');
+    }
+    
+    if (this.isPlaying) {
+      this.startAutoPlay();
+    } else {
+      if (this.interval) clearInterval(this.interval);
+      
+      // Arrêter la barre de progression à sa position actuelle
+      const progressFill = document.getElementById('progress-fill');
+      if (progressFill) {
+        const computedStyle = window.getComputedStyle(progressFill);
+        const currentWidth = computedStyle.width;
+        progressFill.style.transition = 'none';
+        progressFill.style.width = currentWidth;
+      }
+    }
+  }
+  
+  destroy() {
+    if (this.interval) clearInterval(this.interval);
+  }
+}
+
+// Initialiser le système de témoignages uniformisé
+let unifiedTestimonials = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Attendre que la section témoignages soit visible
+  const testimonialsSection = document.getElementById('testimonials');
+  if (testimonialsSection) {
+    // Initialiser avec un délai pour s'assurer que tous les éléments sont chargés
+    setTimeout(() => {
+      unifiedTestimonials = new UnifiedTestimonials();
+      console.log('✅ Système de témoignages uniformisé initialisé - Défilement gauche → droite par catégorie');
+    }, 1000);
+  }
+});
+
+// Nettoyer lors du déchargement de la page
+window.addEventListener('beforeunload', () => {
+  if (dynamicTestimonials) {
+    dynamicTestimonials.destroy();
+  }
+});
