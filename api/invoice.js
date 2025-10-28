@@ -579,68 +579,45 @@ export default function handler(req, res) {
         function populateInvoiceData(data) {
             try {
                 console.log('🔍 Traitement des données de facture...');
-                console.log('📦 Données brutes reçues:', data ? data.substring(0, 100) + '...' : 'null');
+                console.log('📦 Données reçues:', data);
                 
-                let decodedData;
+                // Si les données sont déjà un objet (cas des données directes)
+                let decodedData = data;
                 
-                // Essayer différentes méthodes de décodage
+                // Si c'est une string, essayer de la décoder
                 if (typeof data === 'string') {
                     try {
-                        // Méthode 1: Décoder URL puis Base64 puis JSON
                         const urlDecoded = decodeURIComponent(data);
                         const base64Decoded = atob(urlDecoded);
                         decodedData = JSON.parse(base64Decoded);
-                        console.log('✅ Décodage URL->Base64->JSON réussi');
-                    } catch (e1) {
-                        try {
-                            // Méthode 2: Décoder directement Base64 puis JSON
-                            const base64Decoded = atob(data);
-                            decodedData = JSON.parse(base64Decoded);
-                            console.log('✅ Décodage Base64->JSON réussi');
-                        } catch (e2) {
-                            try {
-                                // Méthode 3: Parser directement comme JSON
-                                decodedData = JSON.parse(data);
-                                console.log('✅ Décodage JSON direct réussi');
-                            } catch (e3) {
-                                throw new Error('Impossible de décoder les données: ' + e3.message);
-                            }
-                        }
+                        console.log('✅ Décodage string réussi');
+                    } catch (e) {
+                        console.log('⚠️ Impossible de décoder la string, utilisation directe');
+                        return false;
                     }
-                } else {
-                    // Si ce n'est pas une string, essayer de l'utiliser directement
-                    decodedData = data;
                 }
                 
-                console.log('📊 Données décodées:', decodedData);
+                console.log('📊 Données à traiter:', decodedData);
                 
-                // Vérifier la structure des données
+                // Extraire les données de commande
                 let orderData;
                 if (decodedData.orderData) {
                     orderData = decodedData.orderData;
-                } else if (decodedData.name && decodedData.email) {
+                } else {
                     // Les données sont directement dans l'objet principal
                     orderData = decodedData;
-                } else {
-                    throw new Error('Structure de données non reconnue');
                 }
                 
-                console.log('👤 Données client extraites:', {
-                    name: orderData.name,
-                    email: orderData.email,
-                    phone: orderData.phone,
-                    service: orderData.serviceLabel || orderData.service,
-                    price: orderData.finalPrice || orderData.price
-                });
+                console.log('👤 Données client extraites:', orderData);
                 
-                // Normaliser les données pour compatibilité
+                // Normaliser les données (avec valeurs par défaut seulement si vraiment vides)
                 const normalizedData = {
-                    name: orderData.name || orderData.client_name || 'Client',
-                    email: orderData.email || orderData.client_email || 'email@client.com',
-                    phone: orderData.phone || orderData.client_phone || '+228 XX XX XX XX',
-                    serviceLabel: orderData.serviceLabel || orderData.service || 'Service demandé',
-                    finalPrice: orderData.finalPrice || orderData.price || 0,
-                    basePrice: orderData.basePrice || orderData.finalPrice || orderData.price || 0,
+                    name: orderData.name || 'Nom du client',
+                    email: orderData.email || 'email@client.com',
+                    phone: orderData.phone || '+228 XX XX XX XX',
+                    serviceLabel: orderData.serviceLabel || 'Service demandé',
+                    finalPrice: orderData.finalPrice || 0,
+                    basePrice: orderData.basePrice || orderData.finalPrice || 0,
                     delivery: orderData.delivery || 'standard',
                     coupon: orderData.coupon || null
                 };
@@ -687,22 +664,39 @@ export default function handler(req, res) {
                     console.log('✅ Heure mise à jour:', formatTime(createdDate));
                 }
                 
-                // Informations client avec vérification
+                // Mise à jour des informations client
+                console.log('🔄 Mise à jour des éléments HTML...');
+                
                 const clientNameEl = document.getElementById('client-name');
                 const clientEmailEl = document.getElementById('client-email');
                 const clientPhoneEl = document.getElementById('client-phone');
                 
+                console.log('📋 Éléments trouvés:', {
+                    clientName: !!clientNameEl,
+                    clientEmail: !!clientEmailEl,
+                    clientPhone: !!clientPhoneEl
+                });
+                
                 if (clientNameEl) {
                     clientNameEl.textContent = normalizedData.name;
                     console.log('✅ Nom client mis à jour:', normalizedData.name);
+                    console.log('📝 Contenu élément nom:', clientNameEl.textContent);
+                } else {
+                    console.error('❌ Élément client-name non trouvé !');
                 }
+                
                 if (clientEmailEl) {
                     clientEmailEl.textContent = normalizedData.email;
                     console.log('✅ Email client mis à jour:', normalizedData.email);
+                } else {
+                    console.error('❌ Élément client-email non trouvé !');
                 }
+                
                 if (clientPhoneEl) {
                     clientPhoneEl.textContent = normalizedData.phone;
                     console.log('✅ Téléphone client mis à jour:', normalizedData.phone);
+                } else {
+                    console.error('❌ Élément client-phone non trouvé !');
                 }
                 
                 // Informations service avec vérification
@@ -912,10 +906,10 @@ export default function handler(req, res) {
             
             // Debug: Afficher les données directes reçues
             console.log('🔍 Données directes reçues:', directData);
-            console.log('📊 Nom:', directData.name, 'Email:', directData.email);
+            console.log('📊 Nom:', directData.name, 'Email:', directData.email, 'Service:', directData.service, 'Prix:', directData.price);
             
-            // Vérifier d'abord les données directes depuis l'URL
-            if (directData.name && directData.name !== '' && directData.email && directData.email !== '') {
+            // Vérifier d'abord les données directes depuis l'URL (condition simplifiée)
+            if (directData.name || directData.email || directData.service) {
                 console.log('🔍 Utilisation des données directes depuis l\'URL...');
                 console.log('📦 Données directes:', directData);
                 

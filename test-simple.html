@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Simple - Facture</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .test-button { background: #28a745; color: white; padding: 15px 25px; border: none; border-radius: 8px; font-size: 16px; text-decoration: none; display: inline-block; margin: 10px; }
+        .info { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Simple - Facture Personnalisée</h1>
+    
+    <div class="info">
+        <strong>Test avec données directes :</strong><br>
+        • Nom : Jean MARTIN<br>
+        • Email : jean.martin@example.com<br>
+        • Service : Création de CV<br>
+        • Prix : 7000 F CFA
+    </div>
+    
+    <a href="/api/invoice?invoice=TEST_001&name=Jean%20MARTIN&email=jean.martin@example.com&phone=%2B228%2090%2012%2034%2056&service=Creation%20de%20CV&price=7000&delivery=short&payment=Flooz" 
+       class="test-button" target="_blank">
+        🚀 Tester Facture
+    </a>
+    
+    <div class="info">
+        <strong>Instructions :</strong><br>
+        1. Cliquez sur le bouton ci-dessus<br>
+        2. Ouvrez F12 → Console<br>
+        3. Vérifiez que "Jean MARTIN" s'affiche dans la facture (pas "Nom du client")<br>
+        4. Vérifiez les logs dans la console
+    </div>
+</body>
+</html>
