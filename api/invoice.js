@@ -20,23 +20,12 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Invoice number required' });
     }
 
-    // Si des données de facture sont fournies et que le téléchargement direct est demandé
-    if (data && download === 'pdf') {
-      try {
-        const invoiceData = JSON.parse(atob(decodeURIComponent(data)));
-        
-        // Servir directement le PDF
-        const pdfBuffer = Buffer.from(invoiceData.pdfBase64, 'base64');
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="Facture_${invoice}.pdf"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-        
-        return res.status(200).send(pdfBuffer);
-      } catch (error) {
-        console.error('Erreur décodage données facture:', error);
-        return res.status(400).json({ error: 'Invalid invoice data' });
-      }
+    // Si le téléchargement PDF est demandé, rediriger vers la page avec instructions
+    if (download === 'pdf') {
+      // Rediriger vers la page normale qui utilisera window.print()
+      const redirectUrl = `/api/invoice?invoice=${invoice}${data ? `&data=${data}` : ''}`;
+      res.writeHead(302, { Location: redirectUrl });
+      return res.end();
     }
 
     // Créer une page HTML avec le modèle de facture Enixis Corp
@@ -47,6 +36,9 @@ export default function handler(req, res) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facture ${invoice} - Enixis Corp</title>
+    <!-- Bibliothèques pour génération PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -433,6 +425,7 @@ export default function handler(req, res) {
             <p>Cliquez sur le bouton ci-dessous pour télécharger la facture au format PDF</p>
             <button class="download-btn" onclick="downloadInvoice()" id="download-btn">📥 Télécharger PDF</button>
             <button class="download-btn" onclick="printInvoice()" id="print-btn">🖨️ Imprimer</button>
+            <button class="download-btn" onclick="generatePDFWithLibraries()" id="pdf-lib-btn" style="background: linear-gradient(135deg, #dc3545, #c82333);">🔥 PDF Direct</button>
             <a href="https://enixis-corp.vercel.app" class="download-btn secondary-btn">🏠 Retour au site</a>
             <div id="status-message" style="margin-top: 15px; font-size: 14px;">
                 <p style="color: #666; font-size: 12px; margin: 5px 0;">
@@ -580,6 +573,112 @@ export default function handler(req, res) {
             }, 100);
         }
         
+        // Fonction pour générer le PDF avec les bibliothèques JavaScript
+        async function generatePDFWithLibraries() {
+            const statusMessage = document.getElementById('status-message');
+            const pdfLibBtn = document.getElementById('pdf-lib-btn');
+            
+            try {
+                pdfLibBtn.disabled = true;
+                pdfLibBtn.textContent = '⏳ Génération...';
+                statusMessage.innerHTML = '<span style="color: #ffc107;">🔥 Génération PDF avec bibliothèques JavaScript...</span>';
+                
+                // Vérifier que les bibliothèques sont chargées
+                if (typeof html2canvas === 'undefined') {
+                    throw new Error('Bibliothèque html2canvas non chargée');
+                }
+                
+                if (typeof window.jsPDF === 'undefined') {
+                    throw new Error('Bibliothèque jsPDF non chargée');
+                }
+                
+                // Masquer les éléments non nécessaires
+                const downloadSection = document.querySelector('.download-section');
+                const slackBadge = document.getElementById('slack-badge');
+                
+                if (downloadSection) downloadSection.style.display = 'none';
+                if (slackBadge) slackBadge.style.display = 'none';
+                
+                // Capturer la facture en image
+                const invoiceElement = document.getElementById('invoice-document');
+                if (!invoiceElement) {
+                    throw new Error('Élément facture non trouvé');
+                }
+                
+                console.log('📸 Capture de la facture...');
+                statusMessage.innerHTML = '<span style="color: #ffc107;">📸 Capture de la facture en cours...</span>';
+                
+                const canvas = await html2canvas(invoiceElement, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff',
+                    width: invoiceElement.scrollWidth,
+                    height: invoiceElement.scrollHeight,
+                    logging: false,
+                    removeContainer: true
+                });
+                
+                console.log('✅ Capture réussie, génération PDF...');
+                statusMessage.innerHTML = '<span style="color: #ffc107;">✅ Capture réussie, génération du PDF...</span>';
+                
+                // Créer le PDF
+                const { jsPDF } = window.jsPDF;
+                const pdf = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: 'a4',
+                    compress: true
+                });
+                
+                // Calculer les dimensions pour A4
+                const imgWidth = 210; // A4 width in mm
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                // Ajouter l'image au PDF
+                const imgData = canvas.toDataURL('image/png', 0.95);
+                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, '', 'FAST');
+                
+                // Ajouter les métadonnées
+                pdf.setProperties({
+                    title: \`Facture \${invoiceNumber}\`,
+                    subject: 'Facture Enixis Corp',
+                    author: 'Enixis Corp',
+                    creator: 'Enixis Corp - Solutions IA & Optimisation Business'
+                });
+                
+                // Télécharger le PDF
+                const filename = \`Facture_\${invoiceNumber}.pdf\`;
+                pdf.save(filename);
+                
+                console.log('✅ PDF téléchargé:', filename);
+                statusMessage.innerHTML = '<span style="color: #28a745;">✅ PDF téléchargé avec succès !</span>';
+                
+            } catch (error) {
+                console.error('❌ Erreur génération PDF:', error);
+                statusMessage.innerHTML = \`<span style="color: #dc3545;">❌ Erreur: \${error.message}</span>\`;
+                
+                // Fallback vers l'impression classique
+                setTimeout(() => {
+                    statusMessage.innerHTML = '<span style="color: #ffc107;">🔄 Tentative avec l\'impression classique...</span>';
+                    downloadInvoice();
+                }, 2000);
+                
+            } finally {
+                // Restaurer l'affichage
+                const downloadSection = document.querySelector('.download-section');
+                const slackBadge = document.getElementById('slack-badge');
+                
+                if (downloadSection) downloadSection.style.display = 'block';
+                if (slackBadge && (invoiceData || document.querySelector('[data-test-mode]'))) {
+                    slackBadge.style.display = 'block';
+                }
+                
+                pdfLibBtn.disabled = false;
+                pdfLibBtn.textContent = '🔥 PDF Direct';
+            }
+        }
+        
         // Fonction pour formater les montants en F CFA
         function formatFcfa(amount) {
             if (!amount || amount === 0) return '0 F CFA';
@@ -601,39 +700,81 @@ export default function handler(req, res) {
         // Fonction pour remplir les données de la facture
         function populateInvoiceData(data) {
             try {
-                console.log('🔍 Décodage des données:', data.substring(0, 50) + '...');
+                console.log('🔍 Traitement des données de facture...');
+                console.log('📦 Données brutes reçues:', data ? data.substring(0, 100) + '...' : 'null');
                 
-                // Étape 1: Décoder l'URL
-                const urlDecoded = decodeURIComponent(data);
-                console.log('📝 URL décodée:', urlDecoded.substring(0, 100) + '...');
+                let decodedData;
                 
-                // Étape 2: Décoder le base64
-                const base64Decoded = atob(urlDecoded);
-                console.log('🔓 Base64 décodé:', base64Decoded.substring(0, 100) + '...');
-                
-                // Étape 3: Parser le JSON
-                const decodedData = JSON.parse(base64Decoded);
-                console.log('📊 Données JSON:', decodedData);
-                
-                const orderData = decodedData.orderData;
-                if (!orderData) {
-                    throw new Error('orderData manquant dans les données décodées');
+                // Essayer différentes méthodes de décodage
+                if (typeof data === 'string') {
+                    try {
+                        // Méthode 1: Décoder URL puis Base64 puis JSON
+                        const urlDecoded = decodeURIComponent(data);
+                        const base64Decoded = atob(urlDecoded);
+                        decodedData = JSON.parse(base64Decoded);
+                        console.log('✅ Décodage URL->Base64->JSON réussi');
+                    } catch (e1) {
+                        try {
+                            // Méthode 2: Décoder directement Base64 puis JSON
+                            const base64Decoded = atob(data);
+                            decodedData = JSON.parse(base64Decoded);
+                            console.log('✅ Décodage Base64->JSON réussi');
+                        } catch (e2) {
+                            try {
+                                // Méthode 3: Parser directement comme JSON
+                                decodedData = JSON.parse(data);
+                                console.log('✅ Décodage JSON direct réussi');
+                            } catch (e3) {
+                                throw new Error('Impossible de décoder les données: ' + e3.message);
+                            }
+                        }
+                    }
+                } else {
+                    // Si ce n'est pas une string, essayer de l'utiliser directement
+                    decodedData = data;
                 }
                 
-                console.log('👤 Données client:', {
+                console.log('📊 Données décodées:', decodedData);
+                
+                // Vérifier la structure des données
+                let orderData;
+                if (decodedData.orderData) {
+                    orderData = decodedData.orderData;
+                } else if (decodedData.name && decodedData.email) {
+                    // Les données sont directement dans l'objet principal
+                    orderData = decodedData;
+                } else {
+                    throw new Error('Structure de données non reconnue');
+                }
+                
+                console.log('👤 Données client extraites:', {
                     name: orderData.name,
                     email: orderData.email,
                     phone: orderData.phone,
-                    service: orderData.serviceLabel,
-                    price: orderData.finalPrice
+                    service: orderData.serviceLabel || orderData.service,
+                    price: orderData.finalPrice || orderData.price
                 });
                 
+                // Normaliser les données pour compatibilité
+                const normalizedData = {
+                    name: orderData.name || orderData.client_name || 'Client',
+                    email: orderData.email || orderData.client_email || 'email@client.com',
+                    phone: orderData.phone || orderData.client_phone || '+228 XX XX XX XX',
+                    serviceLabel: orderData.serviceLabel || orderData.service || 'Service demandé',
+                    finalPrice: orderData.finalPrice || orderData.price || 0,
+                    basePrice: orderData.basePrice || orderData.finalPrice || orderData.price || 0,
+                    delivery: orderData.delivery || 'standard',
+                    coupon: orderData.coupon || null
+                };
+                
+                console.log('🔄 Données normalisées:', normalizedData);
+                
                 // Calcul des dates selon le délai choisi
-                const createdDate = new Date(decodedData.createdAt);
+                const createdDate = new Date(decodedData.createdAt || Date.now());
                 const validityDate = new Date(createdDate);
                 
                 // Calculer la date de validité selon le délai
-                switch(orderData.delivery) {
+                switch(normalizedData.delivery) {
                     case 'urgent':
                         validityDate.setDate(validityDate.getDate() + 1); // 24h
                         break;
@@ -656,16 +797,16 @@ export default function handler(req, res) {
                 const invoiceTimeEl = document.getElementById('invoice-time');
                 
                 if (invoiceDateEl) {
-                    invoiceDateEl.textContent = formatDate(decodedData.createdAt);
-                    console.log('✅ Date facture mise à jour:', formatDate(decodedData.createdAt));
+                    invoiceDateEl.textContent = formatDate(createdDate);
+                    console.log('✅ Date facture mise à jour:', formatDate(createdDate));
                 }
                 if (validityDateEl) {
                     validityDateEl.textContent = formatDate(validityDate);
                     console.log('✅ Date validité mise à jour:', formatDate(validityDate));
                 }
                 if (invoiceTimeEl) {
-                    invoiceTimeEl.textContent = formatTime(decodedData.createdAt);
-                    console.log('✅ Heure mise à jour:', formatTime(decodedData.createdAt));
+                    invoiceTimeEl.textContent = formatTime(createdDate);
+                    console.log('✅ Heure mise à jour:', formatTime(createdDate));
                 }
                 
                 // Informations client avec vérification
@@ -674,16 +815,16 @@ export default function handler(req, res) {
                 const clientPhoneEl = document.getElementById('client-phone');
                 
                 if (clientNameEl) {
-                    clientNameEl.textContent = orderData.name || 'Non spécifié';
-                    console.log('✅ Nom client mis à jour:', orderData.name);
+                    clientNameEl.textContent = normalizedData.name;
+                    console.log('✅ Nom client mis à jour:', normalizedData.name);
                 }
                 if (clientEmailEl) {
-                    clientEmailEl.textContent = orderData.email || 'Non spécifié';
-                    console.log('✅ Email client mis à jour:', orderData.email);
+                    clientEmailEl.textContent = normalizedData.email;
+                    console.log('✅ Email client mis à jour:', normalizedData.email);
                 }
                 if (clientPhoneEl) {
-                    clientPhoneEl.textContent = orderData.phone || 'Non spécifié';
-                    console.log('✅ Téléphone client mis à jour:', orderData.phone);
+                    clientPhoneEl.textContent = normalizedData.phone;
+                    console.log('✅ Téléphone client mis à jour:', normalizedData.phone);
                 }
                 
                 // Informations service avec vérification
@@ -691,14 +832,14 @@ export default function handler(req, res) {
                 const serviceDelayEl = document.getElementById('service-delay');
                 
                 if (serviceNameEl) {
-                    serviceNameEl.textContent = orderData.serviceLabel || 'Service non spécifié';
-                    console.log('✅ Service mis à jour:', orderData.serviceLabel);
+                    serviceNameEl.textContent = normalizedData.serviceLabel;
+                    console.log('✅ Service mis à jour:', normalizedData.serviceLabel);
                 }
                 
-                const delayText = orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
-                                 orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
-                                 orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
-                                 orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
+                const delayText = normalizedData.delivery === 'urgent' ? 'Urgent (24h)' : 
+                                 normalizedData.delivery === 'short' ? 'Court terme (3-7j)' : 
+                                 normalizedData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                                 normalizedData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
                 
                 if (serviceDelayEl) {
                     serviceDelayEl.textContent = delayText;
@@ -706,8 +847,8 @@ export default function handler(req, res) {
                 }
                 
                 // Calcul des prix avec gestion des codes promotionnels
-                const basePrice = orderData.basePrice || orderData.finalPrice || 0;
-                const finalPrice = orderData.finalPrice || 0;
+                const basePrice = normalizedData.basePrice;
+                const finalPrice = normalizedData.finalPrice;
                 const hasDiscount = basePrice > finalPrice;
                 
                 // Tableau avec vérification
@@ -717,11 +858,11 @@ export default function handler(req, res) {
                 const itemTotalEl = document.getElementById('item-total');
                 
                 if (itemDescEl) {
-                    itemDescEl.textContent = orderData.serviceLabel || 'Service';
-                    console.log('✅ Description item mise à jour:', orderData.serviceLabel);
+                    itemDescEl.textContent = normalizedData.serviceLabel;
+                    console.log('✅ Description item mise à jour:', normalizedData.serviceLabel);
                 }
                 if (itemDateEl) {
-                    itemDateEl.textContent = formatDate(decodedData.createdAt);
+                    itemDateEl.textContent = formatDate(createdDate);
                     console.log('✅ Date item mise à jour');
                 }
                 if (itemUnitPriceEl) {
@@ -735,8 +876,8 @@ export default function handler(req, res) {
                 
                 // Gestion des remises (codes promotionnels)
                 const totalsContainer = document.querySelector('.invoice-totals');
-                if (hasDiscount && orderData.coupon && totalsContainer) {
-                    console.log('💰 Application de la remise:', orderData.coupon);
+                if (hasDiscount && normalizedData.coupon && totalsContainer) {
+                    console.log('💰 Application de la remise:', normalizedData.coupon);
                     const discountAmount = basePrice - finalPrice;
                     const discountHtml = \`
                         <div class="total-row">
@@ -744,7 +885,7 @@ export default function handler(req, res) {
                             <span>\${formatFcfa(basePrice)}</span>
                         </div>
                         <div class="total-row" style="color: #dc3545;">
-                            <span>Remise (\${orderData.coupon.code} - \${orderData.coupon.percent}%)</span>
+                            <span>Remise (\${normalizedData.coupon.code} - \${normalizedData.coupon.percent}%)</span>
                             <span>-\${formatFcfa(discountAmount)}</span>
                         </div>
                     \`;
@@ -769,11 +910,11 @@ export default function handler(req, res) {
                 const paymentStatusEl = document.getElementById('payment-status');
                 
                 if (paymentMethodEl) {
-                    paymentMethodEl.textContent = decodedData.paymentMethod || 'Non spécifié';
+                    paymentMethodEl.textContent = decodedData.paymentMethod || 'Paiement validé';
                     console.log('✅ Méthode paiement mise à jour:', decodedData.paymentMethod);
                 }
                 if (paymentStatusEl) {
-                    paymentStatusEl.textContent = '✅ Payé le ' + formatDate(decodedData.createdAt) + ' à ' + formatTime(decodedData.createdAt);
+                    paymentStatusEl.textContent = '✅ Payé le ' + formatDate(createdDate) + ' à ' + formatTime(createdDate);
                     console.log('✅ Statut paiement mis à jour');
                 }
                 
@@ -817,28 +958,56 @@ export default function handler(req, res) {
                 
                 // Détecter le type d'appareil
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
                 console.log('📱 Appareil mobile détecté:', isMobile);
+                console.log('🍎 Appareil iOS détecté:', isIOS);
                 
-                if (isMobile) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">📱 Mobile : Menu navigateur > Imprimer > Enregistrer PDF</span>';
+                // Instructions spécifiques selon l'appareil
+                if (isIOS) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">🍎 iOS : Appuyez sur Partager > Imprimer > Pincer pour zoomer > Partager > Enregistrer dans Fichiers</span>';
+                } else if (isMobile) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">📱 Mobile : Menu (⋮) > Imprimer > Enregistrer au format PDF</span>';
                 } else {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">💻 Desktop : Choisissez "Enregistrer au format PDF" dans la boîte d\'impression</span>';
+                    statusMessage.innerHTML = '<span style="color: #28a745;">💻 Desktop : Dans la boîte d\'impression, choisissez "Enregistrer au format PDF"</span>';
                 }
                 
                 // Déclencher l'impression après un court délai
                 setTimeout(() => {
                     console.log('🖨️ Déclenchement de window.print()');
-                    window.print();
+                    
+                    // Essayer différentes méthodes selon le navigateur
+                    try {
+                        window.print();
+                        console.log('✅ window.print() exécuté');
+                    } catch (printError) {
+                        console.error('❌ Erreur window.print():', printError);
+                        
+                        // Fallback : ouvrir dans un nouvel onglet
+                        const printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                            printWindow.document.write(document.documentElement.outerHTML);
+                            printWindow.document.close();
+                            printWindow.print();
+                            console.log('✅ Fallback : impression dans nouvel onglet');
+                        } else {
+                            throw new Error('Impossible d\'ouvrir la fenêtre d\'impression');
+                        }
+                    }
                 }, 500);
                 
                 // Restaurer l'affichage après l'impression
                 setTimeout(() => {
                     console.log('🔄 Restauration de l\'affichage');
                     if (downloadSection) downloadSection.style.display = 'block';
-                    if (slackBadge && invoiceData) slackBadge.style.display = 'block';
+                    if (slackBadge && (invoiceData || document.querySelector('[data-test-mode]'))) {
+                        slackBadge.style.display = 'block';
+                    }
                     
                     downloadBtn.disabled = false;
                     downloadBtn.textContent = '📥 Télécharger PDF';
+                    
+                    // Message de confirmation
+                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
                 }, 2000);
                 
             } catch (error) {
@@ -846,6 +1015,12 @@ export default function handler(req, res) {
                 statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
                 downloadBtn.disabled = false;
                 downloadBtn.textContent = '📥 Télécharger PDF';
+                
+                // Restaurer l'affichage en cas d'erreur
+                const downloadSection = document.querySelector('.download-section');
+                const slackBadge = document.getElementById('slack-badge');
+                if (downloadSection) downloadSection.style.display = 'block';
+                if (slackBadge) slackBadge.style.display = 'block';
             }
         }
         
@@ -881,8 +1056,36 @@ export default function handler(req, res) {
                     statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur décodage: ' + error.message + '</span>';
                 }
             } else {
-                console.log('⚠️ Aucune donnée Slack disponible');
-                statusMessage.innerHTML = '<span style="color: #ffc107;">⚠️ Aucune donnée Slack - Tentative localStorage</span>';
+                console.log('⚠️ Aucune donnée Slack disponible - Utilisation de données de test');
+                statusMessage.innerHTML = '<span style="color: #ffc107;">⚠️ Aucune donnée Slack - Chargement de données de test</span>';
+                
+                // Créer des données de test réalistes
+                const testData = {
+                    invoiceNumber: invoiceNumber,
+                    orderData: {
+                        name: "Client Test",
+                        email: "client.test@example.com",
+                        phone: "+228 90 12 34 56",
+                        serviceLabel: "✍️ Création de CV sur mesure + Lettre",
+                        finalPrice: 7000,
+                        basePrice: 7000,
+                        delivery: "short"
+                    },
+                    paymentMethod: "Test - Données de démonstration",
+                    createdAt: new Date().toISOString()
+                };
+                
+                console.log('🧪 Utilisation de données de test:', testData);
+                
+                // Appliquer les données de test
+                if (populateInvoiceData(testData)) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Données de test chargées - Facture prête pour téléchargement</span>';
+                    console.log('✅ Données de test appliquées avec succès');
+                } else {
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du chargement des données de test</span>';
+                }
+                
+                return; // Sortir ici pour éviter le fallback localStorage
             }
             
             // Fallback: essayer localStorage

@@ -1149,8 +1149,16 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       // URL vers la page de téléchargement de facture avec données encodées
       const invoiceDataEncoded = btoa(JSON.stringify({
         invoiceNumber: invoiceNumber,
-        pdfBase64: pdfBase64,
-        orderData: orderData,
+        orderData: {
+          name: orderData.name,
+          email: orderData.email,
+          phone: orderData.phone,
+          serviceLabel: orderData.serviceLabel,
+          finalPrice: orderData.finalPrice,
+          basePrice: orderData.basePrice || orderData.finalPrice,
+          delivery: orderData.delivery,
+          coupon: orderData.coupon
+        },
         paymentMethod: paymentMethod,
         createdAt: new Date().toISOString()
       }));
