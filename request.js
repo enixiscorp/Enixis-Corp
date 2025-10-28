@@ -104,44 +104,7 @@ function getSlackWebhookUrl() {
   return fromEnv.trim();
 }
 
-// Fonction pour générer une URL de facture optimisée pour la compatibilité mobile
-function generateOptimizedInvoiceUrl(invoiceNumber, data) {
-  const baseUrl = 'https://enixis-corp.vercel.app/api/invoice';
-  
-  // Calculer la longueur de l'URL traditionnelle
-  const traditionalParams = new URLSearchParams({
-    invoice: invoiceNumber,
-    name: data.name,
-    email: data.email,
-    phone: data.phone,
-    service: data.service,
-    price: data.price.toString(),
-    delivery: data.delivery,
-    payment: data.payment
-  });
-  const traditionalUrl = `${baseUrl}?${traditionalParams.toString()}`;
-  
-  // Si l'URL traditionnelle est trop longue (>1024 caractères), utiliser la version optimisée
-  if (traditionalUrl.length > 1024) {
-    console.log(`⚠️ URL traditionnelle trop longue (${traditionalUrl.length} caractères), utilisation de la version optimisée`);
-    
-    try {
-      // Encoder les données en Base64 pour une URL plus courte
-      const encodedData = btoa(JSON.stringify(data));
-      const optimizedUrl = `${baseUrl}?invoice=${invoiceNumber}&data=${encodedData}`;
-      
-      console.log(`✅ URL optimisée générée (${optimizedUrl.length} caractères, réduction de ${((traditionalUrl.length - optimizedUrl.length) / traditionalUrl.length * 100).toFixed(1)}%)`);
-      return optimizedUrl;
-    } catch (error) {
-      console.error('❌ Erreur génération URL optimisée:', error);
-      // Fallback vers l'URL traditionnelle même si elle est longue
-      return traditionalUrl;
-    }
-  } else {
-    console.log(`✅ URL traditionnelle utilisée (${traditionalUrl.length} caractères)`);
-    return traditionalUrl;
-  }
-}
+
 
 function formatFcfa(amount) {
   if (amount === null || amount === undefined || amount === '') return 'Tarif à définir';
@@ -1117,8 +1080,10 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
   `.trim();
 
   try {
-    // Créer la capture de facture pour téléchargement
-    const invoiceImageUrl = await createInvoiceDownloadableImage(invoiceBase64, invoiceNumber);
+    // Créer l'URL de la facture
+    const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
+    
+    console.log('🔍 URL facture générée:', invoiceUrl);
     
     const payload = {
       text: slackText,
@@ -1179,67 +1144,32 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
           ],
           footer: 'Enixis Corp - Gestion de Commande',
           ts: Math.floor(Date.now() / 1000)
+        },
+        // Attachment pour la facture PDF
+        {
+          color: 'good',
+          title: '📄 Facture PDF - Téléchargeable',
+          text: `📄 Facture ${invoiceNumber} - Cliquez pour ouvrir et télécharger`,
+          actions: [
+            {
+              type: 'button',
+              text: '📥 Ouvrir PDF',
+              style: 'primary',
+              name: 'open_pdf',
+              value: invoiceNumber,
+              url: invoiceUrl
+            }
+          ],
+          footer: `Facture ${invoiceNumber} - Téléchargeable`,
+          ts: Math.floor(Date.now() / 1000)
         }
       ]
     };
-
-    // Toujours ajouter le lien de téléchargement de facture
-    console.log('🔍 Génération URL facture avec orderData:', orderData);
     
-    // Générer une URL optimisée pour la compatibilité mobile
-    const invoiceUrl = generateOptimizedInvoiceUrl(invoiceNumber, {
-      name: orderData.name || '',
-      email: orderData.email || '',
-      phone: orderData.phone || '',
-      service: orderData.serviceLabel || '',
-      price: orderData.finalPrice || 0,
-      delivery: orderData.delivery || 'standard',
-      payment: paymentMethod
-    });
-    
-    // Créer l'attachment de facture avec ou sans image
-    const invoiceAttachment = {
-      color: 'good',
-      title: '📄 Facture PDF - Téléchargeable',
-      text: `📄 Facture ${invoiceNumber} - Accessible via le lien de téléchargement`,
-      actions: [
-        {
-          type: 'button',
-          text: '📥 Ouvrir PDF',
-          style: 'primary',
-          name: 'open_pdf',
-          value: invoiceNumber,
-          url: invoiceUrl
-        }
-      ],
-      footer: `Facture ${invoiceNumber} - Téléchargeable depuis n'importe quel appareil`,
-      ts: Math.floor(Date.now() / 1000)
-    };
-    
-    // Ajouter l'image si disponible
-    if (invoiceImageUrl) {
-      invoiceAttachment.image_url = invoiceImageUrl;
-      invoiceAttachment.text = `📄 Facture ${invoiceNumber} - Aperçu et téléchargement disponibles`;
-      console.log('✅ Image de facture ajoutée à la notification Slack');
-    } else {
-      console.log('ℹ️ Notification Slack créée sans image (lien de téléchargement disponible)');
-    }
-    
-    payload.attachments.push(invoiceAttachment);
-    
-    // Debug: Vérifier que le bouton PDF est bien ajouté
-    const pdfAttachment = payload.attachments.find(att => att.title && att.title.includes('Facture PDF'));
-    if (pdfAttachment && pdfAttachment.actions && pdfAttachment.actions.length > 0) {
-      console.log('✅ Bouton PDF ajouté à la notification Slack:', pdfAttachment.actions[0]);
-    } else {
-      console.error('❌ Bouton PDF manquant dans la notification Slack');
-    }
-
-    // Debug: Afficher le payload avant envoi
-    console.log('🔍 Payload Slack à envoyer:', JSON.stringify(payload, null, 2));
+    console.log('✅ Bouton PDF ajouté avec URL:', invoiceUrl);
     
     await submitToSlack(payload);
-    console.log('✅ Notification commande en cours avec boutons envoyée');
+    console.log('✅ Notification Slack envoyée avec bouton PDF');
   } catch (error) {
     console.error('❌ Erreur envoi notification commande:', error);
     
