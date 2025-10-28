@@ -14,7 +14,7 @@ export default function handler(req, res) {
   }
 
   try {
-    const { invoice, data, download } = req.query;
+    const { invoice, data, download, name, email, phone, service, price, delivery, payment } = req.query;
     
     if (!invoice) {
       return res.status(400).json({ error: 'Invoice number required' });
@@ -424,8 +424,6 @@ export default function handler(req, res) {
             <h3>📄 Facture ${invoice} - Enixis Corp</h3>
             <p>Cliquez sur le bouton ci-dessous pour télécharger la facture au format PDF</p>
             <button class="download-btn" onclick="downloadInvoice()" id="download-btn">📥 Télécharger PDF</button>
-            <button class="download-btn" onclick="printInvoice()" id="print-btn">🖨️ Imprimer</button>
-            <button class="download-btn" onclick="generatePDFWithLibraries()" id="pdf-lib-btn" style="background: linear-gradient(135deg, #dc3545, #c82333);">🔥 PDF Direct</button>
             <a href="https://enixis-corp.vercel.app" class="download-btn secondary-btn">🏠 Retour au site</a>
             <div id="status-message" style="margin-top: 15px; font-size: 14px;">
                 <p style="color: #666; font-size: 12px; margin: 5px 0;">
@@ -547,6 +545,17 @@ export default function handler(req, res) {
     <script>
         const invoiceNumber = '${invoice}';
         const invoiceData = ${data ? `'${data}'` : 'null'};
+        
+        // Données directes depuis les paramètres URL
+        const directData = {
+            name: '${name || ''}',
+            email: '${email || ''}',
+            phone: '${phone || ''}',
+            service: '${service || ''}',
+            price: '${price || ''}',
+            delivery: '${delivery || ''}',
+            payment: '${payment || ''}'
+        };
         
         // Fonction pour imprimer la facture
         function printInvoice() {
@@ -1032,8 +1041,38 @@ export default function handler(req, res) {
             console.log('Numéro de facture:', invoiceNumber);
             console.log('Données disponibles:', invoiceData ? 'Oui' : 'Non');
             
+            // Vérifier d'abord les données directes depuis l'URL
+            if (directData.name && directData.email) {
+                console.log('🔍 Utilisation des données directes depuis l\'URL...');
+                console.log('📦 Données directes:', directData);
+                
+                // Créer un objet de données compatible
+                const urlData = {
+                    invoiceNumber: invoiceNumber,
+                    orderData: {
+                        name: decodeURIComponent(directData.name),
+                        email: decodeURIComponent(directData.email),
+                        phone: decodeURIComponent(directData.phone),
+                        serviceLabel: decodeURIComponent(directData.service),
+                        finalPrice: parseInt(directData.price) || 0,
+                        basePrice: parseInt(directData.price) || 0,
+                        delivery: directData.delivery || 'standard'
+                    },
+                    paymentMethod: decodeURIComponent(directData.payment) || 'Paiement validé',
+                    createdAt: new Date().toISOString()
+                };
+                
+                if (populateInvoiceData(urlData)) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture personnalisée chargée - Prête pour téléchargement</span>';
+                    console.log('✅ Données URL appliquées avec succès');
+                } else {
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du chargement des données URL</span>';
+                }
+                return;
+            }
+            
             // Si des données de facture sont disponibles dans l'URL (depuis Slack)
-            if (invoiceData && invoiceData !== 'null') {
+            else if (invoiceData && invoiceData !== 'null') {
                 try {
                     console.log('🔍 Traitement des données Slack...');
                     console.log('📦 Données brutes:', invoiceData.substring(0, 100) + '...');

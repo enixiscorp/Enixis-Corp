@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Facture Simple - Enixis Corp</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-title {
+            color: #0A0F2C;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .form-container {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .url-preview {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2196f3;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🧪 Test Facture Personnalisée - Enixis Corp</h1>
+        
+        <p>Testez la génération de factures avec vos propres données :</p>
+        
+        <div class="form-container">
+            <h3>📋 Saisissez vos données de test</h3>
+            
+            <div class="form-group">
+                <label for="test-name">Nom complet :</label>
+                <input type="text" id="test-name" value="Jean DUPONT" placeholder="Votre nom complet">
+            </div>
+            
+            <div class="form-group">
+                <label for="test-email">Email :</label>
+                <input type="email" id="test-email" value="jean.dupont@example.com" placeholder="votre@email.com">
+            </div>
+            
+            <div class="form-group">
+                <label for="test-phone">Téléphone :</label>
+                <input type="tel" id="test-phone" value="+228 90 12 34 56" placeholder="+228 XX XX XX XX">
+            </div>
+            
+            <div class="form-group">
+                <label for="test-service">Service :</label>
+                <select id="test-service">
+                    <option value="✍️ Création de CV sur mesure + Lettre">✍️ Création de CV sur mesure + Lettre</option>
+                    <option value="🧑‍💼 Personal Branding & LinkedIn">🧑‍💼 Personal Branding & LinkedIn</option>
+                    <option value="🎓 Formation Coaching Emploi">🎓 Formation Coaching Emploi</option>
+                    <option value="🤖 Formation IA">🤖 Formation IA</option>
+                    <option value="🌐 Création de Site Web">🌐 Création de Site Web</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="test-price">Prix (F CFA) :</label>
+                <input type="number" id="test-price" value="7000" placeholder="0">
+            </div>
+            
+            <div class="form-group">
+                <label for="test-delivery">Délai :</label>
+                <select id="test-delivery">
+                    <option value="urgent">🚨 Urgent (24h)</option>
+                    <option value="short" selected>⏳ Court terme (3-7j)</option>
+                    <option value="medium">📅 Moyen terme (2-4 sem.)</option>
+                    <option value="long">🕰️ Long terme (1-6 mois)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="test-payment">Méthode de paiement :</label>
+                <select id="test-payment">
+                    <option value="Flooz">Flooz</option>
+                    <option value="Mixx by Yas">Mixx by Yas</option>
+                    <option value="Cryptomonnaie">Cryptomonnaie</option>
+                    <option value="Test" selected>Test - Démonstration</option>
+                </select>
+            </div>
+            
+            <button onclick="generateInvoiceUrl()" class="test-button">
+                🚀 Générer la Facture Personnalisée
+            </button>
+        </div>
+        
+        <div id="url-container" style="display: none;">
+            <h3>🔗 URL de la Facture Générée</h3>
+            <div class="url-preview" id="generated-url"></div>
+            <a href="#" id="open-invoice" class="test-button" target="_blank">
+                📄 Ouvrir la Facture
+            </a>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2 class="test-title">🎯 Tests Prédéfinis</h2>
+        <p>Ou testez avec des exemples prédéfinis :</p>
+        
+        <a href="/api/invoice?invoice=TEST_CV_001&name=Marie%20MARTIN&email=marie.martin@example.com&phone=%2B228%2090%2012%2034%2056&service=%E2%9C%8D%EF%B8%8F%20Cr%C3%A9ation%20de%20CV%20sur%20mesure%20%2B%20Lettre&price=7000&delivery=short&payment=Flooz" 
+           class="test-button" target="_blank">
+            👩‍💼 Test CV - Marie MARTIN
+        </a>
+        
+        <a href="/api/invoice?invoice=TEST_LINKEDIN_002&name=Paul%20BERNARD&email=paul.bernard@example.com&phone=%2B228%2091%2023%2045%2067&service=%F0%9F%A7%91%E2%80%8D%F0%9F%92%BC%20Personal%20Branding%20%26%20LinkedIn&price=15000&delivery=medium&payment=Mixx%20by%20Yas" 
+           class="test-button" target="_blank">
+            🧑‍💼 Test LinkedIn - Paul BERNARD
+        </a>
+        
+        <a href="/api/invoice?invoice=TEST_FORMATION_003&name=Sophie%20KOUASSI&email=sophie.kouassi@example.com&phone=%2B228%2092%2034%2056%2078&service=%F0%9F%A4%96%20Formation%20IA&price=5000&delivery=urgent&payment=Cryptomonnaie" 
+           class="test-button" target="_blank">
+            🤖 Test Formation IA - Sophie KOUASSI
+        </a>
+    </div>
+    
+    <div class="test-container">
+        <h2 class="test-title">✅ Vérifications à Effectuer</h2>
+        <ul>
+            <li><strong>Données personnalisées</strong> : Vérifiez que le nom, email, téléphone s'affichent correctement</li>
+            <li><strong>Service correct</strong> : Le service choisi doit apparaître dans la facture</li>
+            <li><strong>Prix correct</strong> : Le montant doit correspondre à celui saisi</li>
+            <li><strong>Dates calculées</strong> : Les dates doivent être générées automatiquement</li>
+            <li><strong>Téléchargement PDF</strong> : Le bouton "📥 Télécharger PDF" doit fonctionner</li>
+            <li><strong>Logo Enixis Corp</strong> : Le logo doit s'afficher (pas juste "EC")</li>
+        </ul>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #ffc107;">
+            <strong>💡 Astuce :</strong> Ouvrez F12 → Console pour voir les logs de diagnostic détaillés
+        </div>
+    </div>
+    
+    <script>
+        function generateInvoiceUrl() {
+            const name = document.getElementById('test-name').value;
+            const email = document.getElementById('test-email').value;
+            const phone = document.getElementById('test-phone').value;
+            const service = document.getElementById('test-service').value;
+            const price = document.getElementById('test-price').value;
+            const delivery = document.getElementById('test-delivery').value;
+            const payment = document.getElementById('test-payment').value;
+            
+            // Validation simple
+            if (!name || !email || !phone || !service || !price) {
+                alert('Veuillez remplir tous les champs obligatoires');
+                return;
+            }
+            
+            // Générer un numéro de facture unique
+            const timestamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const random = Math.floor(Math.random() * 1000);
+            const invoiceNumber = `TEST_${timestamp}_${random}`;
+            
+            // Construire l'URL avec les paramètres
+            const baseUrl = '/api/invoice';
+            const params = new URLSearchParams({
+                invoice: invoiceNumber,
+                name: name,
+                email: email,
+                phone: phone,
+                service: service,
+                price: price,
+                delivery: delivery,
+                payment: payment
+            });
+            
+            const fullUrl = `${baseUrl}?${params.toString()}`;
+            
+            // Afficher l'URL générée
+            document.getElementById('generated-url').textContent = fullUrl;
+            document.getElementById('open-invoice').href = fullUrl;
+            document.getElementById('url-container').style.display = 'block';
+            
+            // Faire défiler vers l'URL
+            document.getElementById('url-container').scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('🔗 URL de facture générée:', fullUrl);
+        }
+        
+        // Auto-remplir avec des données aléatoires
+        function randomizeData() {
+            const names = ['Jean DUPONT', 'Marie MARTIN', 'Paul BERNARD', 'Sophie KOUASSI', 'Ahmed TRAORE'];
+            const domains = ['example.com', 'test.fr', 'demo.org'];
+            
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            const randomEmail = randomName.toLowerCase().replace(' ', '.') + '@' + domains[Math.floor(Math.random() * domains.length)];
+            
+            document.getElementById('test-name').value = randomName;
+            document.getElementById('test-email').value = randomEmail;
+        }
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🧪 Page de test chargée');
+            console.log('📋 Prêt pour générer des factures personnalisées');
+        });
+    </script>
+</body>
+</html>

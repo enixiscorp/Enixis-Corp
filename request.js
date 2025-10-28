@@ -1162,7 +1162,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
         paymentMethod: paymentMethod,
         createdAt: new Date().toISOString()
       }));
-      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&data=${encodeURIComponent(invoiceDataEncoded)}`;
+      // Créer l'URL avec les données directes pour simplifier
+      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name)}&email=${encodeURIComponent(orderData.email)}&phone=${encodeURIComponent(orderData.phone)}&service=${encodeURIComponent(orderData.serviceLabel)}&price=${orderData.finalPrice}&delivery=${orderData.delivery}&payment=${encodeURIComponent(paymentMethod)}`;
       
       payload.attachments.push({
         color: 'good',
