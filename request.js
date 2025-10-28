@@ -1146,8 +1146,15 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
 
     // Ajouter la capture de facture avec lien de téléchargement si disponible
     if (invoiceImageUrl && invoiceBase64) {
-      // URL vers la page de téléchargement de facture
-      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}`;
+      // URL vers la page de téléchargement de facture avec données encodées
+      const invoiceDataEncoded = btoa(JSON.stringify({
+        invoiceNumber: invoiceNumber,
+        pdfBase64: pdfBase64,
+        orderData: orderData,
+        paymentMethod: paymentMethod,
+        createdAt: new Date().toISOString()
+      }));
+      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&data=${encodeURIComponent(invoiceDataEncoded)}`;
       
       payload.attachments.push({
         color: 'good',
