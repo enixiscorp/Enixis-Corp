@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Système de Factures - Enixis Corp</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5;
+        }
+        .container { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn { 
+            background: #28a745; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover { background: #218838; }
+        .btn.secondary { background: #007bff; }
+        .btn.secondary:hover { background: #0056b3; }
+        .invoice-list { 
+            background: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin: 10px 0;
+        }
+        .invoice-item {
+            padding: 10px;
+            border: 1px solid #ddd;
+            margin: 5px 0;
+            border-radius: 5px;
+            background: white;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Système de Factures</h1>
+        <p>Cette page permet de tester le système de stockage et de récupération des factures.</p>
+        
+        <h2>📋 Actions</h2>
+        <button class="btn" onclick="listStoredInvoices()">📄 Lister les factures stockées</button>
+        <button class="btn secondary" onclick="clearAllInvoices()">🗑️ Vider le stockage</button>
+        <button class="btn secondary" onclick="testDownload()">📥 Test téléchargement</button>
+        
+        <h2>📊 Factures Stockées</h2>
+        <div id="invoices-list" class="invoice-list">
+            <p>Cliquez sur "Lister les factures stockées" pour voir les factures disponibles.</p>
+        </div>
+        
+        <h2>📝 Journal</h2>
+        <div id="log" class="log"></div>
+        
+        <h2>🔗 Liens Utiles</h2>
+        <a href="demande.html" class="btn">📝 Créer une nouvelle commande</a>
+        <a href="index.html" class="btn secondary">🏠 Retour à l'accueil</a>
+    </div>
+    
+    <script>
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}<br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            console.log(message);
+        }
+        
+        function listStoredInvoices() {
+            try {
+                const invoicesList = JSON.parse(localStorage.getItem('enixis_invoices_list') || '[]');
+                const listEl = document.getElementById('invoices-list');
+                
+                if (invoicesList.length === 0) {
+                    listEl.innerHTML = '<p>❌ Aucune facture stockée trouvée.</p>';
+                    log('Aucune facture trouvée dans localStorage');
+                    return;
+                }
+                
+                let html = `<p>✅ ${invoicesList.length} facture(s) trouvée(s) :</p>`;
+                
+                invoicesList.forEach(invoiceNumber => {
+                    const storageKey = `enixis_invoice_${invoiceNumber}`;
+                    const invoiceData = localStorage.getItem(storageKey);
+                    
+                    if (invoiceData) {
+                        const invoice = JSON.parse(invoiceData);
+                        html += `
+                            <div class="invoice-item">
+                                <strong>📄 ${invoiceNumber}</strong><br>
+                                <small>Client: ${invoice.clientInfo.name}</small><br>
+                                <small>Service: ${invoice.serviceInfo.label}</small><br>
+                                <small>Montant: ${new Intl.NumberFormat('fr-FR').format(invoice.serviceInfo.amount)} F CFA</small><br>
+                                <small>Date: ${new Date(invoice.createdAt).toLocaleString('fr-FR')}</small><br>
+                                <button class="btn" onclick="downloadInvoice('${invoiceNumber}')">📥 Télécharger</button>
+                                <button class="btn secondary" onclick="viewInvoiceUrl('${invoiceNumber}')">🔗 Voir URL</button>
+                            </div>
+                        `;
+                    }
+                });
+                
+                listEl.innerHTML = html;
+                log(`${invoicesList.length} factures listées`);
+                
+            } catch (error) {
+                log(`❌ Erreur listage factures: ${error.message}`);
+            }
+        }
+        
+        function downloadInvoice(invoiceNumber) {
+            try {
+                const storageKey = `enixis_invoice_${invoiceNumber}`;
+                const invoiceData = localStorage.getItem(storageKey);
+                
+                if (!invoiceData) {
+                    log(`❌ Facture ${invoiceNumber} non trouvée`);
+                    return;
+                }
+                
+                const invoice = JSON.parse(invoiceData);
+                const pdfDataUrl = `data:application/pdf;base64,${invoice.pdfBase64}`;
+                
+                const link = document.createElement('a');
+                link.href = pdfDataUrl;
+                link.download = `Facture_${invoiceNumber}.pdf`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                log(`✅ Téléchargement facture ${invoiceNumber} déclenché`);
+                
+            } catch (error) {
+                log(`❌ Erreur téléchargement ${invoiceNumber}: ${error.message}`);
+            }
+        }
+        
+        function viewInvoiceUrl(invoiceNumber) {
+            const url = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}`;
+            window.open(url, '_blank');
+            log(`🔗 Ouverture URL facture ${invoiceNumber}`);
+        }
+        
+        function clearAllInvoices() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer toutes les factures stockées ?')) {
+                try {
+                    const invoicesList = JSON.parse(localStorage.getItem('enixis_invoices_list') || '[]');
+                    
+                    invoicesList.forEach(invoiceNumber => {
+                        localStorage.removeItem(`enixis_invoice_${invoiceNumber}`);
+                    });
+                    
+                    localStorage.removeItem('enixis_invoices_list');
+                    
+                    document.getElementById('invoices-list').innerHTML = '<p>🗑️ Toutes les factures ont été supprimées.</p>';
+                    log(`🗑️ ${invoicesList.length} factures supprimées`);
+                    
+                } catch (error) {
+                    log(`❌ Erreur suppression: ${error.message}`);
+                }
+            }
+        }
+        
+        function testDownload() {
+            // Créer une facture de test
+            const testInvoice = {
+                invoiceNumber: 'TEST_' + Date.now(),
+                pdfBase64: 'JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVGl0bGUgKFRlc3QgUERGKQovQ3JlYXRvciAoVGVzdCkKL1Byb2R1Y2VyIChUZXN0KQovQ3JlYXRpb25EYXRlIChEOjIwMjMxMDI3KQo+PgplbmRvYmoKMiAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwovUGFnZXMgMyAwIFIKPj4KZW5kb2JqCjMgMCBvYmoKPDwKL1R5cGUgL1BhZ2VzCi9LaWRzIFs0IDAgUl0KL0NvdW50IDEKL01lZGlhQm94IFswIDAgNjEyIDc5Ml0KPj4KZW5kb2JqCjQgMCBvYmoKPDwKL1R5cGUgL1BhZ2UKL1BhcmVudCAzIDAgUgovUmVzb3VyY2VzIDw8Ci9Gb250IDw8Ci9GMSA1IDAgUgo+Pgo+PgovTWVkaWFCb3ggWzAgMCA2MTIgNzkyXQovQ29udGVudHMgNiAwIFIKPj4KZW5kb2JqCjUgMCBvYmoKPDwKL1R5cGUgL0ZvbnQKL1N1YnR5cGUgL1R5cGUxCi9CYXNlRm9udCAvSGVsdmV0aWNhCj4+CmVuZG9iago2IDAgb2JqCjw8Ci9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCi9GMSAxMiBUZgoxMDAgNzAwIFRkCihUZXN0IFBERikgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagp4cmVmCjAgNwowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDEyNCAwMDAwMCBuIAowMDAwMDAwMTcxIDAwMDAwIG4gCjAwMDAwMDAyMjggMDAwMDAgbiAKMDAwMDAwMDM3NiAwMDAwMCBuIAowMDAwMDAwNDQ1IDAwMDAwIG4gCnRyYWlsZXIKPDwKL1NpemUgNwovUm9vdCAyIDAgUgovSW5mbyAxIDAgUgo+PgpzdGFydHhyZWYKNTM5CiUlRU9G',
+                orderData: { name: 'Test Client', email: 'test@example.com', phone: '+228 00 00 00 00' },
+                paymentMethod: 'Test',
+                createdAt: new Date().toISOString(),
+                clientInfo: { name: 'Test Client', email: 'test@example.com', phone: '+228 00 00 00 00' },
+                serviceInfo: { label: 'Service de test', amount: 10000, delivery: 'test' }
+            };
+            
+            // Stocker la facture de test
+            localStorage.setItem(`enixis_invoice_${testInvoice.invoiceNumber}`, JSON.stringify(testInvoice));
+            
+            let invoicesList = JSON.parse(localStorage.getItem('enixis_invoices_list') || '[]');
+            invoicesList.push(testInvoice.invoiceNumber);
+            localStorage.setItem('enixis_invoices_list', JSON.stringify(invoicesList));
+            
+            log(`✅ Facture de test créée: ${testInvoice.invoiceNumber}`);
+            
+            // Tester le téléchargement
+            setTimeout(() => {
+                downloadInvoice(testInvoice.invoiceNumber);
+            }, 500);
+        }
+        
+        // Charger les factures au démarrage
+        window.addEventListener('load', () => {
+            log('🚀 Page de test chargée');
+            listStoredInvoices();
+        });
+    </script>
+</body>
+</html>

@@ -1146,13 +1146,13 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
 
     // Ajouter la capture de facture avec lien de téléchargement si disponible
     if (invoiceImageUrl && invoiceBase64) {
-      // Créer une page temporaire pour le PDF
-      const pdfPageUrl = await createTemporaryPDFPage(invoiceBase64, invoiceNumber);
+      // URL vers la page de téléchargement de facture
+      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}`;
       
       payload.attachments.push({
         color: 'good',
         title: '📄 Facture PDF - Téléchargeable',
-        text: `📄 Facture ${invoiceNumber} - Cliquez sur le lien ci-dessous pour accéder au PDF`,
+        text: `📄 Facture ${invoiceNumber} - Stockée dans le navigateur client et accessible via le lien`,
         image_url: invoiceImageUrl,
         actions: [
           {
@@ -1161,10 +1161,10 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
             style: 'primary',
             name: 'open_pdf',
             value: invoiceNumber,
-            url: pdfPageUrl || `https://enixis-corp.vercel.app/demande.html?invoice=${invoiceNumber}`
+            url: invoiceUrl
           }
         ],
-        footer: `Facture ${invoiceNumber} - Cliquez sur "Ouvrir PDF" pour télécharger`,
+        footer: `Facture ${invoiceNumber} - Stockée localement + accessible via URL`,
         ts: Math.floor(Date.now() / 1000)
       });
     }
@@ -1645,6 +1645,103 @@ function showBlinkingCompleteButton() {
     sessionStorage.setItem('orderCompleted', 'true');
     window.location.href = 'index.html#success';
   });
+}
+
+// Fonction pour stocker la facture dans le localStorage
+async function storeInvoiceInLocalStorage(invoiceNumber, pdfBase64, orderData, paymentMethod) {
+  try {
+    const invoiceData = {
+      invoiceNumber: invoiceNumber,
+      pdfBase64: pdfBase64,
+      orderData: orderData,
+      paymentMethod: paymentMethod,
+      createdAt: new Date().toISOString(),
+      clientInfo: {
+        name: orderData.name,
+        email: orderData.email,
+        phone: orderData.phone
+      },
+      serviceInfo: {
+        label: orderData.serviceLabel,
+        amount: orderData.finalPrice,
+        delivery: orderData.delivery
+      }
+    };
+    
+    // Stocker dans localStorage avec une clé unique
+    const storageKey = `enixis_invoice_${invoiceNumber}`;
+    localStorage.setItem(storageKey, JSON.stringify(invoiceData));
+    
+    // Maintenir une liste des factures pour référence
+    let invoicesList = JSON.parse(localStorage.getItem('enixis_invoices_list') || '[]');
+    if (!invoicesList.includes(invoiceNumber)) {
+      invoicesList.push(invoiceNumber);
+      localStorage.setItem('enixis_invoices_list', JSON.stringify(invoicesList));
+    }
+    
+    console.log('✅ Facture stockée dans localStorage:', invoiceNumber);
+    
+    // Nettoyer les anciennes factures (garder seulement les 10 dernières)
+    if (invoicesList.length > 10) {
+      const oldInvoices = invoicesList.slice(0, invoicesList.length - 10);
+      oldInvoices.forEach(oldInvoice => {
+        localStorage.removeItem(`enixis_invoice_${oldInvoice}`);
+      });
+      invoicesList = invoicesList.slice(-10);
+      localStorage.setItem('enixis_invoices_list', JSON.stringify(invoicesList));
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur stockage facture:', error);
+  }
+}
+
+// Fonction pour récupérer une facture depuis le localStorage
+function getInvoiceFromLocalStorage(invoiceNumber) {
+  try {
+    const storageKey = `enixis_invoice_${invoiceNumber}`;
+    const invoiceData = localStorage.getItem(storageKey);
+    
+    if (invoiceData) {
+      return JSON.parse(invoiceData);
+    }
+    
+    console.warn('⚠️ Facture non trouvée dans localStorage:', invoiceNumber);
+    return null;
+  } catch (error) {
+    console.error('❌ Erreur récupération facture:', error);
+    return null;
+  }
+}
+
+// Fonction pour télécharger une facture depuis le localStorage
+function downloadInvoiceFromStorage(invoiceNumber) {
+  try {
+    const invoiceData = getInvoiceFromLocalStorage(invoiceNumber);
+    
+    if (!invoiceData) {
+      console.error('❌ Facture non trouvée pour téléchargement:', invoiceNumber);
+      return false;
+    }
+    
+    // Créer un lien de téléchargement
+    const pdfDataUrl = `data:application/pdf;base64,${invoiceData.pdfBase64}`;
+    const link = document.createElement('a');
+    link.href = pdfDataUrl;
+    link.download = `Facture_${invoiceNumber}.pdf`;
+    
+    // Déclencher le téléchargement
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    console.log('✅ Téléchargement facture déclenché:', invoiceNumber);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ Erreur téléchargement facture:', error);
+    return false;
+  }
 }
 
 // Fonction pour créer un lien de téléchargement PDF pour Slack
@@ -2675,13 +2772,16 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
     // Convertir le PDF en base64 pour l'envoi
     const pdfBase64 = pdf.output('datauristring').split(',')[1];
     
+    // Stocker la facture dans le localStorage pour accès permanent
+    await storeInvoiceInLocalStorage(invoiceData.invoiceNumber, pdfBase64, orderData, paymentMethod);
+    
     // Envoyer la notification de commande en cours avec boutons interactifs
     await sendOrderInProgressNotification(paymentMethod, orderData, pdfBase64, invoiceData.invoiceNumber);
     
     // Envoyer la facture par email à l'équipe
     await sendInvoiceByEmail(orderData, paymentMethod, pdfBase64, invoiceData.invoiceNumber);
     
-    console.log('✅ Facture générée, notification avec boutons envoyée sur Slack + Email envoyé');
+    console.log('✅ Facture générée, stockée et notification avec boutons envoyée sur Slack + Email envoyé');
     
   } catch (error) {
     console.error('❌ Erreur lors de la génération de facture:', error);
@@ -2695,8 +2795,10 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   }
 }
 
-// Rendre la fonction copyWalletAddress accessible globalement
+// Rendre les fonctions accessibles globalement
 window.copyWalletAddress = copyWalletAddress;
+window.downloadInvoiceFromStorage = downloadInvoiceFromStorage;
+window.getInvoiceFromLocalStorage = getInvoiceFromLocalStorage;
 
 
 // Fonctions pour gérer les changements d'état des boutons Slack (pour future intégration webhook)
