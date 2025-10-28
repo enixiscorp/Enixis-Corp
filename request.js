@@ -104,6 +104,45 @@ function getSlackWebhookUrl() {
   return fromEnv.trim();
 }
 
+// Fonction pour générer une URL de facture optimisée pour la compatibilité mobile
+function generateOptimizedInvoiceUrl(invoiceNumber, data) {
+  const baseUrl = 'https://enixis-corp.vercel.app/api/invoice';
+  
+  // Calculer la longueur de l'URL traditionnelle
+  const traditionalParams = new URLSearchParams({
+    invoice: invoiceNumber,
+    name: data.name,
+    email: data.email,
+    phone: data.phone,
+    service: data.service,
+    price: data.price.toString(),
+    delivery: data.delivery,
+    payment: data.payment
+  });
+  const traditionalUrl = `${baseUrl}?${traditionalParams.toString()}`;
+  
+  // Si l'URL traditionnelle est trop longue (>1024 caractères), utiliser la version optimisée
+  if (traditionalUrl.length > 1024) {
+    console.log(`⚠️ URL traditionnelle trop longue (${traditionalUrl.length} caractères), utilisation de la version optimisée`);
+    
+    try {
+      // Encoder les données en Base64 pour une URL plus courte
+      const encodedData = btoa(JSON.stringify(data));
+      const optimizedUrl = `${baseUrl}?invoice=${invoiceNumber}&data=${encodedData}`;
+      
+      console.log(`✅ URL optimisée générée (${optimizedUrl.length} caractères, réduction de ${((traditionalUrl.length - optimizedUrl.length) / traditionalUrl.length * 100).toFixed(1)}%)`);
+      return optimizedUrl;
+    } catch (error) {
+      console.error('❌ Erreur génération URL optimisée:', error);
+      // Fallback vers l'URL traditionnelle même si elle est longue
+      return traditionalUrl;
+    }
+  } else {
+    console.log(`✅ URL traditionnelle utilisée (${traditionalUrl.length} caractères)`);
+    return traditionalUrl;
+  }
+}
+
 function formatFcfa(amount) {
   if (amount === null || amount === undefined || amount === '') return 'Tarif à définir';
   const n = Number(amount);
@@ -1149,7 +1188,17 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       // URL vers la page de téléchargement de facture avec données encodées
       // Créer l'URL avec les données directes du formulaire
       console.log('🔍 Génération URL facture avec orderData:', orderData);
-      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
+      
+      // Générer une URL optimisée pour la compatibilité mobile
+      const invoiceUrl = generateOptimizedInvoiceUrl(invoiceNumber, {
+        name: orderData.name || '',
+        email: orderData.email || '',
+        phone: orderData.phone || '',
+        service: orderData.serviceLabel || '',
+        price: orderData.finalPrice || 0,
+        delivery: orderData.delivery || 'standard',
+        payment: paymentMethod
+      });
       
       payload.attachments.push({
         color: 'good',
