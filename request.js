@@ -1183,43 +1183,61 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    // Ajouter la capture de facture avec lien de téléchargement si disponible
-    if (invoiceImageUrl && invoiceBase64) {
-      // URL vers la page de téléchargement de facture avec données encodées
-      // Créer l'URL avec les données directes du formulaire
-      console.log('🔍 Génération URL facture avec orderData:', orderData);
-      
-      // Générer une URL optimisée pour la compatibilité mobile
-      const invoiceUrl = generateOptimizedInvoiceUrl(invoiceNumber, {
-        name: orderData.name || '',
-        email: orderData.email || '',
-        phone: orderData.phone || '',
-        service: orderData.serviceLabel || '',
-        price: orderData.finalPrice || 0,
-        delivery: orderData.delivery || 'standard',
-        payment: paymentMethod
-      });
-      
-      payload.attachments.push({
-        color: 'good',
-        title: '📄 Facture PDF - Téléchargeable',
-        text: `📄 Facture ${invoiceNumber} - Stockée dans le navigateur client et accessible via le lien`,
-        image_url: invoiceImageUrl,
-        actions: [
-          {
-            type: 'button',
-            text: '📥 Ouvrir PDF',
-            style: 'primary',
-            name: 'open_pdf',
-            value: invoiceNumber,
-            url: invoiceUrl
-          }
-        ],
-        footer: `Facture ${invoiceNumber} - Stockée localement + accessible via URL`,
-        ts: Math.floor(Date.now() / 1000)
-      });
+    // Toujours ajouter le lien de téléchargement de facture
+    console.log('🔍 Génération URL facture avec orderData:', orderData);
+    
+    // Générer une URL optimisée pour la compatibilité mobile
+    const invoiceUrl = generateOptimizedInvoiceUrl(invoiceNumber, {
+      name: orderData.name || '',
+      email: orderData.email || '',
+      phone: orderData.phone || '',
+      service: orderData.serviceLabel || '',
+      price: orderData.finalPrice || 0,
+      delivery: orderData.delivery || 'standard',
+      payment: paymentMethod
+    });
+    
+    // Créer l'attachment de facture avec ou sans image
+    const invoiceAttachment = {
+      color: 'good',
+      title: '📄 Facture PDF - Téléchargeable',
+      text: `📄 Facture ${invoiceNumber} - Accessible via le lien de téléchargement`,
+      actions: [
+        {
+          type: 'button',
+          text: '📥 Ouvrir PDF',
+          style: 'primary',
+          name: 'open_pdf',
+          value: invoiceNumber,
+          url: invoiceUrl
+        }
+      ],
+      footer: `Facture ${invoiceNumber} - Téléchargeable depuis n'importe quel appareil`,
+      ts: Math.floor(Date.now() / 1000)
+    };
+    
+    // Ajouter l'image si disponible
+    if (invoiceImageUrl) {
+      invoiceAttachment.image_url = invoiceImageUrl;
+      invoiceAttachment.text = `📄 Facture ${invoiceNumber} - Aperçu et téléchargement disponibles`;
+      console.log('✅ Image de facture ajoutée à la notification Slack');
+    } else {
+      console.log('ℹ️ Notification Slack créée sans image (lien de téléchargement disponible)');
+    }
+    
+    payload.attachments.push(invoiceAttachment);
+    
+    // Debug: Vérifier que le bouton PDF est bien ajouté
+    const pdfAttachment = payload.attachments.find(att => att.title && att.title.includes('Facture PDF'));
+    if (pdfAttachment && pdfAttachment.actions && pdfAttachment.actions.length > 0) {
+      console.log('✅ Bouton PDF ajouté à la notification Slack:', pdfAttachment.actions[0]);
+    } else {
+      console.error('❌ Bouton PDF manquant dans la notification Slack');
     }
 
+    // Debug: Afficher le payload avant envoi
+    console.log('🔍 Payload Slack à envoyer:', JSON.stringify(payload, null, 2));
+    
     await submitToSlack(payload);
     console.log('✅ Notification commande en cours avec boutons envoyée');
   } catch (error) {

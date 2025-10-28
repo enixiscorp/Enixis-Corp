@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Flux Complet - Facture PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        
+        .slack-simulation {
+            background: #4a154b;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .slack-attachment {
+            background: #f8f9fa;
+            color: #333;
+            margin: 10px 0;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .slack-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px 0 0;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        
+        .slack-button:hover {
+            background: #218838;
+            color: white;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .json-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            border: 1px solid #dee2e6;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .step-number {
+            background: #007bff;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+        
+        .step.completed .step-number {
+            background: #28a745;
+        }
+        
+        .step.error .step-number {
+            background: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test Flux Complet - Facture PDF</h1>
+        <p>Ce test simule le flux complet depuis la commande jusqu'au téléchargement PDF via Slack.</p>
+        
+        <div class="test-section">
+            <h2>📋 Étapes du Flux</h2>
+            <div id="flow-steps">
+                <div class="step" id="step-1">
+                    <div class="step-number">1</div>
+                    <div>Génération des données de commande</div>
+                </div>
+                <div class="step" id="step-2">
+                    <div class="step-number">2</div>
+                    <div>Création du numéro de facture</div>
+                </div>
+                <div class="step" id="step-3">
+                    <div class="step-number">3</div>
+                    <div>Génération de l'URL optimisée</div>
+                </div>
+                <div class="step" id="step-4">
+                    <div class="step-number">4</div>
+                    <div>Création du payload Slack</div>
+                </div>
+                <div class="step" id="step-5">
+                    <div class="step-number">5</div>
+                    <div>Simulation de l'envoi Slack</div>
+                </div>
+                <div class="step" id="step-6">
+                    <div class="step-number">6</div>
+                    <div>Test du lien de facture</div>
+                </div>
+            </div>
+            <button class="test-button" onclick="runCompleteFlow()">🚀 Lancer Test Complet</button>
+        </div>
+        
+        <div class="test-section">
+            <h2>💬 Simulation Slack</h2>
+            <div id="slack-simulation" style="display: none;">
+                <div class="slack-simulation">
+                    <div id="slack-content"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔧 Détails Techniques</h2>
+            <div id="technical-details"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 Résultats</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentStep = 0;
+        let testData = {};
+        let testResults = [];
+        
+        // Fonctions utilitaires (copiées du système)
+        function generateInvoiceNumber() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() * 100);
+            return `ENIXIS_${year}${month}${day}_${random}`;
+        }
+        
+        function formatFcfa(amount) {
+            if (amount === null || amount === undefined || amount === '') return 'Tarif à définir';
+            const n = Number(amount);
+            if (!isFinite(n) || n <= 0) return 'Tarif à définir';
+            return `${n.toLocaleString('fr-FR')} F CFA`;
+        }
+        
+        function generateOptimizedInvoiceUrl(invoiceNumber, data) {
+            const baseUrl = 'https://enixis-corp.vercel.app/api/invoice';
+            
+            const traditionalParams = new URLSearchParams({
+                invoice: invoiceNumber,
+                name: data.name,
+                email: data.email,
+                phone: data.phone,
+                service: data.service,
+                price: data.price.toString(),
+                delivery: data.delivery,
+                payment: data.payment
+            });
+            const traditionalUrl = `${baseUrl}?${traditionalParams.toString()}`;
+            
+            if (traditionalUrl.length > 1024) {
+                try {
+                    const encodedData = btoa(JSON.stringify(data));
+                    const optimizedUrl = `${baseUrl}?invoice=${invoiceNumber}&data=${encodedData}`;
+                    console.log(`✅ URL optimisée générée (${optimizedUrl.length} caractères)`);
+                    return optimizedUrl;
+                } catch (error) {
+                    console.error('❌ Erreur génération URL optimisée:', error);
+                    return traditionalUrl;
+                }
+            } else {
+                console.log(`✅ URL traditionnelle utilisée (${traditionalUrl.length} caractères)`);
+                return traditionalUrl;
+            }
+        }
+        
+        // Marquer une étape comme complétée
+        function completeStep(stepNumber, success = true) {
+            const step = document.getElementById(`step-${stepNumber}`);
+            if (step) {
+                step.classList.add(success ? 'completed' : 'error');
+            }
+        }
+        
+        // Ajouter un résultat de test
+        function addTestResult(name, status, message, details = null) {
+            testResults.push({ name, status, message, details, timestamp: new Date().toLocaleTimeString() });
+            updateTestResults();
+        }
+        
+        // Mettre à jour l'affichage des résultats
+        function updateTestResults() {
+            const resultsHtml = testResults.map(result => `
+                <div class="result ${result.status}">
+                    <strong>[${result.timestamp}] ${result.name}:</strong> ${result.message}
+                    ${result.details ? `<br><small>${result.details}</small>` : ''}
+                </div>
+            `).join('');
+            
+            document.getElementById('test-results').innerHTML = resultsHtml;
+        }
+        
+        // Flux complet de test
+        async function runCompleteFlow() {
+            testResults = [];
+            currentStep = 0;
+            
+            // Reset des étapes
+            for (let i = 1; i <= 6; i++) {
+                const step = document.getElementById(`step-${i}`);
+                step.classList.remove('completed', 'error');
+            }
+            
+            try {
+                // Étape 1: Génération des données de commande
+                currentStep = 1;
+                testData.orderData = {
+                    name: 'Test Client Complet',
+                    email: 'test@complete.com',
+                    phone: '+22812345678',
+                    serviceLabel: '🎓 Formation Test Complet',
+                    finalPrice: 25000,
+                    delivery: 'standard',
+                    details: 'Test complet du système de facture PDF'
+                };
+                
+                completeStep(1);
+                addTestResult('Données Commande', 'success', 'Données de test générées');
+                
+                // Étape 2: Création du numéro de facture
+                currentStep = 2;
+                testData.invoiceNumber = generateInvoiceNumber();
+                testData.paymentMethod = 'Test Payment Complete';
+                
+                completeStep(2);
+                addTestResult('Numéro Facture', 'success', `Facture: ${testData.invoiceNumber}`);
+                
+                // Étape 3: Génération de l'URL optimisée
+                currentStep = 3;
+                testData.invoiceUrl = generateOptimizedInvoiceUrl(testData.invoiceNumber, {
+                    name: testData.orderData.name,
+                    email: testData.orderData.email,
+                    phone: testData.orderData.phone,
+                    service: testData.orderData.serviceLabel,
+                    price: testData.orderData.finalPrice,
+                    delivery: testData.orderData.delivery,
+                    payment: testData.paymentMethod
+                });
+                
+                completeStep(3);
+                addTestResult('URL Optimisée', 'success', `URL générée (${testData.invoiceUrl.length} caractères)`, testData.invoiceUrl);
+                
+                // Étape 4: Création du payload Slack
+                currentStep = 4;
+                testData.slackPayload = await createSlackPayload();
+                
+                completeStep(4);
+                addTestResult('Payload Slack', 'success', `Payload créé avec ${testData.slackPayload.attachments.length} attachments`);
+                
+                // Étape 5: Simulation de l'envoi Slack
+                currentStep = 5;
+                await simulateSlackSend();
+                
+                completeStep(5);
+                addTestResult('Envoi Slack', 'success', 'Simulation d\'envoi réussie');
+                
+                // Étape 6: Test du lien de facture
+                currentStep = 6;
+                await testInvoiceLink();
+                
+                completeStep(6);
+                addTestResult('Lien Facture', 'success', 'Lien de facture testé');
+                
+                // Afficher les détails techniques
+                displayTechnicalDetails();
+                
+            } catch (error) {
+                completeStep(currentStep, false);
+                addTestResult(`Étape ${currentStep}`, 'error', error.message);
+                console.error('❌ Erreur dans le flux:', error);
+            }
+        }
+        
+        // Créer le payload Slack
+        async function createSlackPayload() {
+            const slackText = `
+🔄 COMMANDE EN COURS - Enixis Corp
+
+📄 Numéro de commande: ${testData.invoiceNumber}
+💳 Méthode de paiement: ${testData.paymentMethod}
+💰 Montant: ${formatFcfa(testData.orderData.finalPrice)}
+
+👤 RÉCAPITULATIF CLIENT:
+• Nom: ${testData.orderData.name}
+• Email: ${testData.orderData.email}
+• Téléphone: ${testData.orderData.phone}
+
+📦 RÉCAPITULATIF COMMANDE:
+• Prestation: ${testData.orderData.serviceLabel}
+• Délai: ${testData.orderData.delivery || 'Non spécifié'}
+• Détails: ${testData.orderData.details}
+
+⏰ Commande créée le: ${new Date().toLocaleString('fr-FR')}
+
+⚠️ Utilisez les boutons ci-dessous pour gérer cette commande:
+            `.trim();
+            
+            const payload = {
+                text: slackText,
+                attachments: [
+                    {
+                        color: '#ff9500',
+                        title: `🔄 COMMANDE EN COURS - ${testData.invoiceNumber}`,
+                        text: `Récapitulatif général avec actions de gestion`,
+                        fields: [
+                            {
+                                title: 'Client',
+                                value: `${testData.orderData.name}\n${testData.orderData.email}\n${testData.orderData.phone}`,
+                                short: true
+                            },
+                            {
+                                title: 'Commande',
+                                value: `${testData.orderData.serviceLabel}\nMontant: ${formatFcfa(testData.orderData.finalPrice)}\nDélai: ${testData.orderData.delivery}`,
+                                short: true
+                            }
+                        ],
+                        actions: [
+                            {
+                                type: 'button',
+                                text: '⏳ PAIEMENT EN ATTENTE',
+                                style: 'danger',
+                                name: 'confirm_payment',
+                                value: testData.invoiceNumber
+                            },
+                            {
+                                type: 'button',
+                                text: '⏳ COMMANDE EN COURS',
+                                style: 'danger',
+                                name: 'finalize_order',
+                                value: testData.invoiceNumber
+                            }
+                        ],
+                        footer: 'Enixis Corp - Gestion de Commande',
+                        ts: Math.floor(Date.now() / 1000)
+                    },
+                    // Attachment pour la facture PDF
+                    {
+                        color: 'good',
+                        title: '📄 Facture PDF - Téléchargeable',
+                        text: `📄 Facture ${testData.invoiceNumber} - Accessible via le lien de téléchargement`,
+                        actions: [
+                            {
+                                type: 'button',
+                                text: '📥 Ouvrir PDF',
+                                style: 'primary',
+                                name: 'open_pdf',
+                                value: testData.invoiceNumber,
+                                url: testData.invoiceUrl
+                            }
+                        ],
+                        footer: `Facture ${testData.invoiceNumber} - Téléchargeable depuis n'importe quel appareil`,
+                        ts: Math.floor(Date.now() / 1000)
+                    }
+                ]
+            };
+            
+            return payload;
+        }
+        
+        // Simuler l'envoi Slack
+        async function simulateSlackSend() {
+            // Afficher la simulation Slack
+            const slackContent = `
+                <div style="margin-bottom: 15px;">
+                    <strong>📦 COMMANDE EN COURS - ${testData.invoiceNumber}</strong>
+                </div>
+                
+                <div class="slack-attachment">
+                    <div style="font-weight: bold; margin-bottom: 10px;">🔄 COMMANDE EN COURS - ${testData.invoiceNumber}</div>
+                    <div style="margin-bottom: 15px;">Récapitulatif général avec actions de gestion</div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                        <div>
+                            <strong>Client</strong><br>
+                            ${testData.orderData.name}<br>
+                            ${testData.orderData.email}<br>
+                            ${testData.orderData.phone}
+                        </div>
+                        <div>
+                            <strong>Commande</strong><br>
+                            ${testData.orderData.serviceLabel}<br>
+                            Montant: ${formatFcfa(testData.orderData.finalPrice)}<br>
+                            Délai: ${testData.orderData.delivery}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <button class="slack-button" style="background: #dc3545;">⏳ PAIEMENT EN ATTENTE</button>
+                        <button class="slack-button" style="background: #dc3545;">⏳ COMMANDE EN COURS</button>
+                    </div>
+                </div>
+                
+                <div class="slack-attachment">
+                    <div style="font-weight: bold; margin-bottom: 10px;">📄 Facture PDF - Téléchargeable</div>
+                    <div style="margin-bottom: 10px;">📄 Facture ${testData.invoiceNumber} - Accessible via le lien de téléchargement</div>
+                    <a href="${testData.invoiceUrl}" class="slack-button" target="_blank">📥 Ouvrir PDF</a>
+                    <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                        Facture ${testData.invoiceNumber} - Téléchargeable depuis n'importe quel appareil
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('slack-content').innerHTML = slackContent;
+            document.getElementById('slack-simulation').style.display = 'block';
+        }
+        
+        // Tester le lien de facture
+        async function testInvoiceLink() {
+            // Vérifier que l'URL est valide
+            if (!testData.invoiceUrl || !testData.invoiceUrl.startsWith('https://')) {
+                throw new Error('URL de facture invalide');
+            }
+            
+            // Vérifier que l'URL contient les bonnes données
+            const url = new URL(testData.invoiceUrl);
+            const hasInvoice = url.searchParams.has('invoice');
+            const hasData = url.searchParams.has('data') || url.searchParams.has('name');
+            
+            if (!hasInvoice) {
+                throw new Error('Numéro de facture manquant dans l\'URL');
+            }
+            
+            if (!hasData) {
+                throw new Error('Données de facture manquantes dans l\'URL');
+            }
+        }
+        
+        // Afficher les détails techniques
+        function displayTechnicalDetails() {
+            const details = {
+                'Numéro de Facture': testData.invoiceNumber,
+                'URL de Facture': testData.invoiceUrl,
+                'Longueur URL': `${testData.invoiceUrl.length} caractères`,
+                'Type URL': testData.invoiceUrl.includes('&data=') ? 'Optimisée (Base64)' : 'Traditionnelle',
+                'Attachments Slack': testData.slackPayload.attachments.length,
+                'Bouton PDF': testData.slackPayload.attachments.some(att => 
+                    att.actions && att.actions.some(action => action.name === 'open_pdf')
+                ) ? 'Présent' : 'Manquant'
+            };
+            
+            const detailsHtml = Object.entries(details).map(([key, value]) => `
+                <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                    <strong>${key}:</strong> ${value}
+                </div>
+            `).join('');
+            
+            document.getElementById('technical-details').innerHTML = detailsHtml;
+        }
+        
+        // Initialisation
+        window.addEventListener('load', function() {
+            console.log('🔍 Test flux complet initialisé');
+        });
+    </script>
+</body>
+</html>
