@@ -534,8 +534,14 @@ export default function handler(req, res) {
         // Fonction pour remplir les données de la facture
         function populateInvoiceData(data) {
             try {
+                console.log('Décodage des données:', data.substring(0, 50) + '...');
                 const decodedData = JSON.parse(atob(decodeURIComponent(data)));
+                console.log('Données décodées:', decodedData);
+                
                 const orderData = decodedData.orderData;
+                if (!orderData) {
+                    throw new Error('orderData manquant dans les données décodées');
+                }
                 
                 // Dates
                 const createdDate = new Date(decodedData.createdAt);
@@ -547,12 +553,12 @@ export default function handler(req, res) {
                 document.getElementById('invoice-time').textContent = formatTime(decodedData.createdAt);
                 
                 // Informations client
-                document.getElementById('client-name').textContent = orderData.name;
-                document.getElementById('client-email').textContent = orderData.email;
-                document.getElementById('client-phone').textContent = orderData.phone;
+                document.getElementById('client-name').textContent = orderData.name || 'Non spécifié';
+                document.getElementById('client-email').textContent = orderData.email || 'Non spécifié';
+                document.getElementById('client-phone').textContent = orderData.phone || 'Non spécifié';
                 
                 // Informations service
-                document.getElementById('service-name').textContent = orderData.serviceLabel;
+                document.getElementById('service-name').textContent = orderData.serviceLabel || 'Service non spécifié';
                 const delayText = orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
                                  orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
                                  orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
@@ -560,21 +566,23 @@ export default function handler(req, res) {
                 document.getElementById('service-delay').textContent = delayText;
                 
                 // Tableau
-                document.getElementById('item-description').textContent = orderData.serviceLabel;
+                document.getElementById('item-description').textContent = orderData.serviceLabel || 'Service';
                 document.getElementById('item-date').textContent = formatDate(decodedData.createdAt);
-                document.getElementById('item-unit-price').textContent = formatFcfa(orderData.finalPrice);
-                document.getElementById('item-total').textContent = formatFcfa(orderData.finalPrice);
+                document.getElementById('item-unit-price').textContent = formatFcfa(orderData.finalPrice || 0);
+                document.getElementById('item-total').textContent = formatFcfa(orderData.finalPrice || 0);
                 
                 // Total
-                document.getElementById('final-total').textContent = formatFcfa(orderData.finalPrice);
+                document.getElementById('final-total').textContent = formatFcfa(orderData.finalPrice || 0);
                 
                 // Paiement
-                document.getElementById('payment-method').textContent = decodedData.paymentMethod;
+                document.getElementById('payment-method').textContent = decodedData.paymentMethod || 'Non spécifié';
                 document.getElementById('payment-status').textContent = '✅ Payé le ' + formatDate(decodedData.createdAt) + ' à ' + formatTime(decodedData.createdAt);
                 
+                console.log('✅ Données remplies avec succès');
                 return true;
             } catch (error) {
                 console.error('Erreur lors du remplissage des données:', error);
+                console.error('Données reçues:', data);
                 return false;
             }
         }
@@ -591,12 +599,18 @@ export default function handler(req, res) {
             // Si des données de facture sont disponibles dans l'URL (depuis Slack)
             if (invoiceData) {
                 try {
-                    // Téléchargement direct via l'API
-                    const downloadUrl = window.location.href + '&download=pdf';
+                    // Construire l'URL de téléchargement correctement
+                    const currentUrl = new URL(window.location.href);
+                    currentUrl.searchParams.set('download', 'pdf');
+                    const downloadUrl = currentUrl.toString();
                     
+                    console.log('URL de téléchargement:', downloadUrl);
+                    
+                    // Créer un lien de téléchargement
                     const link = document.createElement('a');
                     link.href = downloadUrl;
                     link.download = 'Facture_' + invoiceNumber + '.pdf';
+                    link.style.display = 'none';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -607,6 +621,7 @@ export default function handler(req, res) {
                     return;
                 } catch (error) {
                     console.error('Erreur téléchargement direct:', error);
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du téléchargement: ' + error.message + '</span>';
                 }
             }
             
@@ -643,23 +658,31 @@ export default function handler(req, res) {
         window.addEventListener('load', function() {
             const statusMessage = document.getElementById('status-message');
             
+            console.log('Initialisation de la page facture');
+            console.log('Numéro de facture:', invoiceNumber);
+            console.log('Données disponibles:', invoiceData ? 'Oui' : 'Non');
+            
             // Si des données de facture sont disponibles dans l'URL (depuis Slack)
             if (invoiceData) {
                 try {
+                    console.log('Traitement des données Slack...');
+                    
                     // Afficher le badge Slack
                     document.getElementById('slack-badge').style.display = 'block';
                     
                     // Remplir les données de la facture
                     if (populateInvoiceData(invoiceData)) {
                         statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture chargée depuis Slack - Prête pour téléchargement</span>';
+                        console.log('✅ Données Slack chargées avec succès');
                     } else {
                         statusMessage.innerHTML = '<span style="color: #dc3545;">⚠️ Erreur lors du chargement des données</span>';
+                        console.error('❌ Erreur lors du remplissage des données');
                     }
                     
                     return;
                 } catch (error) {
                     console.error('Erreur décodage données Slack:', error);
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du décodage des données Slack</span>';
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du décodage des données Slack: ' + error.message + '</span>';
                 }
             }
             

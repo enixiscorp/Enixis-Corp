@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Facture Slack - Enixis Corp</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #0A0F2C;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .secondary-btn {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+            margin: 15px 0;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Facture Slack - Enixis Corp</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Page de test</strong><br>
+            Cette page permet de tester le système de téléchargement de factures depuis Slack avec des données simulées.
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 Données de Test</h3>
+            <p>Voici les données qui seront utilisées pour simuler une facture :</p>
+            <div class="code-block" id="test-data">
+                Chargement des données de test...
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🔗 Liens de Test</h3>
+            <p>Cliquez sur les liens ci-dessous pour tester le système :</p>
+            
+            <a href="#" id="slack-link" class="test-btn">📱 Simuler accès depuis Slack</a>
+            <a href="/api/invoice?invoice=TEST_20241028_99" class="test-btn secondary-btn">📄 Test sans données</a>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Instructions</strong><br>
+            1. Cliquez sur "Simuler accès depuis Slack" pour tester avec des données<br>
+            2. Vérifiez que la facture se charge correctement<br>
+            3. Testez le téléchargement PDF<br>
+            4. Vérifiez les logs dans la console du navigateur (F12)
+        </div>
+        
+        <div class="test-section">
+            <h3>🔍 Diagnostic</h3>
+            <button class="test-btn" onclick="runDiagnostic()">🔍 Lancer diagnostic</button>
+            <div id="diagnostic-results" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Données de test simulées
+        const testOrderData = {
+            name: "Jean DUPONT",
+            email: "jean.dupont@test.com",
+            phone: "+228 90 12 34 56",
+            serviceLabel: "✍️ Création de CV sur mesure",
+            finalPrice: 7000,
+            delivery: "short"
+        };
+        
+        const testInvoiceData = {
+            invoiceNumber: "ENIXIS_20241028_99",
+            pdfBase64: "JVBERi0xLjQKJcOkw7zDtsO4CjIgMCBvYmoKPDwKL0xlbmd0aCAzIDAgUgo+PgpzdHJlYW0KQNP...", // PDF simulé
+            orderData: testOrderData,
+            paymentMethod: "Flooz",
+            createdAt: new Date().toISOString()
+        };
+        
+        // Afficher les données de test
+        document.getElementById('test-data').textContent = JSON.stringify(testInvoiceData, null, 2);
+        
+        // Créer le lien Slack avec données encodées
+        const encodedData = btoa(JSON.stringify(testInvoiceData));
+        const slackUrl = `/api/invoice?invoice=ENIXIS_20241028_99&data=${encodeURIComponent(encodedData)}`;
+        document.getElementById('slack-link').href = slackUrl;
+        
+        // Fonction de diagnostic
+        function runDiagnostic() {
+            const results = document.getElementById('diagnostic-results');
+            results.innerHTML = '<div style="color: #ffc107;">🔍 Diagnostic en cours...</div>';
+            
+            const diagnostics = [];
+            
+            // Test 1: Vérifier l'encodage/décodage
+            try {
+                const encoded = btoa(JSON.stringify(testInvoiceData));
+                const decoded = JSON.parse(atob(encoded));
+                diagnostics.push('✅ Encodage/décodage base64 : OK');
+            } catch (error) {
+                diagnostics.push('❌ Encodage/décodage base64 : ERREUR - ' + error.message);
+            }
+            
+            // Test 2: Vérifier l'URL encoding
+            try {
+                const encoded = encodeURIComponent(btoa(JSON.stringify(testInvoiceData)));
+                const decoded = decodeURIComponent(encoded);
+                diagnostics.push('✅ URL encoding : OK');
+            } catch (error) {
+                diagnostics.push('❌ URL encoding : ERREUR - ' + error.message);
+            }
+            
+            // Test 3: Vérifier la structure des données
+            if (testInvoiceData.orderData && testInvoiceData.pdfBase64) {
+                diagnostics.push('✅ Structure des données : OK');
+            } else {
+                diagnostics.push('❌ Structure des données : ERREUR - Données manquantes');
+            }
+            
+            // Test 4: Vérifier l'API
+            fetch('/api/invoice?invoice=TEST_20241028_99')
+                .then(response => {
+                    if (response.ok) {
+                        diagnostics.push('✅ API accessible : OK');
+                    } else {
+                        diagnostics.push('❌ API accessible : ERREUR - Status ' + response.status);
+                    }
+                })
+                .catch(error => {
+                    diagnostics.push('❌ API accessible : ERREUR - ' + error.message);
+                })
+                .finally(() => {
+                    results.innerHTML = '<div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">' + 
+                                       diagnostics.map(d => '<div style="margin: 5px 0;">' + d + '</div>').join('') + 
+                                       '</div>';
+                });
+        }
+        
+        console.log('🧪 Page de test chargée');
+        console.log('📊 Données de test:', testInvoiceData);
+        console.log('🔗 URL Slack:', slackUrl);
+    </script>
+</body>
+</html>
