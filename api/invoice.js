@@ -36,9 +36,7 @@ export default function handler(req, res) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Facture ${invoice} - Enixis Corp</title>
-    <!-- Bibliothèques pour génération PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -557,136 +555,7 @@ export default function handler(req, res) {
             payment: '${payment || ''}'
         };
         
-        // Fonction pour imprimer la facture
-        function printInvoice() {
-            const statusMessage = document.getElementById('status-message');
-            statusMessage.innerHTML = '<span style="color: #28a745;">🖨️ Ouverture de la boîte de dialogue d\'impression...</span>';
-            
-            // Masquer les éléments non nécessaires
-            const downloadSection = document.querySelector('.download-section');
-            const slackBadge = document.getElementById('slack-badge');
-            
-            if (downloadSection) downloadSection.style.display = 'none';
-            if (slackBadge) slackBadge.style.display = 'none';
-            
-            // Déclencher l'impression
-            setTimeout(() => {
-                window.print();
-                
-                // Restaurer l'affichage
-                setTimeout(() => {
-                    if (downloadSection) downloadSection.style.display = 'block';
-                    if (slackBadge && invoiceData) slackBadge.style.display = 'block';
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture prête ! Dans la boîte d\'impression, choisissez "Enregistrer au format PDF"</span>';
-                }, 500);
-            }, 100);
-        }
-        
-        // Fonction pour générer le PDF avec les bibliothèques JavaScript
-        async function generatePDFWithLibraries() {
-            const statusMessage = document.getElementById('status-message');
-            const pdfLibBtn = document.getElementById('pdf-lib-btn');
-            
-            try {
-                pdfLibBtn.disabled = true;
-                pdfLibBtn.textContent = '⏳ Génération...';
-                statusMessage.innerHTML = '<span style="color: #ffc107;">🔥 Génération PDF avec bibliothèques JavaScript...</span>';
-                
-                // Vérifier que les bibliothèques sont chargées
-                if (typeof html2canvas === 'undefined') {
-                    throw new Error('Bibliothèque html2canvas non chargée');
-                }
-                
-                if (typeof window.jsPDF === 'undefined') {
-                    throw new Error('Bibliothèque jsPDF non chargée');
-                }
-                
-                // Masquer les éléments non nécessaires
-                const downloadSection = document.querySelector('.download-section');
-                const slackBadge = document.getElementById('slack-badge');
-                
-                if (downloadSection) downloadSection.style.display = 'none';
-                if (slackBadge) slackBadge.style.display = 'none';
-                
-                // Capturer la facture en image
-                const invoiceElement = document.getElementById('invoice-document');
-                if (!invoiceElement) {
-                    throw new Error('Élément facture non trouvé');
-                }
-                
-                console.log('📸 Capture de la facture...');
-                statusMessage.innerHTML = '<span style="color: #ffc107;">📸 Capture de la facture en cours...</span>';
-                
-                const canvas = await html2canvas(invoiceElement, {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: '#ffffff',
-                    width: invoiceElement.scrollWidth,
-                    height: invoiceElement.scrollHeight,
-                    logging: false,
-                    removeContainer: true
-                });
-                
-                console.log('✅ Capture réussie, génération PDF...');
-                statusMessage.innerHTML = '<span style="color: #ffc107;">✅ Capture réussie, génération du PDF...</span>';
-                
-                // Créer le PDF
-                const { jsPDF } = window.jsPDF;
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4',
-                    compress: true
-                });
-                
-                // Calculer les dimensions pour A4
-                const imgWidth = 210; // A4 width in mm
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                
-                // Ajouter l'image au PDF
-                const imgData = canvas.toDataURL('image/png', 0.95);
-                pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, '', 'FAST');
-                
-                // Ajouter les métadonnées
-                pdf.setProperties({
-                    title: \`Facture \${invoiceNumber}\`,
-                    subject: 'Facture Enixis Corp',
-                    author: 'Enixis Corp',
-                    creator: 'Enixis Corp - Solutions IA & Optimisation Business'
-                });
-                
-                // Télécharger le PDF
-                const filename = \`Facture_\${invoiceNumber}.pdf\`;
-                pdf.save(filename);
-                
-                console.log('✅ PDF téléchargé:', filename);
-                statusMessage.innerHTML = '<span style="color: #28a745;">✅ PDF téléchargé avec succès !</span>';
-                
-            } catch (error) {
-                console.error('❌ Erreur génération PDF:', error);
-                statusMessage.innerHTML = \`<span style="color: #dc3545;">❌ Erreur: \${error.message}</span>\`;
-                
-                // Fallback vers l'impression classique
-                setTimeout(() => {
-                    statusMessage.innerHTML = '<span style="color: #ffc107;">🔄 Tentative avec l\'impression classique...</span>';
-                    downloadInvoice();
-                }, 2000);
-                
-            } finally {
-                // Restaurer l'affichage
-                const downloadSection = document.querySelector('.download-section');
-                const slackBadge = document.getElementById('slack-badge');
-                
-                if (downloadSection) downloadSection.style.display = 'block';
-                if (slackBadge && (invoiceData || document.querySelector('[data-test-mode]'))) {
-                    slackBadge.style.display = 'block';
-                }
-                
-                pdfLibBtn.disabled = false;
-                pdfLibBtn.textContent = '🔥 PDF Direct';
-            }
-        }
+
         
         // Fonction pour formater les montants en F CFA
         function formatFcfa(amount) {

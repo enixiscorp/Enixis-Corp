@@ -1147,22 +1147,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
     // Ajouter la capture de facture avec lien de téléchargement si disponible
     if (invoiceImageUrl && invoiceBase64) {
       // URL vers la page de téléchargement de facture avec données encodées
-      const invoiceDataEncoded = btoa(JSON.stringify({
-        invoiceNumber: invoiceNumber,
-        orderData: {
-          name: orderData.name,
-          email: orderData.email,
-          phone: orderData.phone,
-          serviceLabel: orderData.serviceLabel,
-          finalPrice: orderData.finalPrice,
-          basePrice: orderData.basePrice || orderData.finalPrice,
-          delivery: orderData.delivery,
-          coupon: orderData.coupon
-        },
-        paymentMethod: paymentMethod,
-        createdAt: new Date().toISOString()
-      }));
-      // Créer l'URL avec les données directes pour simplifier
+      // Créer l'URL avec les données directes du formulaire
       const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name)}&email=${encodeURIComponent(orderData.email)}&phone=${encodeURIComponent(orderData.phone)}&service=${encodeURIComponent(orderData.serviceLabel)}&price=${orderData.finalPrice}&delivery=${orderData.delivery}&payment=${encodeURIComponent(paymentMethod)}`;
       
       payload.attachments.push({
