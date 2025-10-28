@@ -553,7 +553,7 @@ export default function handler(req, res) {
     
     <script>
         const invoiceNumber = '${invoice}';
-        const invoiceData = '${data || ''}';
+        const invoiceData = ${data ? `'${data}'` : 'null'};
         
         // Fonction pour imprimer la facture
         function printInvoice() {
@@ -601,14 +601,32 @@ export default function handler(req, res) {
         // Fonction pour remplir les données de la facture
         function populateInvoiceData(data) {
             try {
-                console.log('Décodage des données:', data.substring(0, 50) + '...');
-                const decodedData = JSON.parse(atob(decodeURIComponent(data)));
-                console.log('Données décodées:', decodedData);
+                console.log('🔍 Décodage des données:', data.substring(0, 50) + '...');
+                
+                // Étape 1: Décoder l'URL
+                const urlDecoded = decodeURIComponent(data);
+                console.log('📝 URL décodée:', urlDecoded.substring(0, 100) + '...');
+                
+                // Étape 2: Décoder le base64
+                const base64Decoded = atob(urlDecoded);
+                console.log('🔓 Base64 décodé:', base64Decoded.substring(0, 100) + '...');
+                
+                // Étape 3: Parser le JSON
+                const decodedData = JSON.parse(base64Decoded);
+                console.log('📊 Données JSON:', decodedData);
                 
                 const orderData = decodedData.orderData;
                 if (!orderData) {
                     throw new Error('orderData manquant dans les données décodées');
                 }
+                
+                console.log('👤 Données client:', {
+                    name: orderData.name,
+                    email: orderData.email,
+                    phone: orderData.phone,
+                    service: orderData.serviceLabel,
+                    price: orderData.finalPrice
+                });
                 
                 // Calcul des dates selon le délai choisi
                 const createdDate = new Date(decodedData.createdAt);
@@ -632,38 +650,93 @@ export default function handler(req, res) {
                         validityDate.setDate(validityDate.getDate() + 14); // 2 semaines par défaut
                 }
                 
-                document.getElementById('invoice-date').textContent = formatDate(decodedData.createdAt);
-                document.getElementById('validity-date').textContent = formatDate(validityDate);
-                document.getElementById('invoice-time').textContent = formatTime(decodedData.createdAt);
+                // Remplir les dates avec vérification
+                const invoiceDateEl = document.getElementById('invoice-date');
+                const validityDateEl = document.getElementById('validity-date');
+                const invoiceTimeEl = document.getElementById('invoice-time');
                 
-                // Informations client
-                document.getElementById('client-name').textContent = orderData.name || 'Non spécifié';
-                document.getElementById('client-email').textContent = orderData.email || 'Non spécifié';
-                document.getElementById('client-phone').textContent = orderData.phone || 'Non spécifié';
+                if (invoiceDateEl) {
+                    invoiceDateEl.textContent = formatDate(decodedData.createdAt);
+                    console.log('✅ Date facture mise à jour:', formatDate(decodedData.createdAt));
+                }
+                if (validityDateEl) {
+                    validityDateEl.textContent = formatDate(validityDate);
+                    console.log('✅ Date validité mise à jour:', formatDate(validityDate));
+                }
+                if (invoiceTimeEl) {
+                    invoiceTimeEl.textContent = formatTime(decodedData.createdAt);
+                    console.log('✅ Heure mise à jour:', formatTime(decodedData.createdAt));
+                }
                 
-                // Informations service
-                document.getElementById('service-name').textContent = orderData.serviceLabel || 'Service non spécifié';
+                // Informations client avec vérification
+                const clientNameEl = document.getElementById('client-name');
+                const clientEmailEl = document.getElementById('client-email');
+                const clientPhoneEl = document.getElementById('client-phone');
+                
+                if (clientNameEl) {
+                    clientNameEl.textContent = orderData.name || 'Non spécifié';
+                    console.log('✅ Nom client mis à jour:', orderData.name);
+                }
+                if (clientEmailEl) {
+                    clientEmailEl.textContent = orderData.email || 'Non spécifié';
+                    console.log('✅ Email client mis à jour:', orderData.email);
+                }
+                if (clientPhoneEl) {
+                    clientPhoneEl.textContent = orderData.phone || 'Non spécifié';
+                    console.log('✅ Téléphone client mis à jour:', orderData.phone);
+                }
+                
+                // Informations service avec vérification
+                const serviceNameEl = document.getElementById('service-name');
+                const serviceDelayEl = document.getElementById('service-delay');
+                
+                if (serviceNameEl) {
+                    serviceNameEl.textContent = orderData.serviceLabel || 'Service non spécifié';
+                    console.log('✅ Service mis à jour:', orderData.serviceLabel);
+                }
+                
                 const delayText = orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
                                  orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
                                  orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
                                  orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
-                document.getElementById('service-delay').textContent = delayText;
+                
+                if (serviceDelayEl) {
+                    serviceDelayEl.textContent = delayText;
+                    console.log('✅ Délai mis à jour:', delayText);
+                }
                 
                 // Calcul des prix avec gestion des codes promotionnels
                 const basePrice = orderData.basePrice || orderData.finalPrice || 0;
                 const finalPrice = orderData.finalPrice || 0;
                 const hasDiscount = basePrice > finalPrice;
                 
-                // Tableau
-                document.getElementById('item-description').textContent = orderData.serviceLabel || 'Service';
-                document.getElementById('item-date').textContent = formatDate(decodedData.createdAt);
-                document.getElementById('item-unit-price').textContent = formatFcfa(basePrice);
-                document.getElementById('item-total').textContent = formatFcfa(finalPrice);
+                // Tableau avec vérification
+                const itemDescEl = document.getElementById('item-description');
+                const itemDateEl = document.getElementById('item-date');
+                const itemUnitPriceEl = document.getElementById('item-unit-price');
+                const itemTotalEl = document.getElementById('item-total');
+                
+                if (itemDescEl) {
+                    itemDescEl.textContent = orderData.serviceLabel || 'Service';
+                    console.log('✅ Description item mise à jour:', orderData.serviceLabel);
+                }
+                if (itemDateEl) {
+                    itemDateEl.textContent = formatDate(decodedData.createdAt);
+                    console.log('✅ Date item mise à jour');
+                }
+                if (itemUnitPriceEl) {
+                    itemUnitPriceEl.textContent = formatFcfa(basePrice);
+                    console.log('✅ Prix unitaire mis à jour:', formatFcfa(basePrice));
+                }
+                if (itemTotalEl) {
+                    itemTotalEl.textContent = formatFcfa(finalPrice);
+                    console.log('✅ Total item mis à jour:', formatFcfa(finalPrice));
+                }
                 
                 // Gestion des remises (codes promotionnels)
                 const totalsContainer = document.querySelector('.invoice-totals');
-                if (hasDiscount && orderData.coupon) {
-                    // Ajouter les lignes de remise
+                if (hasDiscount && orderData.coupon && totalsContainer) {
+                    console.log('💰 Application de la remise:', orderData.coupon);
                     const discountAmount = basePrice - finalPrice;
                     const discountHtml = \`
                         <div class="total-row">
@@ -678,15 +751,31 @@ export default function handler(req, res) {
                     
                     // Insérer avant le total final
                     const finalTotalDiv = totalsContainer.querySelector('.total-final');
-                    finalTotalDiv.insertAdjacentHTML('beforebegin', discountHtml);
+                    if (finalTotalDiv) {
+                        finalTotalDiv.insertAdjacentHTML('beforebegin', discountHtml);
+                        console.log('✅ Remise ajoutée à la facture');
+                    }
                 }
                 
-                // Total final
-                document.getElementById('final-total').textContent = formatFcfa(finalPrice);
+                // Total final avec vérification
+                const finalTotalEl = document.getElementById('final-total');
+                if (finalTotalEl) {
+                    finalTotalEl.textContent = formatFcfa(finalPrice);
+                    console.log('✅ Total final mis à jour:', formatFcfa(finalPrice));
+                }
                 
-                // Paiement
-                document.getElementById('payment-method').textContent = decodedData.paymentMethod || 'Non spécifié';
-                document.getElementById('payment-status').textContent = '✅ Payé le ' + formatDate(decodedData.createdAt) + ' à ' + formatTime(decodedData.createdAt);
+                // Paiement avec vérification
+                const paymentMethodEl = document.getElementById('payment-method');
+                const paymentStatusEl = document.getElementById('payment-status');
+                
+                if (paymentMethodEl) {
+                    paymentMethodEl.textContent = decodedData.paymentMethod || 'Non spécifié';
+                    console.log('✅ Méthode paiement mise à jour:', decodedData.paymentMethod);
+                }
+                if (paymentStatusEl) {
+                    paymentStatusEl.textContent = '✅ Payé le ' + formatDate(decodedData.createdAt) + ' à ' + formatTime(decodedData.createdAt);
+                    console.log('✅ Statut paiement mis à jour');
+                }
                 
                 console.log('✅ Données remplies avec succès');
                 console.log('Prix de base:', basePrice, 'Prix final:', finalPrice);
@@ -704,66 +793,60 @@ export default function handler(req, res) {
             const statusMessage = document.getElementById('status-message');
             const downloadBtn = document.getElementById('download-btn');
             
+            console.log('🔥 Fonction downloadInvoice appelée');
+            console.log('📊 Données disponibles:', invoiceData ? 'Oui' : 'Non');
+            
             downloadBtn.disabled = true;
             downloadBtn.textContent = '⏳ Téléchargement...';
-            statusMessage.innerHTML = '<span style="color: #ffc107;">⏳ Génération du PDF en cours...</span>';
+            statusMessage.innerHTML = '<span style="color: #ffc107;">⏳ Préparation du téléchargement PDF...</span>';
             
             try {
-                // Utiliser window.print() pour générer le PDF
                 // Masquer les éléments non nécessaires pour l'impression
                 const downloadSection = document.querySelector('.download-section');
                 const slackBadge = document.getElementById('slack-badge');
                 
-                if (downloadSection) downloadSection.style.display = 'none';
-                if (slackBadge) slackBadge.style.display = 'none';
+                console.log('🎯 Masquage des éléments pour impression');
+                if (downloadSection) {
+                    downloadSection.style.display = 'none';
+                    console.log('✅ Section téléchargement masquée');
+                }
+                if (slackBadge) {
+                    slackBadge.style.display = 'none';
+                    console.log('✅ Badge Slack masqué');
+                }
                 
-                // Déclencher l'impression/sauvegarde PDF
-                window.print();
+                // Détecter le type d'appareil
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                console.log('📱 Appareil mobile détecté:', isMobile);
                 
-                // Restaurer l'affichage après un délai
+                if (isMobile) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">📱 Mobile : Menu navigateur > Imprimer > Enregistrer PDF</span>';
+                } else {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">💻 Desktop : Choisissez "Enregistrer au format PDF" dans la boîte d\'impression</span>';
+                }
+                
+                // Déclencher l'impression après un court délai
                 setTimeout(() => {
+                    console.log('🖨️ Déclenchement de window.print()');
+                    window.print();
+                }, 500);
+                
+                // Restaurer l'affichage après l'impression
+                setTimeout(() => {
+                    console.log('🔄 Restauration de l\'affichage');
                     if (downloadSection) downloadSection.style.display = 'block';
                     if (slackBadge && invoiceData) slackBadge.style.display = 'block';
                     
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ PDF généré ! Utilisez Ctrl+P ou Cmd+P pour sauvegarder.</span>';
                     downloadBtn.disabled = false;
                     downloadBtn.textContent = '📥 Télécharger PDF';
-                }, 1000);
+                }, 2000);
                 
             } catch (error) {
-                console.error('Erreur génération PDF:', error);
-                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors de la génération PDF: ' + error.message + '</span>';
+                console.error('❌ Erreur génération PDF:', error);
+                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
                 downloadBtn.disabled = false;
                 downloadBtn.textContent = '📥 Télécharger PDF';
             }
-            
-            // Fallback: essayer de récupérer depuis localStorage
-            try {
-                const storageKey = 'enixis_invoice_' + invoiceNumber;
-                const localInvoiceData = localStorage.getItem(storageKey);
-                
-                if (localInvoiceData) {
-                    const invoice = JSON.parse(localInvoiceData);
-                    const pdfDataUrl = 'data:application/pdf;base64,' + invoice.pdfBase64;
-                    
-                    const link = document.createElement('a');
-                    link.href = pdfDataUrl;
-                    link.download = 'Facture_' + invoiceNumber + '.pdf';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Téléchargement démarré ! Vérifiez votre dossier de téléchargements.</span>';
-                } else {
-                    throw new Error('Facture non trouvée');
-                }
-            } catch (error) {
-                console.error('Erreur téléchargement:', error);
-                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Facture non disponible. Contactez notre équipe à contacteccorp@gmail.com</span>';
-            }
-            
-            downloadBtn.disabled = false;
-            downloadBtn.textContent = '📥 Télécharger PDF';
         }
         
         // Initialisation au chargement de la page
@@ -775,9 +858,10 @@ export default function handler(req, res) {
             console.log('Données disponibles:', invoiceData ? 'Oui' : 'Non');
             
             // Si des données de facture sont disponibles dans l'URL (depuis Slack)
-            if (invoiceData) {
+            if (invoiceData && invoiceData !== 'null') {
                 try {
-                    console.log('Traitement des données Slack...');
+                    console.log('🔍 Traitement des données Slack...');
+                    console.log('📦 Données brutes:', invoiceData.substring(0, 100) + '...');
                     
                     // Afficher le badge Slack
                     document.getElementById('slack-badge').style.display = 'block';
@@ -793,9 +877,12 @@ export default function handler(req, res) {
                     
                     return;
                 } catch (error) {
-                    console.error('Erreur décodage données Slack:', error);
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du décodage des données Slack: ' + error.message + '</span>';
+                    console.error('❌ Erreur décodage données Slack:', error);
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur décodage: ' + error.message + '</span>';
                 }
+            } else {
+                console.log('⚠️ Aucune donnée Slack disponible');
+                statusMessage.innerHTML = '<span style="color: #ffc107;">⚠️ Aucune donnée Slack - Tentative localStorage</span>';
             }
             
             // Fallback: essayer localStorage
