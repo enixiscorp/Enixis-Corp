@@ -535,8 +535,9 @@ style.textContent = `
     }
   }
 `;
-document.head.appendChild(style);/
-// Système de témoignages dynamiques uniformisé - Défilement gauche vers droite par catégorie
+document.head.appendChild(style);
+
+// Système de témoignages dynamiques par catégorie
 const TESTIMONIALS_DATA = {
   'cv_creation': {
     title: '✍️ Création de CV sur mesure',
@@ -597,32 +598,24 @@ const TESTIMONIALS_DATA = {
   }
 };
 
-// Classe de témoignages dynamiques uniformisée avec défilement fluide gauche → droite
-class UnifiedTestimonials {
+class DynamicTestimonials {
   constructor() {
     this.categories = Object.keys(TESTIMONIALS_DATA);
-    this.allTestimonials = this.flattenTestimonials();
-    this.currentIndex = 0;
+    this.currentCategoryIndex = 0;
+    this.currentTestimonialIndex = 0;
     this.isPlaying = true;
     this.interval = null;
-    this.animationDuration = 5000; // 5 secondes par témoignage
+    this.progressInterval = null;
+    this.totalTestimonials = this.calculateTotalTestimonials();
+    this.globalTestimonialIndex = 0;
     
     this.init();
   }
   
-  // Aplatir tous les témoignages avec leurs catégories
-  flattenTestimonials() {
-    const flattened = [];
-    Object.entries(TESTIMONIALS_DATA).forEach(([categoryKey, categoryData]) => {
-      categoryData.testimonials.forEach(testimonial => {
-        flattened.push({
-          ...testimonial,
-          category: categoryData.title,
-          categoryKey: categoryKey
-        });
-      });
-    });
-    return flattened;
+  calculateTotalTestimonials() {
+    return Object.values(TESTIMONIALS_DATA).reduce((total, category) => {
+      return total + category.testimonials.length;
+    }, 0);
   }
   
   init() {
@@ -630,7 +623,6 @@ class UnifiedTestimonials {
     this.displayCurrentTestimonial();
     this.startAutoPlay();
     this.bindEvents();
-    console.log('✅ Système de témoignages uniformisé initialisé:', this.allTestimonials.length, 'témoignages');
   }
   
   bindEvents() {
@@ -643,45 +635,45 @@ class UnifiedTestimonials {
     pauseBtn?.addEventListener('click', () => this.togglePlayPause());
   }
   
+  getCurrentCategory() {
+    const categoryKey = this.categories[this.currentCategoryIndex];
+    return TESTIMONIALS_DATA[categoryKey];
+  }
+  
   getCurrentTestimonial() {
-    return this.allTestimonials[this.currentIndex];
+    const category = this.getCurrentCategory();
+    return category.testimonials[this.currentTestimonialIndex];
   }
   
   displayCurrentTestimonial() {
+    const category = this.getCurrentCategory();
     const testimonial = this.getCurrentTestimonial();
-    if (!testimonial) return;
     
-    // Éléments DOM
+    // Mettre à jour la catégorie
     const categoryTitle = document.getElementById('current-category-title');
+    if (categoryTitle) {
+      categoryTitle.textContent = category.title;
+    }
+    
+    // Mettre à jour le témoignage avec animation
     const quote = document.getElementById('testimonial-quote');
     const author = document.getElementById('testimonial-author');
     const testimonialEl = document.getElementById('current-testimonial');
     
-    if (!categoryTitle || !quote || !author || !testimonialEl) {
-      console.warn('⚠️ Éléments DOM des témoignages non trouvés');
-      return;
-    }
-    
-    // Animation de sortie fluide (gauche)
-    testimonialEl.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-    testimonialEl.style.opacity = '0';
-    testimonialEl.style.transform = 'translateX(-50px)';
-    
-    setTimeout(() => {
-      // Mettre à jour le contenu
-      categoryTitle.textContent = testimonial.category;
-      quote.textContent = testimonial.quote;
-      author.textContent = testimonial.author;
-      
-      // Animation d'entrée fluide (droite)
-      testimonialEl.style.transform = 'translateX(50px)';
+    if (quote && author && testimonialEl) {
+      // Animation de sortie
+      testimonialEl.style.opacity = '0';
+      testimonialEl.style.transform = 'translateX(-30px)';
       
       setTimeout(() => {
+        quote.textContent = testimonial.quote;
+        author.textContent = testimonial.author;
+        
+        // Animation d'entrée
         testimonialEl.style.opacity = '1';
         testimonialEl.style.transform = 'translateX(0)';
-      }, 50);
-      
-    }, 400);
+      }, 300);
+    }
     
     // Mettre à jour le compteur
     this.updateCounter();
@@ -690,32 +682,59 @@ class UnifiedTestimonials {
   updateCounter() {
     const currentIndex = document.getElementById('current-testimonial-index');
     if (currentIndex) {
-      currentIndex.textContent = this.currentIndex + 1;
+      currentIndex.textContent = this.globalTestimonialIndex + 1;
     }
   }
   
   updateTotalCounter() {
     const totalEl = document.getElementById('total-testimonials');
     if (totalEl) {
-      totalEl.textContent = this.allTestimonials.length;
+      totalEl.textContent = this.totalTestimonials;
     }
   }
   
   nextTestimonial() {
-    this.currentIndex = (this.currentIndex + 1) % this.allTestimonials.length;
+    const category = this.getCurrentCategory();
+    
+    // Passer au témoignage suivant dans la catégorie
+    if (this.currentTestimonialIndex < category.testimonials.length - 1) {
+      this.currentTestimonialIndex++;
+    } else {
+      // Passer à la catégorie suivante
+      this.currentTestimonialIndex = 0;
+      this.currentCategoryIndex = (this.currentCategoryIndex + 1) % this.categories.length;
+    }
+    
+    this.globalTestimonialIndex = (this.globalTestimonialIndex + 1) % this.totalTestimonials;
     this.displayCurrentTestimonial();
     this.resetProgress();
   }
   
   previousTestimonial() {
-    this.currentIndex = this.currentIndex === 0 ? 
-      this.allTestimonials.length - 1 : this.currentIndex - 1;
+    const category = this.getCurrentCategory();
+    
+    // Passer au témoignage précédent dans la catégorie
+    if (this.currentTestimonialIndex > 0) {
+      this.currentTestimonialIndex--;
+    } else {
+      // Passer à la catégorie précédente
+      this.currentCategoryIndex = this.currentCategoryIndex === 0 ? 
+        this.categories.length - 1 : this.currentCategoryIndex - 1;
+      
+      const prevCategory = this.getCurrentCategory();
+      this.currentTestimonialIndex = prevCategory.testimonials.length - 1;
+    }
+    
+    this.globalTestimonialIndex = this.globalTestimonialIndex === 0 ? 
+      this.totalTestimonials - 1 : this.globalTestimonialIndex - 1;
+    
     this.displayCurrentTestimonial();
     this.resetProgress();
   }
   
   startAutoPlay() {
     if (this.interval) clearInterval(this.interval);
+    if (this.progressInterval) clearInterval(this.progressInterval);
     
     if (!this.isPlaying) return;
     
@@ -727,20 +746,18 @@ class UnifiedTestimonials {
       if (this.isPlaying) {
         this.nextTestimonial();
       }
-    }, this.animationDuration);
+    }, 5000);
   }
   
   startProgress() {
     const progressFill = document.getElementById('progress-fill');
     if (!progressFill) return;
     
-    // Reset immédiat
-    progressFill.style.transition = 'none';
     progressFill.style.width = '0%';
+    progressFill.style.transition = 'width 5s linear';
     
-    // Animer la barre de progression sur 5 secondes
+    // Animer la barre de progression
     setTimeout(() => {
-      progressFill.style.transition = `width ${this.animationDuration}ms linear`;
       progressFill.style.width = '100%';
     }, 50);
   }
@@ -751,12 +768,12 @@ class UnifiedTestimonials {
       progressFill.style.transition = 'none';
       progressFill.style.width = '0%';
       
-      if (this.isPlaying) {
-        setTimeout(() => {
-          progressFill.style.transition = `width ${this.animationDuration}ms linear`;
+      setTimeout(() => {
+        progressFill.style.transition = 'width 5s linear';
+        if (this.isPlaying) {
           progressFill.style.width = '100%';
-        }, 50);
-      }
+        }
+      }, 50);
     }
   }
   
@@ -773,25 +790,28 @@ class UnifiedTestimonials {
       this.startAutoPlay();
     } else {
       if (this.interval) clearInterval(this.interval);
+      if (this.progressInterval) clearInterval(this.progressInterval);
       
-      // Arrêter la barre de progression à sa position actuelle
+      // Arrêter la barre de progression
       const progressFill = document.getElementById('progress-fill');
       if (progressFill) {
-        const computedStyle = window.getComputedStyle(progressFill);
-        const currentWidth = computedStyle.width;
+        const currentWidth = progressFill.offsetWidth;
+        const containerWidth = progressFill.parentElement.offsetWidth;
+        const percentage = (currentWidth / containerWidth) * 100;
         progressFill.style.transition = 'none';
-        progressFill.style.width = currentWidth;
+        progressFill.style.width = percentage + '%';
       }
     }
   }
   
   destroy() {
     if (this.interval) clearInterval(this.interval);
+    if (this.progressInterval) clearInterval(this.progressInterval);
   }
 }
 
-// Initialiser le système de témoignages uniformisé
-let unifiedTestimonials = null;
+// Initialiser le système de témoignages dynamiques
+let dynamicTestimonials = null;
 
 document.addEventListener('DOMContentLoaded', function() {
   // Attendre que la section témoignages soit visible
@@ -799,8 +819,8 @@ document.addEventListener('DOMContentLoaded', function() {
   if (testimonialsSection) {
     // Initialiser avec un délai pour s'assurer que tous les éléments sont chargés
     setTimeout(() => {
-      unifiedTestimonials = new UnifiedTestimonials();
-      console.log('✅ Système de témoignages uniformisé initialisé - Défilement gauche → droite par catégorie');
+      dynamicTestimonials = new DynamicTestimonials();
+      console.log('✅ Système de témoignages dynamiques initialisé');
     }, 1000);
   }
 });

@@ -1144,28 +1144,27 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    // Ajouter la capture de facture avec lien de téléchargement ÉQUIPE UNIQUEMENT
+    // Ajouter la capture de facture avec lien de téléchargement si disponible
     if (invoiceImageUrl && invoiceBase64) {
-      // URL sécurisée vers la page de téléchargement de facture pour l'équipe
-      const teamAccessKey = (window.env && window.env.TEAM_ACCESS_KEY) || 'enixis_team_2024';
-      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&team=${teamAccessKey}`;
+      // URL vers la page de téléchargement de facture
+      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}`;
       
       payload.attachments.push({
         color: 'good',
-        title: '🔒 Facture PDF - ÉQUIPE UNIQUEMENT',
-        text: `📄 Facture ${invoiceNumber} - Accès sécurisé pour l'équipe Enixis Corp uniquement`,
+        title: '📄 Facture PDF - Téléchargeable',
+        text: `📄 Facture ${invoiceNumber} - Stockée dans le navigateur client et accessible via le lien`,
         image_url: invoiceImageUrl,
         actions: [
           {
             type: 'button',
-            text: '🔒 Accès Équipe PDF',
+            text: '📥 Ouvrir PDF',
             style: 'primary',
-            name: 'open_team_pdf',
+            name: 'open_pdf',
             value: invoiceNumber,
             url: invoiceUrl
           }
         ],
-        footer: `🔒 Facture ${invoiceNumber} - Accès équipe sécurisé | À envoyer au client par email`,
+        footer: `Facture ${invoiceNumber} - Stockée localement + accessible via URL`,
         ts: Math.floor(Date.now() / 1000)
       });
     }
