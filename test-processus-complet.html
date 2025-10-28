@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Processus Complet - Enixis Corp</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .test-title {
+            color: #0A0F2C;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        }
+        
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .step h3 {
+            margin: 0 0 10px 0;
+            color: #28a745;
+        }
+        
+        .expected {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .important {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1 class="test-title">🎯 Test Processus Complet - Nouveau Système</h1>
+        
+        <div class="important">
+            <strong>🔄 Nouveau Processus :</strong><br>
+            L'utilisateur ne reçoit plus la facture automatiquement après le paiement.<br>
+            La facture est accessible uniquement via le lien Slack envoyé à l'équipe.
+        </div>
+        
+        <h2>📋 Étapes du Nouveau Processus</h2>
+        
+        <div class="step">
+            <h3>1. 📝 Formulaire de Demande</h3>
+            <p>L'utilisateur remplit le formulaire sur <code>/demande.html</code></p>
+            <a href="/demande.html" class="test-button" target="_blank">
+                📝 Tester le Formulaire
+            </a>
+        </div>
+        
+        <div class="step">
+            <h3>2. 💳 Paiement</h3>
+            <p>L'utilisateur choisit sa méthode de paiement (Flooz, Mixx, Crypto)</p>
+            <div class="expected">
+                <strong>✅ Résultat attendu :</strong><br>
+                • Pop-up de confirmation simple (pas de facture)<br>
+                • Message "Paiement Confirmé !"<br>
+                • Informations de base sur la commande<br>
+                • Bouton "✅ Parfait, merci !" pour fermer
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>3. 📱 Notification Slack (Équipe)</h3>
+            <p>L'équipe reçoit une notification avec les détails de la commande</p>
+            <div class="expected">
+                <strong>✅ Contenu attendu :</strong><br>
+                • Informations client (nom, email, téléphone)<br>
+                • Détails de la commande (service, prix, délai)<br>
+                • Bouton "📥 Ouvrir PDF" avec lien vers la facture
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>4. 📄 Accès à la Facture via Slack</h3>
+            <p>En cliquant sur "📥 Ouvrir PDF", on accède à la facture personnalisée</p>
+            <a href="/api/invoice?invoice=TEST_PROCESSUS_001&name=Marie%20KOUASSI&email=marie.kouassi@example.com&phone=%2B228%2090%2012%2034%2056&service=Creation%20de%20CV&price=7000&delivery=short&payment=Flooz" 
+               class="test-button" target="_blank">
+                📄 Simuler Accès Facture
+            </a>
+            <div class="expected">
+                <strong>✅ Résultat attendu :</strong><br>
+                • Facture avec les vraies données du formulaire<br>
+                • Nom : "Marie KOUASSI" (pas "Nom du client")<br>
+                • Email : "marie.kouassi@example.com" (pas "email@client.com")<br>
+                • Service : "Creation de CV" (pas "Service demandé")<br>
+                • Prix : "7 000 F CFA" (pas "0 F CFA")<br>
+                • Bouton "📥 Télécharger PDF" fonctionnel
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>5. 📥 Téléchargement de la Facture</h3>
+            <p>Sur la page de la facture, bouton pour télécharger le PDF</p>
+            <div class="expected">
+                <strong>✅ Fonctionnement attendu :</strong><br>
+                • Clic sur "📥 Télécharger PDF"<br>
+                • Ouverture de la boîte d'impression<br>
+                • Option "Enregistrer au format PDF"<br>
+                • Téléchargement du PDF avec les données personnalisées
+            </div>
+        </div>
+        
+        <h2>🧪 Tests à Effectuer</h2>
+        
+        <div class="test-container">
+            <h3>Test 1 : Formulaire → Paiement</h3>
+            <ol>
+                <li>Remplir le formulaire de demande</li>
+                <li>Choisir un service et un prix</li>
+                <li>Procéder au paiement</li>
+                <li>Vérifier le pop-up de confirmation (sans facture)</li>
+            </ol>
+        </div>
+        
+        <div class="test-container">
+            <h3>Test 2 : Facture via Slack</h3>
+            <ol>
+                <li>Utiliser le lien de simulation ci-dessus</li>
+                <li>Vérifier que les données personnalisées s'affichent</li>
+                <li>Tester le bouton "📥 Télécharger PDF"</li>
+                <li>Confirmer que le PDF contient les bonnes données</li>
+            </ol>
+        </div>
+        
+        <h2>🔍 Points de Vérification</h2>
+        
+        <div class="important">
+            <strong>❌ Ce qui ne doit PLUS arriver :</strong><br>
+            • Téléchargement automatique de facture après paiement<br>
+            • Pop-up avec facture intégrée après paiement<br>
+            • Bouton "Terminer ma commande" avec facture
+        </div>
+        
+        <div class="expected">
+            <strong>✅ Ce qui doit arriver :</strong><br>
+            • Pop-up de confirmation simple après paiement<br>
+            • Notification Slack avec lien vers facture<br>
+            • Facture accessible uniquement via Slack<br>
+            • Données personnalisées dans la facture<br>
+            • Téléchargement PDF depuis la page facture
+        </div>
+        
+        <h2>🚀 Commencer les Tests</h2>
+        <p>Commencez par tester le processus complet :</p>
+        
+        <a href="/demande.html" class="test-button" target="_blank">
+            🚀 Démarrer le Test Complet
+        </a>
+        
+        <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3;">
+            <strong>💡 Conseil :</strong> Ouvrez F12 → Console pour voir les logs de diagnostic pendant les tests.
+        </div>
+    </div>
+</body>
+</html>

@@ -1369,7 +1369,108 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
   console.log('✅ Facture générée en arrière-plan pour traitement');
 }
 
-// Fonction pour afficher le pop-up de synthèse statique
+// Fonction pour afficher la confirmation de paiement (sans téléchargement automatique)
+function showPaymentConfirmation(orderData, paymentMethod, invoiceNumber) {
+  // Créer le pop-up de confirmation simple
+  const confirmationPopup = document.createElement('div');
+  confirmationPopup.id = 'payment-confirmation-popup';
+  confirmationPopup.className = 'popup-overlay';
+  confirmationPopup.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+  `;
+  
+  confirmationPopup.innerHTML = `
+    <div class="popup-content" style="
+      background: white;
+      border-radius: 15px;
+      padding: 40px;
+      max-width: 500px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    ">
+      <div style="
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px auto;
+        font-size: 36px;
+      ">✅</div>
+      
+      <h2 style="color: #28a745; margin-bottom: 15px; font-size: 24px;">
+        Paiement Confirmé !
+      </h2>
+      
+      <p style="color: #666; margin-bottom: 25px; font-size: 16px; line-height: 1.5;">
+        Merci <strong>${orderData.name}</strong> pour votre commande !<br>
+        Votre paiement de <strong>${formatFcfa(orderData.finalPrice)}</strong> a été validé.
+      </p>
+      
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px; text-align: left;">
+        <h4 style="margin: 0 0 15px 0; color: #333;">📋 Récapitulatif :</h4>
+        <p style="margin: 5px 0; color: #666;"><strong>Service :</strong> ${orderData.serviceLabel}</p>
+        <p style="margin: 5px 0; color: #666;"><strong>Email :</strong> ${orderData.email}</p>
+        <p style="margin: 5px 0; color: #666;"><strong>Paiement :</strong> ${paymentMethod}</p>
+        <p style="margin: 5px 0; color: #666;"><strong>Numéro de facture :</strong> ${invoiceNumber}</p>
+      </div>
+      
+      <div style="background: linear-gradient(135deg, #e3f2fd, #f3e5f5); padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+        <h4 style="margin: 0 0 15px 0; color: #1976d2;">📱 Prochaines étapes :</h4>
+        <ul style="text-align: left; color: #666; margin: 0; padding-left: 20px;">
+          <li>Notre équipe a été notifiée de votre commande</li>
+          <li>Vous recevrez votre facture via notre équipe</li>
+          <li>Nous commencerons le travail selon le délai convenu</li>
+          <li>Nous vous contacterons si nous avons des questions</li>
+        </ul>
+      </div>
+      
+      <button id="close-confirmation-btn" style="
+        background: linear-gradient(135deg, #28a745, #20c997);
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        transition: all 0.3s ease;
+      ">
+        ✅ Parfait, merci !
+      </button>
+    </div>
+  `;
+  
+  // Ajouter au DOM
+  document.body.appendChild(confirmationPopup);
+  document.body.style.overflow = 'hidden';
+  
+  // Event listener pour fermer
+  document.getElementById('close-confirmation-btn').addEventListener('click', () => {
+    confirmationPopup.remove();
+    document.body.style.overflow = '';
+    
+    // Rediriger vers l'accueil avec message de succès
+    sessionStorage.setItem('orderCompleted', 'true');
+    window.location.href = 'index.html#success';
+  });
+}
+
+// Fonction pour afficher le pop-up de synthèse statique (DEPRECATED - remplacée par showPaymentConfirmation)
 function showOrderSummaryPopup(orderData, paymentMethod) {
   // Créer le pop-up de synthèse
   const summaryPopup = document.createElement('div');
@@ -2703,97 +2804,25 @@ invoicePopup?.addEventListener('click', (e) => {
 // Fonction principale pour générer et envoyer la facture avec validation de paiement
 async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   try {
-    // Afficher le pop-up de synthèse avec le bouton "Terminer ma commande"
-    showOrderSummaryPopup(orderData, paymentMethod);
+    // Ne plus afficher de pop-up de facture à l'utilisateur
+    // La facture sera accessible uniquement via Slack
     
-    // Générer la facture en arrière-plan
-    await generateInvoiceInBackground(orderData, paymentMethod);
-    
-    // Attendre que la facture soit générée
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Générer le PDF de la facture
-    const invoiceElement = document.getElementById('invoice-document');
-    const invoiceData = window.currentInvoiceData;
-    
-    if (!invoiceElement || !invoiceData) {
-      console.error('❌ Éléments de facture non trouvés');
-      // Envoyer quand même la notification sans PDF
-      await sendPaymentValidationWithInvoice(paymentMethod, orderData, null, 'ERREUR_PDF');
-      return;
-    }
-
-    // Créer le PDF
-    const { jsPDF } = window.jspdf;
-    
-    // Forcer les dimensions A4 pour la capture
-    const originalWidth = invoiceElement.style.width;
-    const originalMaxWidth = invoiceElement.style.maxWidth;
-    
-    invoiceElement.style.width = '210mm';
-    invoiceElement.style.maxWidth = '210mm';
-    
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    const canvas = await html2canvas(invoiceElement, {
-      backgroundColor: '#ffffff',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      width: 794,
-      height: 1123,
-      logging: false,
-      removeContainer: true,
-      scrollX: 0,
-      scrollY: 0
-    });
-    
-    // Restaurer les styles
-    invoiceElement.style.width = originalWidth;
-    invoiceElement.style.maxWidth = originalMaxWidth;
-    
-    const imgData = canvas.toDataURL('image/png', 0.95);
-    
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-      compress: true
-    });
-    
-    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297, '', 'FAST');
-    
-    pdf.setProperties({
-      title: `Facture ${invoiceData.invoiceNumber}`,
-      subject: 'Facture Enixis Corp - Paiement Validé',
-      author: 'Enixis Corp',
-      creator: 'Enixis Corp - Solutions IA & Optimisation Business',
-      producer: 'Enixis Corp'
-    });
-    
-    // Convertir le PDF en base64 pour l'envoi
-    const pdfBase64 = pdf.output('datauristring').split(',')[1];
-    
-    // Stocker la facture dans le localStorage pour accès permanent
-    await storeInvoiceInLocalStorage(invoiceData.invoiceNumber, pdfBase64, orderData, paymentMethod);
-    
-    // Envoyer la notification de commande en cours avec boutons interactifs
-    await sendOrderInProgressNotification(paymentMethod, orderData, pdfBase64, invoiceData.invoiceNumber);
-    
-    // Envoyer la facture par email à l'équipe
-    await sendInvoiceByEmail(orderData, paymentMethod, pdfBase64, invoiceData.invoiceNumber);
-    
-    console.log('✅ Facture générée, stockée et notification avec boutons envoyée sur Slack + Email envoyé');
-    
-  } catch (error) {
-    console.error('❌ Erreur lors de la génération de facture:', error);
-    
-    // Fallback : envoyer au moins la notification sans PDF
+    // Générer un numéro de facture
     const invoiceNumber = generateInvoiceNumber();
+    
+    // Envoyer directement la notification Slack avec le lien vers la facture
     await sendOrderInProgressNotification(paymentMethod, orderData, null, invoiceNumber);
     
-    // Afficher quand même le pop-up de synthèse
-    showOrderSummaryPopup(orderData, paymentMethod);
+    // Afficher un message de confirmation simple à l'utilisateur
+    showPaymentConfirmation(orderData, paymentMethod, invoiceNumber);
+
+    console.log('✅ Notification Slack envoyée avec lien vers la facture personnalisée');
+    
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'envoi de la notification:', error);
+    
+    // Afficher quand même la confirmation à l'utilisateur
+    showPaymentConfirmation(orderData, paymentMethod, 'ERREUR_' + Date.now());
   }
 }
 
