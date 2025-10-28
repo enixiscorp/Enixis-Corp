@@ -28,6 +28,30 @@ export default function handler(req, res) {
       return res.end();
     }
 
+    // Extraire et nettoyer les données du formulaire
+    const clientName = name ? decodeURIComponent(name) : 'Nom du client';
+    const clientEmail = email ? decodeURIComponent(email) : 'email@client.com';
+    const clientPhone = phone ? decodeURIComponent(phone) : '+228 XX XX XX XX';
+    const clientService = service ? decodeURIComponent(service) : 'Service demandé';
+    const clientPrice = price ? parseInt(price) : 0;
+    const clientDelivery = delivery || 'standard';
+    const clientPayment = payment ? decodeURIComponent(payment) : 'Paiement validé';
+    
+    // Formater le prix
+    const formattedPrice = clientPrice > 0 ? new Intl.NumberFormat('fr-FR').format(clientPrice) + ' F CFA' : '0 F CFA';
+    
+    // Formater le délai
+    const deliveryText = clientDelivery === 'urgent' ? 'Urgent (24h)' : 
+                        clientDelivery === 'short' ? 'Court terme (3-7j)' : 
+                        clientDelivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                        clientDelivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
+    
+    // Générer les dates
+    const currentDate = new Date();
+    const invoiceDate = currentDate.toLocaleDateString('fr-FR');
+    const invoiceTime = currentDate.toLocaleTimeString('fr-FR');
+    const validityDate = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000)).toLocaleDateString('fr-FR');
+
     // Créer une page HTML avec le modèle de facture Enixis Corp
     const html = `
 <!DOCTYPE html>
@@ -364,12 +388,19 @@ export default function handler(req, res) {
             }
         }
         
-        /* Styles d'impression */
+        /* Styles d'impression optimisés pour A4 */
         @media print {
+            @page {
+                size: A4;
+                margin: 15mm;
+            }
+            
             body {
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                font-size: 12px !important;
+                line-height: 1.4 !important;
             }
             
             .download-section,
@@ -383,17 +414,59 @@ export default function handler(req, res) {
                 max-width: none !important;
                 margin: 0 !important;
                 background: white !important;
+                width: 100% !important;
             }
             
             .invoice-document {
-                padding: 20px !important;
+                padding: 0 !important;
                 background: white !important;
+                width: 100% !important;
+                max-width: none !important;
+            }
+            
+            .invoice-header {
+                margin-bottom: 20px !important;
+                page-break-inside: avoid;
+            }
+            
+            .client-service-section {
+                margin-bottom: 20px !important;
+                page-break-inside: avoid;
+            }
+            
+            .invoice-table {
+                margin: 15px 0 !important;
+                page-break-inside: avoid;
+                font-size: 11px !important;
+            }
+            
+            .invoice-table th,
+            .invoice-table td {
+                padding: 8px 6px !important;
+            }
+            
+            .invoice-totals {
+                margin-top: 15px !important;
+                page-break-inside: avoid;
+            }
+            
+            .payment-info-section {
+                margin: 15px 0 !important;
+                page-break-inside: avoid;
+                background: #f0f8f0 !important;
+                border-left: 3px solid #28a745 !important;
+            }
+            
+            .invoice-footer {
+                margin-top: 20px !important;
+                page-break-inside: avoid;
             }
             
             /* Assurer que tous les éléments sont visibles à l'impression */
             * {
                 -webkit-print-color-adjust: exact !important;
                 color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             
             .invoice-table thead {
@@ -401,14 +474,14 @@ export default function handler(req, res) {
                 color: white !important;
             }
             
-            .payment-info-section {
-                background: #e8f5e8 !important;
-                border-left: 4px solid #28a745 !important;
-            }
-            
             .info-box {
                 background: #f8f9fa !important;
-                border-left: 4px solid #0A0F2C !important;
+                border-left: 3px solid #0A0F2C !important;
+            }
+            
+            .company-logo-img {
+                max-width: 50px !important;
+                max-height: 50px !important;
             }
         }
     </style>
@@ -447,9 +520,9 @@ export default function handler(req, res) {
                 <div class="invoice-number-section">
                     <div class="invoice-number" id="invoice-number">${invoice}</div>
                     <div class="invoice-dates">
-                        <p><strong>Date:</strong> <span id="invoice-date">--/--/----</span></p>
-                        <p><strong>Date de validité:</strong> <span id="validity-date">--/--/----</span></p>
-                        <p><strong>Heure:</strong> <span id="invoice-time">--:--:--</span></p>
+                        <p><strong>Date:</strong> <span id="invoice-date">${invoiceDate}</span></p>
+                        <p><strong>Date de validité:</strong> <span id="validity-date">${validityDate}</span></p>
+                        <p><strong>Heure:</strong> <span id="invoice-time">${invoiceTime}</span></p>
                     </div>
                 </div>
             </div>
@@ -459,17 +532,17 @@ export default function handler(req, res) {
                 <div class="info-box">
                     <h4>📋 Informations Client</h4>
                     <div class="client-details" id="client-details">
-                        <p><strong id="client-name">Nom du client</strong></p>
-                        <p id="client-email">email@client.com</p>
-                        <p id="client-phone">+228 XX XX XX XX</p>
+                        <p><strong id="client-name">${clientName}</strong></p>
+                        <p id="client-email">${clientEmail}</p>
+                        <p id="client-phone">${clientPhone}</p>
                     </div>
                 </div>
                 
                 <div class="info-box">
                     <h4>🎯 Prestation Demandée</h4>
                     <div class="service-details" id="service-details">
-                        <p><strong id="service-name">Service demandé</strong></p>
-                        <p><strong>Délai:</strong> <span id="service-delay">Standard</span></p>
+                        <p><strong id="service-name">${clientService}</strong></p>
+                        <p><strong>Délai:</strong> <span id="service-delay">${deliveryText}</span></p>
                     </div>
                 </div>
             </div>
@@ -488,12 +561,12 @@ export default function handler(req, res) {
                 </thead>
                 <tbody id="invoice-items">
                     <tr>
-                        <td>→ <span id="item-description">Service</span></td>
-                        <td id="item-date">--/--/----</td>
+                        <td>→ <span id="item-description">${clientService}</span></td>
+                        <td id="item-date">${invoiceDate}</td>
                         <td>1,00</td>
                         <td>pcs</td>
-                        <td id="item-unit-price">0 F CFA</td>
-                        <td id="item-total">0 F CFA</td>
+                        <td id="item-unit-price">${formattedPrice}</td>
+                        <td id="item-total">${formattedPrice}</td>
                     </tr>
                 </tbody>
             </table>
@@ -503,7 +576,7 @@ export default function handler(req, res) {
                 <div class="total-final">
                     <div class="total-row">
                         <span><strong>Total TTC</strong></span>
-                        <span><strong id="final-total">0 F CFA</strong></span>
+                        <span><strong id="final-total">${formattedPrice}</strong></span>
                     </div>
                 </div>
             </div>
@@ -514,11 +587,11 @@ export default function handler(req, res) {
                 <div class="payment-details">
                     <div class="payment-row">
                         <span class="payment-label">Méthode de paiement:</span>
-                        <span class="payment-value" id="payment-method">--</span>
+                        <span class="payment-value" id="payment-method">${clientPayment}</span>
                     </div>
                     <div class="payment-row">
                         <span class="payment-label">Statut:</span>
-                        <span class="payment-value status-paid" id="payment-status">✅ Payé</span>
+                        <span class="payment-value status-paid" id="payment-status">✅ Payé le ${invoiceDate} à ${invoiceTime}</span>
                     </div>
                     <div class="payment-row">
                         <span class="payment-label">Transaction:</span>
@@ -803,56 +876,25 @@ export default function handler(req, res) {
         
         // Fonction pour télécharger la facture
         function downloadInvoice() {
-            const statusMessage = document.getElementById('status-message');
-            const downloadBtn = document.getElementById('download-btn');
+            console.log('🔥 Téléchargement PDF demandé');
             
-            console.log('🔥 Fonction downloadInvoice appelée');
-            console.log('📊 Données disponibles:', invoiceData ? 'Oui' : 'Non');
+            // Masquer les éléments non nécessaires
+            const downloadSection = document.querySelector('.download-section');
+            const slackBadge = document.getElementById('slack-badge');
             
-            downloadBtn.disabled = true;
-            downloadBtn.textContent = '⏳ Téléchargement...';
-            statusMessage.innerHTML = '<span style="color: #ffc107;">⏳ Préparation du téléchargement PDF...</span>';
+            if (downloadSection) downloadSection.style.display = 'none';
+            if (slackBadge) slackBadge.style.display = 'none';
             
-            try {
-                // Masquer les éléments non nécessaires pour l'impression
-                const downloadSection = document.querySelector('.download-section');
-                const slackBadge = document.getElementById('slack-badge');
+            // Déclencher l'impression
+            setTimeout(() => {
+                window.print();
                 
-                console.log('🎯 Masquage des éléments pour impression');
-                if (downloadSection) {
-                    downloadSection.style.display = 'none';
-                    console.log('✅ Section téléchargement masquée');
-                }
-                if (slackBadge) {
-                    slackBadge.style.display = 'none';
-                    console.log('✅ Badge Slack masqué');
-                }
-                
-                // Détecter le type d'appareil
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                console.log('📱 Appareil mobile détecté:', isMobile);
-                console.log('🍎 Appareil iOS détecté:', isIOS);
-                
-                // Instructions spécifiques selon l'appareil
-                if (isIOS) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">🍎 iOS : Appuyez sur Partager > Imprimer > Pincer pour zoomer > Partager > Enregistrer dans Fichiers</span>';
-                } else if (isMobile) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">📱 Mobile : Menu (⋮) > Imprimer > Enregistrer au format PDF</span>';
-                } else {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">💻 Desktop : Dans la boîte d\'impression, choisissez "Enregistrer au format PDF"</span>';
-                }
-                
-                // Déclencher l'impression après un court délai
+                // Restaurer l'affichage après impression
                 setTimeout(() => {
-                    console.log('🖨️ Déclenchement de window.print()');
-                    
-                    // Essayer différentes méthodes selon le navigateur
-                    try {
-                        window.print();
-                        console.log('✅ window.print() exécuté');
-                    } catch (printError) {
-                        console.error('❌ Erreur window.print():', printError);
+                    if (downloadSection) downloadSection.style.display = 'block';
+                    if (slackBadge) slackBadge.style.display = 'block';
+                }, 1000);
+            }, 500);
                         
                         // Fallback : ouvrir dans un nouvel onglet
                         const printWindow = window.open('', '_blank');
@@ -896,138 +938,16 @@ export default function handler(req, res) {
             }
         }
         
-        // Initialisation au chargement de la page
+        // Initialisation simple
         window.addEventListener('load', function() {
-            const statusMessage = document.getElementById('status-message');
-            
-            console.log('Initialisation de la page facture');
-            console.log('Numéro de facture:', invoiceNumber);
-            console.log('Données disponibles:', invoiceData ? 'Oui' : 'Non');
-            
-            // Debug: Afficher les données directes reçues
-            console.log('🔍 Données directes reçues:', directData);
-            console.log('📊 Nom:', directData.name, 'Email:', directData.email, 'Service:', directData.service, 'Prix:', directData.price);
-            
-            // Vérifier d'abord les données directes depuis l'URL (condition simplifiée)
-            if (directData.name || directData.email || directData.service) {
-                console.log('🔍 Utilisation des données directes depuis l\'URL...');
-                console.log('📦 Données directes:', directData);
-                
-                // Créer un objet de données compatible
-                const urlData = {
-                    invoiceNumber: invoiceNumber,
-                    orderData: {
-                        name: decodeURIComponent(directData.name),
-                        email: decodeURIComponent(directData.email),
-                        phone: decodeURIComponent(directData.phone),
-                        serviceLabel: decodeURIComponent(directData.service),
-                        finalPrice: parseInt(directData.price) || 0,
-                        basePrice: parseInt(directData.price) || 0,
-                        delivery: directData.delivery || 'standard'
-                    },
-                    paymentMethod: decodeURIComponent(directData.payment) || 'Paiement validé',
-                    createdAt: new Date().toISOString()
-                };
-                
-                if (populateInvoiceData(urlData)) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture personnalisée chargée - Prête pour téléchargement</span>';
-                    console.log('✅ Données URL appliquées avec succès');
-                } else {
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du chargement des données URL</span>';
-                }
-                return;
-            }
-            
-            // Si des données de facture sont disponibles dans l'URL (depuis Slack)
-            else if (invoiceData && invoiceData !== 'null') {
-                try {
-                    console.log('🔍 Traitement des données Slack...');
-                    console.log('📦 Données brutes:', invoiceData.substring(0, 100) + '...');
-                    
-                    // Afficher le badge Slack
-                    document.getElementById('slack-badge').style.display = 'block';
-                    
-                    // Remplir les données de la facture
-                    if (populateInvoiceData(invoiceData)) {
-                        statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture chargée depuis Slack - Prête pour téléchargement</span>';
-                        console.log('✅ Données Slack chargées avec succès');
-                    } else {
-                        statusMessage.innerHTML = '<span style="color: #dc3545;">⚠️ Erreur lors du chargement des données</span>';
-                        console.error('❌ Erreur lors du remplissage des données');
-                    }
-                    
-                    return;
-                } catch (error) {
-                    console.error('❌ Erreur décodage données Slack:', error);
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur décodage: ' + error.message + '</span>';
-                }
-            } else {
-                console.log('⚠️ Aucune donnée Slack disponible - Utilisation de données de test');
-                statusMessage.innerHTML = '<span style="color: #ffc107;">⚠️ Aucune donnée Slack - Chargement de données de test</span>';
-                
-                // Créer des données de test réalistes
-                const testData = {
-                    invoiceNumber: invoiceNumber,
-                    orderData: {
-                        name: "Client Test",
-                        email: "client.test@example.com",
-                        phone: "+228 90 12 34 56",
-                        serviceLabel: "✍️ Création de CV sur mesure + Lettre",
-                        finalPrice: 7000,
-                        basePrice: 7000,
-                        delivery: "short"
-                    },
-                    paymentMethod: "Test - Données de démonstration",
-                    createdAt: new Date().toISOString()
-                };
-                
-                console.log('🧪 Utilisation de données de test:', testData);
-                
-                // Appliquer les données de test
-                if (populateInvoiceData(testData)) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Données de test chargées - Facture prête pour téléchargement</span>';
-                    console.log('✅ Données de test appliquées avec succès');
-                } else {
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du chargement des données de test</span>';
-                }
-                
-                return; // Sortir ici pour éviter le fallback localStorage
-            }
-            
-            // Fallback: essayer localStorage
-            try {
-                const storageKey = 'enixis_invoice_' + invoiceNumber;
-                const localInvoiceData = localStorage.getItem(storageKey);
-                
-                if (localInvoiceData) {
-                    const invoice = JSON.parse(localInvoiceData);
-                    
-                    // Remplir avec les données localStorage
-                    document.getElementById('invoice-date').textContent = formatDate(invoice.createdAt);
-                    document.getElementById('validity-date').textContent = formatDate(new Date(Date.now() + 30*24*60*60*1000));
-                    document.getElementById('invoice-time').textContent = formatTime(invoice.createdAt);
-                    
-                    document.getElementById('client-name').textContent = invoice.clientInfo.name;
-                    document.getElementById('client-email').textContent = invoice.clientInfo.email;
-                    document.getElementById('client-phone').textContent = invoice.clientInfo.phone;
-                    
-                    document.getElementById('service-name').textContent = invoice.serviceInfo.label;
-                    document.getElementById('item-description').textContent = invoice.serviceInfo.label;
-                    document.getElementById('item-date').textContent = formatDate(invoice.createdAt);
-                    document.getElementById('item-unit-price').textContent = formatFcfa(invoice.serviceInfo.amount);
-                    document.getElementById('item-total').textContent = formatFcfa(invoice.serviceInfo.amount);
-                    document.getElementById('final-total').textContent = formatFcfa(invoice.serviceInfo.amount);
-                    
-                    document.getElementById('payment-method').textContent = invoice.paymentMethod;
-                    
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture chargée depuis le stockage local</span>';
-                } else {
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Facture non trouvée - Accédez via le lien Slack</span>';
-                }
-            } catch (error) {
-                console.error('Erreur localStorage:', error);
-                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du chargement de la facture</span>';
-            }
+            console.log('✅ Facture chargée avec les données:', {
+                nom: '${clientName}',
+                email: '${clientEmail}',
+                service: '${clientService}',
+                prix: '${formattedPrice}'
+            });
+        });
+
         });
     </script>
 </body>
