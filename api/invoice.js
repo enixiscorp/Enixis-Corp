@@ -150,6 +150,14 @@ export default function handler(req, res) {
             font-weight: bold;
         }
         
+        .company-logo-img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #0A0F2C;
+        }
+        
         .company-details h2 {
             color: #0A0F2C;
             font-size: 24px;
@@ -369,8 +377,9 @@ export default function handler(req, res) {
         /* Styles d'impression */
         @media print {
             body {
-                background: white;
-                padding: 0;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             
             .download-section,
@@ -379,9 +388,37 @@ export default function handler(req, res) {
             }
             
             .page-container {
-                box-shadow: none;
-                border-radius: 0;
-                max-width: none;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                max-width: none !important;
+                margin: 0 !important;
+                background: white !important;
+            }
+            
+            .invoice-document {
+                padding: 20px !important;
+                background: white !important;
+            }
+            
+            /* Assurer que tous les éléments sont visibles à l'impression */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+            
+            .invoice-table thead {
+                background: #1e3a8a !important;
+                color: white !important;
+            }
+            
+            .payment-info-section {
+                background: #e8f5e8 !important;
+                border-left: 4px solid #28a745 !important;
+            }
+            
+            .info-box {
+                background: #f8f9fa !important;
+                border-left: 4px solid #0A0F2C !important;
             }
         }
     </style>
@@ -395,8 +432,13 @@ export default function handler(req, res) {
             <h3>📄 Facture ${invoice} - Enixis Corp</h3>
             <p>Cliquez sur le bouton ci-dessous pour télécharger la facture au format PDF</p>
             <button class="download-btn" onclick="downloadInvoice()" id="download-btn">📥 Télécharger PDF</button>
+            <button class="download-btn" onclick="printInvoice()" id="print-btn">🖨️ Imprimer</button>
             <a href="https://enixis-corp.vercel.app" class="download-btn secondary-btn">🏠 Retour au site</a>
-            <div id="status-message" style="margin-top: 15px; font-size: 14px;"></div>
+            <div id="status-message" style="margin-top: 15px; font-size: 14px;">
+                <p style="color: #666; font-size: 12px; margin: 5px 0;">
+                    💡 Astuce: Utilisez Ctrl+P (Windows) ou Cmd+P (Mac) puis "Enregistrer au format PDF"
+                </p>
+            </div>
         </div>
         
         <!-- Document de facture -->
@@ -404,7 +446,7 @@ export default function handler(req, res) {
             <!-- Header -->
             <div class="invoice-header">
                 <div class="company-info">
-                    <div class="company-logo">EC</div>
+                    <img src="https://enixis-corp.vercel.app/images/enixis corp_logo.png" alt="Enixis Corp" class="company-logo-img">
                     <div class="company-details">
                         <h2>Enixis Corp</h2>
                         <p>contacteccorp@gmail.com</p>
@@ -513,6 +555,31 @@ export default function handler(req, res) {
         const invoiceNumber = '${invoice}';
         const invoiceData = '${data || ''}';
         
+        // Fonction pour imprimer la facture
+        function printInvoice() {
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.innerHTML = '<span style="color: #28a745;">🖨️ Ouverture de la boîte de dialogue d\'impression...</span>';
+            
+            // Masquer les éléments non nécessaires
+            const downloadSection = document.querySelector('.download-section');
+            const slackBadge = document.getElementById('slack-badge');
+            
+            if (downloadSection) downloadSection.style.display = 'none';
+            if (slackBadge) slackBadge.style.display = 'none';
+            
+            // Déclencher l'impression
+            setTimeout(() => {
+                window.print();
+                
+                // Restaurer l'affichage
+                setTimeout(() => {
+                    if (downloadSection) downloadSection.style.display = 'block';
+                    if (slackBadge && invoiceData) slackBadge.style.display = 'block';
+                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture prête ! Dans la boîte d\'impression, choisissez "Enregistrer au format PDF"</span>';
+                }, 500);
+            }, 100);
+        }
+        
         // Fonction pour formater les montants en F CFA
         function formatFcfa(amount) {
             if (!amount || amount === 0) return '0 F CFA';
@@ -543,10 +610,27 @@ export default function handler(req, res) {
                     throw new Error('orderData manquant dans les données décodées');
                 }
                 
-                // Dates
+                // Calcul des dates selon le délai choisi
                 const createdDate = new Date(decodedData.createdAt);
                 const validityDate = new Date(createdDate);
-                validityDate.setDate(validityDate.getDate() + 30); // 30 jours de validité
+                
+                // Calculer la date de validité selon le délai
+                switch(orderData.delivery) {
+                    case 'urgent':
+                        validityDate.setDate(validityDate.getDate() + 1); // 24h
+                        break;
+                    case 'short':
+                        validityDate.setDate(validityDate.getDate() + 7); // 7 jours
+                        break;
+                    case 'medium':
+                        validityDate.setDate(validityDate.getDate() + 28); // 4 semaines
+                        break;
+                    case 'long':
+                        validityDate.setMonth(validityDate.getMonth() + 6); // 6 mois
+                        break;
+                    default:
+                        validityDate.setDate(validityDate.getDate() + 14); // 2 semaines par défaut
+                }
                 
                 document.getElementById('invoice-date').textContent = formatDate(decodedData.createdAt);
                 document.getElementById('validity-date').textContent = formatDate(validityDate);
@@ -565,20 +649,48 @@ export default function handler(req, res) {
                                  orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
                 document.getElementById('service-delay').textContent = delayText;
                 
+                // Calcul des prix avec gestion des codes promotionnels
+                const basePrice = orderData.basePrice || orderData.finalPrice || 0;
+                const finalPrice = orderData.finalPrice || 0;
+                const hasDiscount = basePrice > finalPrice;
+                
                 // Tableau
                 document.getElementById('item-description').textContent = orderData.serviceLabel || 'Service';
                 document.getElementById('item-date').textContent = formatDate(decodedData.createdAt);
-                document.getElementById('item-unit-price').textContent = formatFcfa(orderData.finalPrice || 0);
-                document.getElementById('item-total').textContent = formatFcfa(orderData.finalPrice || 0);
+                document.getElementById('item-unit-price').textContent = formatFcfa(basePrice);
+                document.getElementById('item-total').textContent = formatFcfa(finalPrice);
                 
-                // Total
-                document.getElementById('final-total').textContent = formatFcfa(orderData.finalPrice || 0);
+                // Gestion des remises (codes promotionnels)
+                const totalsContainer = document.querySelector('.invoice-totals');
+                if (hasDiscount && orderData.coupon) {
+                    // Ajouter les lignes de remise
+                    const discountAmount = basePrice - finalPrice;
+                    const discountHtml = \`
+                        <div class="total-row">
+                            <span>Sous-total TTC</span>
+                            <span>\${formatFcfa(basePrice)}</span>
+                        </div>
+                        <div class="total-row" style="color: #dc3545;">
+                            <span>Remise (\${orderData.coupon.code} - \${orderData.coupon.percent}%)</span>
+                            <span>-\${formatFcfa(discountAmount)}</span>
+                        </div>
+                    \`;
+                    
+                    // Insérer avant le total final
+                    const finalTotalDiv = totalsContainer.querySelector('.total-final');
+                    finalTotalDiv.insertAdjacentHTML('beforebegin', discountHtml);
+                }
+                
+                // Total final
+                document.getElementById('final-total').textContent = formatFcfa(finalPrice);
                 
                 // Paiement
                 document.getElementById('payment-method').textContent = decodedData.paymentMethod || 'Non spécifié';
                 document.getElementById('payment-status').textContent = '✅ Payé le ' + formatDate(decodedData.createdAt) + ' à ' + formatTime(decodedData.createdAt);
                 
                 console.log('✅ Données remplies avec succès');
+                console.log('Prix de base:', basePrice, 'Prix final:', finalPrice);
+                console.log('Code promo:', orderData.coupon);
                 return true;
             } catch (error) {
                 console.error('Erreur lors du remplissage des données:', error);
@@ -594,35 +706,35 @@ export default function handler(req, res) {
             
             downloadBtn.disabled = true;
             downloadBtn.textContent = '⏳ Téléchargement...';
-            statusMessage.innerHTML = '<span style="color: #ffc107;">⏳ Préparation du téléchargement...</span>';
+            statusMessage.innerHTML = '<span style="color: #ffc107;">⏳ Génération du PDF en cours...</span>';
             
-            // Si des données de facture sont disponibles dans l'URL (depuis Slack)
-            if (invoiceData) {
-                try {
-                    // Construire l'URL de téléchargement correctement
-                    const currentUrl = new URL(window.location.href);
-                    currentUrl.searchParams.set('download', 'pdf');
-                    const downloadUrl = currentUrl.toString();
+            try {
+                // Utiliser window.print() pour générer le PDF
+                // Masquer les éléments non nécessaires pour l'impression
+                const downloadSection = document.querySelector('.download-section');
+                const slackBadge = document.getElementById('slack-badge');
+                
+                if (downloadSection) downloadSection.style.display = 'none';
+                if (slackBadge) slackBadge.style.display = 'none';
+                
+                // Déclencher l'impression/sauvegarde PDF
+                window.print();
+                
+                // Restaurer l'affichage après un délai
+                setTimeout(() => {
+                    if (downloadSection) downloadSection.style.display = 'block';
+                    if (slackBadge && invoiceData) slackBadge.style.display = 'block';
                     
-                    console.log('URL de téléchargement:', downloadUrl);
-                    
-                    // Créer un lien de téléchargement
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = 'Facture_' + invoiceNumber + '.pdf';
-                    link.style.display = 'none';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Téléchargement démarré ! Vérifiez votre dossier de téléchargements.</span>';
+                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ PDF généré ! Utilisez Ctrl+P ou Cmd+P pour sauvegarder.</span>';
                     downloadBtn.disabled = false;
                     downloadBtn.textContent = '📥 Télécharger PDF';
-                    return;
-                } catch (error) {
-                    console.error('Erreur téléchargement direct:', error);
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors du téléchargement: ' + error.message + '</span>';
-                }
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Erreur génération PDF:', error);
+                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur lors de la génération PDF: ' + error.message + '</span>';
+                downloadBtn.disabled = false;
+                downloadBtn.textContent = '📥 Télécharger PDF';
             }
             
             // Fallback: essayer de récupérer depuis localStorage
