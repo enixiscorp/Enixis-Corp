@@ -910,8 +910,12 @@ export default function handler(req, res) {
             console.log('Numéro de facture:', invoiceNumber);
             console.log('Données disponibles:', invoiceData ? 'Oui' : 'Non');
             
+            // Debug: Afficher les données directes reçues
+            console.log('🔍 Données directes reçues:', directData);
+            console.log('📊 Nom:', directData.name, 'Email:', directData.email);
+            
             // Vérifier d'abord les données directes depuis l'URL
-            if (directData.name && directData.email) {
+            if (directData.name && directData.name !== '' && directData.email && directData.email !== '') {
                 console.log('🔍 Utilisation des données directes depuis l\'URL...');
                 console.log('📦 Données directes:', directData);
                 

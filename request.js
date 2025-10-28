@@ -1148,7 +1148,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
     if (invoiceImageUrl && invoiceBase64) {
       // URL vers la page de téléchargement de facture avec données encodées
       // Créer l'URL avec les données directes du formulaire
-      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name)}&email=${encodeURIComponent(orderData.email)}&phone=${encodeURIComponent(orderData.phone)}&service=${encodeURIComponent(orderData.serviceLabel)}&price=${orderData.finalPrice}&delivery=${orderData.delivery}&payment=${encodeURIComponent(paymentMethod)}`;
+      console.log('🔍 Génération URL facture avec orderData:', orderData);
+      const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
       
       payload.attachments.push({
         color: 'good',
