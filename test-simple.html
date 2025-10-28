@@ -37,9 +37,19 @@
     <div class="info">
         <strong>Instructions :</strong><br>
         1. Cliquez sur le bouton ci-dessus<br>
-        2. Ouvrez F12 → Console<br>
-        3. Vérifiez que "Jean MARTIN" s'affiche dans la facture (pas "Nom du client")<br>
-        4. Vérifiez les logs dans la console
+        2. Vérifiez que "Jean MARTIN" s'affiche dans la facture<br>
+        3. <strong>Testez le bouton "📥 Télécharger PDF"</strong><br>
+        4. Dans la boîte d'impression, choisissez "Enregistrer au format PDF"<br>
+        5. Vérifiez que le PDF est au format A4 avec toutes les données
+    </div>
+    
+    <div class="info" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+        <strong>🔥 BOUTON PDF CORRIGÉ :</strong><br>
+        • Fonction downloadInvoice() complètement refaite<br>
+        • Instructions spécifiques par appareil (iOS, Android, Desktop)<br>
+        • Format A4 optimisé avec marges réduites<br>
+        • Texte adapté pour tenir sur une page<br>
+        • Fallback si window.print() échoue
     </div>
 </body>
 </html>

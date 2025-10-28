@@ -2680,12 +2680,59 @@ function showInvoice(orderData, paymentMethod) {
           ✨ N'hésitez pas à explorer nos autres services sur notre site !
         </p>
       </div>
+      
+      <!-- Bouton de téléchargement PDF -->
+      <div class="pdf-download-section" style="text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #28a745;">
+        <p style="margin-bottom: 15px; color: #666; font-size: 14px;">
+          📄 Téléchargez votre facture au format PDF (optimisé pour impression A4)
+        </p>
+        <button id="download-pdf-btn" class="btn primary" style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease;">
+          📥 Télécharger PDF
+        </button>
+        <p style="margin-top: 10px; color: #666; font-size: 12px;">
+          💡 Le PDF sera optimisé pour le format A4 et prêt à imprimer
+        </p>
+      </div>
     </div>
   `;
   
   invoiceContent.innerHTML = invoiceHTML;
   invoicePopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  
+  // Ajouter l'événement click au bouton PDF après l'insertion du HTML
+  setTimeout(() => {
+    const downloadBtn = document.getElementById('download-pdf-btn');
+    if (downloadBtn) {
+      downloadBtn.addEventListener('click', async () => {
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = '⏳ Génération PDF...';
+        downloadBtn.style.background = '#6c757d';
+        
+        try {
+          await downloadInvoiceAsPDF();
+          downloadBtn.textContent = '✅ PDF Téléchargé !';
+          downloadBtn.style.background = '#28a745';
+          
+          setTimeout(() => {
+            downloadBtn.disabled = false;
+            downloadBtn.textContent = '📥 Télécharger PDF';
+            downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+          }, 3000);
+        } catch (error) {
+          console.error('❌ Erreur téléchargement PDF:', error);
+          downloadBtn.textContent = '❌ Erreur - Réessayer';
+          downloadBtn.style.background = '#dc3545';
+          downloadBtn.disabled = false;
+          
+          setTimeout(() => {
+            downloadBtn.textContent = '📥 Télécharger PDF';
+            downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+          }, 3000);
+        }
+      });
+    }
+  }, 100);
 }
 
 async function downloadInvoiceAsPDF() {
@@ -2694,45 +2741,20 @@ async function downloadInvoiceAsPDF() {
   
   if (!invoiceElement || !invoiceData) {
     console.error('❌ Erreur lors de la génération du PDF');
-    return;
+    throw new Error('Données de facture manquantes');
   }
 
   try {
-    // Créer le PDF avec jsPDF en format A4 universel
+    console.log('🔄 Génération du PDF A4 optimisé...');
+    
+    // Vérifier que jsPDF est disponible
+    if (!window.jspdf) {
+      throw new Error('Bibliothèque jsPDF non disponible');
+    }
+    
     const { jsPDF } = window.jspdf;
     
-    // Forcer les dimensions A4 pour la capture
-    const originalWidth = invoiceElement.style.width;
-    const originalMaxWidth = invoiceElement.style.maxWidth;
-    
-    // Appliquer temporairement les dimensions A4 exactes
-    invoiceElement.style.width = '210mm';
-    invoiceElement.style.maxWidth = '210mm';
-    
-    // Attendre que le DOM se mette à jour
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Capturer avec des paramètres optimisés pour A4
-    const canvas = await html2canvas(invoiceElement, {
-      backgroundColor: '#ffffff',
-      scale: 2, // Équilibre entre qualité et performance
-      useCORS: true,
-      allowTaint: true,
-      width: 794, // 210mm en pixels à 96 DPI
-      height: 1123, // 297mm en pixels à 96 DPI
-      logging: false,
-      removeContainer: true,
-      scrollX: 0,
-      scrollY: 0
-    });
-    
-    // Restaurer les styles originaux
-    invoiceElement.style.width = originalWidth;
-    invoiceElement.style.maxWidth = originalMaxWidth;
-    
-    const imgData = canvas.toDataURL('image/png', 0.95);
-    
-    // Créer le PDF A4
+    // Créer le PDF A4 avec du contenu textuel optimisé
     const pdf = new jsPDF({
       orientation: 'portrait',
       unit: 'mm',
@@ -2740,30 +2762,242 @@ async function downloadInvoiceAsPDF() {
       compress: true
     });
     
-    // Dimensions A4 exactes
-    const pdfWidth = 210;
-    const pdfHeight = 297;
+    // Dimensions A4 et marges
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 15;
+    const contentWidth = pageWidth - (margin * 2);
     
-    // Ajouter l'image en pleine page A4
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+    // Position Y courante
+    let currentY = margin;
+    
+    // Couleurs
+    const primaryColor = [10, 15, 44]; // #0A0F2C
+    const secondaryColor = [40, 167, 69]; // #28a745
+    const textColor = [51, 51, 51]; // #333333
+    const grayColor = [102, 102, 102]; // #666666
+    
+    // Fonction pour ajouter du texte avec retour à la ligne automatique
+    function addText(text, x, y, options = {}) {
+      const fontSize = options.fontSize || 10;
+      const maxWidth = options.maxWidth || contentWidth;
+      const lineHeight = options.lineHeight || fontSize * 0.4;
+      
+      pdf.setFontSize(fontSize);
+      if (options.color) pdf.setTextColor(...options.color);
+      if (options.style) pdf.setFont('helvetica', options.style);
+      
+      const lines = pdf.splitTextToSize(text, maxWidth);
+      pdf.text(lines, x, y);
+      
+      return y + (lines.length * lineHeight);
+    }
+    
+    // En-tête de la facture
+    pdf.setFillColor(...primaryColor);
+    pdf.rect(0, 0, pageWidth, 25, 'F');
+    
+    // Logo et nom de l'entreprise (en blanc sur fond bleu)
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('ENIXIS CORP', margin, 15);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Solutions IA & Optimisation Business', margin, 20);
+    
+    // Numéro de facture (à droite)
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    const invoiceText = `FACTURE ${invoiceData.invoiceNumber}`;
+    const invoiceWidth = pdf.getTextWidth(invoiceText);
+    pdf.text(invoiceText, pageWidth - margin - invoiceWidth, 15);
+    
+    currentY = 35;
+    
+    // Informations de l'entreprise
+    pdf.setTextColor(...textColor);
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    
+    currentY = addText('ENIXIS CORP', margin, currentY, { fontSize: 12, style: 'bold', color: primaryColor });
+    currentY = addText('Email: contacteccorp@gmail.com', margin, currentY + 2);
+    currentY = addText('Téléphone: +228 97 57 23 46', margin, currentY + 2);
+    currentY = addText('Site web: https://enixis-corp.vercel.app', margin, currentY + 2);
+    
+    // Dates (à droite)
+    const dateX = pageWidth - margin - 60;
+    let dateY = 35;
+    dateY = addText(`Date: ${invoiceData.currentDate}`, dateX, dateY, { fontSize: 9 });
+    dateY = addText(`Validité: ${invoiceData.validityDateStr}`, dateX, dateY + 2, { fontSize: 9 });
+    dateY = addText(`Heure: ${new Date().toLocaleTimeString('fr-FR')}`, dateX, dateY + 2, { fontSize: 9 });
+    
+    currentY += 15;
+    
+    // Ligne de séparation
+    pdf.setDrawColor(...grayColor);
+    pdf.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 10;
+    
+    // Section client et service (deux colonnes)
+    const colWidth = (contentWidth - 10) / 2;
+    
+    // Informations client
+    pdf.setFillColor(248, 249, 250);
+    pdf.rect(margin, currentY, colWidth, 35, 'F');
+    pdf.setDrawColor(...primaryColor);
+    pdf.rect(margin, currentY, colWidth, 35);
+    
+    let clientY = currentY + 5;
+    clientY = addText('📋 INFORMATIONS CLIENT', margin + 5, clientY, { fontSize: 11, style: 'bold', color: primaryColor });
+    clientY = addText(`Nom: ${invoiceData.orderData.name}`, margin + 5, clientY + 5, { fontSize: 10 });
+    clientY = addText(`Email: ${invoiceData.orderData.email}`, margin + 5, clientY + 3, { fontSize: 10 });
+    clientY = addText(`Téléphone: ${invoiceData.orderData.phone}`, margin + 5, clientY + 3, { fontSize: 10 });
+    
+    // Informations service
+    const serviceX = margin + colWidth + 10;
+    pdf.setFillColor(248, 249, 250);
+    pdf.rect(serviceX, currentY, colWidth, 35, 'F');
+    pdf.setDrawColor(...primaryColor);
+    pdf.rect(serviceX, currentY, colWidth, 35);
+    
+    let serviceY = currentY + 5;
+    serviceY = addText('🎯 PRESTATION DEMANDÉE', serviceX + 5, serviceY, { fontSize: 11, style: 'bold', color: primaryColor });
+    serviceY = addText(`Service: ${invoiceData.orderData.serviceLabel}`, serviceX + 5, serviceY + 5, { fontSize: 10, maxWidth: colWidth - 10 });
+    
+    const delayText = invoiceData.orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
+                     invoiceData.orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
+                     invoiceData.orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                     invoiceData.orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
+    serviceY = addText(`Délai: ${delayText}`, serviceX + 5, serviceY + 3, { fontSize: 10 });
+    
+    currentY += 45;
+    
+    // Tableau des prestations
+    const tableY = currentY;
+    const rowHeight = 8;
+    const colWidths = [60, 25, 15, 15, 35, 35]; // Largeurs des colonnes
+    const headers = ['DESCRIPTION', 'DATE', 'QTÉ', 'UNITÉ', 'PRIX UNITAIRE', 'MONTANT'];
+    
+    // En-tête du tableau
+    pdf.setFillColor(30, 58, 138);
+    pdf.rect(margin, tableY, contentWidth, rowHeight, 'F');
+    
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'bold');
+    
+    let colX = margin;
+    headers.forEach((header, i) => {
+      pdf.text(header, colX + 2, tableY + 5.5);
+      colX += colWidths[i];
+    });
+    
+    // Ligne de données
+    const dataY = tableY + rowHeight;
+    pdf.setFillColor(255, 255, 255);
+    pdf.rect(margin, dataY, contentWidth, rowHeight, 'F');
+    pdf.setDrawColor(...grayColor);
+    pdf.rect(margin, dataY, contentWidth, rowHeight);
+    
+    pdf.setTextColor(...textColor);
+    pdf.setFont('helvetica', 'normal');
+    
+    const rowData = [
+      `→ ${invoiceData.orderData.serviceLabel}`,
+      invoiceData.currentDate,
+      '1,00',
+      'pcs',
+      formatFcfa(invoiceData.orderData.basePrice || invoiceData.orderData.finalPrice),
+      formatFcfa(invoiceData.orderData.finalPrice)
+    ];
+    
+    colX = margin;
+    rowData.forEach((data, i) => {
+      const maxColWidth = colWidths[i] - 4;
+      const lines = pdf.splitTextToSize(data, maxColWidth);
+      pdf.text(lines, colX + 2, dataY + 5.5);
+      colX += colWidths[i];
+    });
+    
+    currentY = dataY + rowHeight + 10;
+    
+    // Section totaux
+    const totalX = pageWidth - margin - 80;
+    
+    // Si remise appliquée
+    if (invoiceData.orderData.coupon) {
+      currentY = addText(`Sous-total TTC: ${formatFcfa(invoiceData.orderData.basePrice)}`, totalX, currentY, { fontSize: 10 });
+      currentY = addText(`Remise (${invoiceData.orderData.coupon.code} - ${invoiceData.orderData.coupon.percent}%): -${formatFcfa((invoiceData.orderData.basePrice || invoiceData.orderData.finalPrice) - invoiceData.orderData.finalPrice)}`, totalX, currentY + 3, { fontSize: 10, color: [220, 53, 69] });
+    }
+    
+    // Total final
+    pdf.setFillColor(...secondaryColor);
+    pdf.rect(totalX - 5, currentY + 2, 85, 12, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    currentY = addText(`TOTAL TTC: ${formatFcfa(invoiceData.orderData.finalPrice)}`, totalX, currentY + 9, { fontSize: 12, color: [255, 255, 255] });
+    
+    currentY += 20;
+    
+    // Informations de paiement
+    pdf.setFillColor(232, 245, 232);
+    pdf.rect(margin, currentY, contentWidth, 25, 'F');
+    pdf.setDrawColor(...secondaryColor);
+    pdf.rect(margin, currentY, contentWidth, 25);
+    
+    pdf.setTextColor(...textColor);
+    pdf.setFont('helvetica', 'bold');
+    currentY = addText('💳 INFORMATIONS DE PAIEMENT', margin + 5, currentY + 7, { fontSize: 11, color: secondaryColor });
+    
+    pdf.setFont('helvetica', 'normal');
+    currentY = addText(`Méthode: ${invoiceData.paymentMethod}`, margin + 5, currentY + 5, { fontSize: 10 });
+    currentY = addText(`Statut: ✅ Payé le ${new Date().toLocaleString('fr-FR')}`, margin + 5, currentY + 3, { fontSize: 10, color: secondaryColor });
+    currentY = addText('Transaction: 🔒 Sécurisée et validée', margin + 5, currentY + 3, { fontSize: 10 });
+    
+    currentY += 30;
+    
+    // Footer
+    pdf.setTextColor(...grayColor);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    
+    currentY = addText('🎉 Merci pour votre commande !', margin, currentY, { fontSize: 11, style: 'bold', color: secondaryColor });
+    currentY = addText('Cette facture a été générée automatiquement. Nous commencerons le travail selon le délai convenu.', margin, currentY + 5, { fontSize: 9 });
+    currentY = addText('Contact: contacteccorp@gmail.com | +228 97 57 23 46', margin, currentY + 5, { fontSize: 9 });
+    currentY = addText('✨ N\'hésitez pas à explorer nos autres services sur notre site !', margin, currentY + 5, { fontSize: 9, color: secondaryColor });
     
     // Métadonnées du PDF
     pdf.setProperties({
-      title: `Facture ${invoiceData.invoiceNumber}`,
-      subject: 'Facture Enixis Corp',
+      title: `Facture ${invoiceData.invoiceNumber} - Enixis Corp`,
+      subject: 'Facture Enixis Corp - Solutions IA & Optimisation Business',
       author: 'Enixis Corp',
       creator: 'Enixis Corp - Solutions IA & Optimisation Business',
-      producer: 'Enixis Corp',
-      keywords: 'facture, enixis corp, ia, optimisation'
+      producer: 'Enixis Corp PDF Generator',
+      keywords: 'facture, enixis corp, ia, optimisation, business, ' + invoiceData.orderData.serviceLabel
     });
     
-    // Téléchargement automatique
-    pdf.save(`Facture_${invoiceData.invoiceNumber}.pdf`);
+    // Téléchargement automatique avec nom de fichier optimisé
+    const fileName = `Facture_${invoiceData.invoiceNumber}_EnixisCorp.pdf`;
+    pdf.save(fileName);
     
-    console.log('✅ PDF A4 téléchargé automatiquement avec succès');
+    console.log(`✅ PDF A4 textuel téléchargé avec succès: ${fileName}`);
+    console.log('📄 Contenu: Format A4 optimisé avec texte sélectionnable et imprimable');
+    
+    return true;
+    
   } catch (error) {
     console.error('❌ Erreur génération PDF:', error);
-    // Fallback silencieux - pas d'alerte pour ne pas perturber l'UX
+    console.error('📋 Détails:', {
+      hasInvoiceElement: !!invoiceElement,
+      hasInvoiceData: !!invoiceData,
+      hasJsPDF: !!window.jspdf,
+      errorMessage: error.message
+    });
+    
+    // Relancer l'erreur pour que le bouton puisse l'afficher
+    throw error;
   }
 }
 

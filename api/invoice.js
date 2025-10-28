@@ -392,15 +392,16 @@ export default function handler(req, res) {
         @media print {
             @page {
                 size: A4;
-                margin: 15mm;
+                margin: 12mm;
             }
             
             body {
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
-                font-size: 12px !important;
-                line-height: 1.4 !important;
+                font-size: 11px !important;
+                line-height: 1.3 !important;
+                color: black !important;
             }
             
             .download-section,
@@ -425,41 +426,97 @@ export default function handler(req, res) {
             }
             
             .invoice-header {
-                margin-bottom: 20px !important;
+                margin-bottom: 15px !important;
                 page-break-inside: avoid;
+            }
+            
+            .invoice-header h2 {
+                font-size: 18px !important;
+            }
+            
+            .company-details p {
+                font-size: 10px !important;
+                margin: 1px 0 !important;
+            }
+            
+            .invoice-dates p {
+                font-size: 10px !important;
+                margin: 2px 0 !important;
             }
             
             .client-service-section {
-                margin-bottom: 20px !important;
+                margin-bottom: 15px !important;
                 page-break-inside: avoid;
+            }
+            
+            .info-box {
+                padding: 12px !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .info-box h4 {
+                font-size: 12px !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .client-details p, .service-details p {
+                font-size: 10px !important;
+                margin: 4px 0 !important;
             }
             
             .invoice-table {
-                margin: 15px 0 !important;
+                margin: 12px 0 !important;
                 page-break-inside: avoid;
-                font-size: 11px !important;
+                font-size: 10px !important;
             }
             
-            .invoice-table th,
+            .invoice-table th {
+                padding: 6px 4px !important;
+                font-size: 9px !important;
+                font-weight: bold !important;
+            }
+            
             .invoice-table td {
-                padding: 8px 6px !important;
+                padding: 6px 4px !important;
+                font-size: 10px !important;
             }
             
             .invoice-totals {
-                margin-top: 15px !important;
+                margin-top: 12px !important;
                 page-break-inside: avoid;
+            }
+            
+            .total-final {
+                padding: 10px !important;
+                font-size: 14px !important;
             }
             
             .payment-info-section {
-                margin: 15px 0 !important;
+                margin: 12px 0 !important;
                 page-break-inside: avoid;
                 background: #f0f8f0 !important;
                 border-left: 3px solid #28a745 !important;
+                padding: 12px !important;
+            }
+            
+            .payment-info-section h4 {
+                font-size: 12px !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .payment-row {
+                padding: 4px 0 !important;
+                font-size: 10px !important;
             }
             
             .invoice-footer {
-                margin-top: 20px !important;
+                margin-top: 15px !important;
                 page-break-inside: avoid;
+                font-size: 9px !important;
+            }
+            
+            .invoice-footer p {
+                margin: 3px 0 !important;
             }
             
             /* Assurer que tous les éléments sont visibles à l'impression */
@@ -874,30 +931,96 @@ export default function handler(req, res) {
             }
         }
         
-        // Fonction pour télécharger la facture
+        // Fonction pour télécharger la facture en PDF
         function downloadInvoice() {
             console.log('🔥 Téléchargement PDF demandé');
             
-            // Masquer les éléments non nécessaires
+            const statusMessage = document.getElementById('status-message');
+            const downloadBtn = document.getElementById('download-btn');
+            
+            // Désactiver le bouton pendant le traitement
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = '⏳ Génération PDF...';
+            }
+            
+            // Afficher un message de statut
+            if (statusMessage) {
+                statusMessage.innerHTML = '<span style="color: #ffc107;">📄 Préparation du PDF format A4...</span>';
+            }
+            
+            // Masquer les éléments non nécessaires pour l'impression
             const downloadSection = document.querySelector('.download-section');
             const slackBadge = document.getElementById('slack-badge');
             
             if (downloadSection) downloadSection.style.display = 'none';
             if (slackBadge) slackBadge.style.display = 'none';
             
-            // Déclencher l'impression
+            // Détecter le type d'appareil pour les instructions
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            // Afficher les instructions selon l'appareil
+            if (statusMessage) {
+                if (isIOS) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">🍎 iOS : Appuyez sur Partager → Imprimer → Pincer pour zoomer → Partager → Enregistrer dans Fichiers</span>';
+                } else if (isMobile) {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">📱 Android : Menu (⋮) → Imprimer → Enregistrer au format PDF</span>';
+                } else {
+                    statusMessage.innerHTML = '<span style="color: #28a745;">💻 Desktop : Dans la boîte d\'impression, choisissez "Enregistrer au format PDF"</span>';
+                }
+            }
+            
+            // Déclencher l'impression après un court délai
             setTimeout(() => {
-                window.print();
+                try {
+                    console.log('🖨️ Ouverture de la boîte d\'impression...');
+                    window.print();
+                    
+                    // Message de confirmation
+                    if (statusMessage) {
+                        statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erreur window.print():', error);
+                    
+                    // Fallback : ouvrir dans un nouvel onglet
+                    try {
+                        const printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                            printWindow.document.write(document.documentElement.outerHTML);
+                            printWindow.document.close();
+                            printWindow.focus();
+                            printWindow.print();
+                            
+                            if (statusMessage) {
+                                statusMessage.innerHTML = '<span style="color: #28a745;">✅ Facture ouverte dans un nouvel onglet pour impression</span>';
+                            }
+                        } else {
+                            throw new Error('Impossible d\'ouvrir une nouvelle fenêtre');
+                        }
+                    } catch (fallbackError) {
+                        console.error('❌ Erreur fallback:', fallbackError);
+                        if (statusMessage) {
+                            statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : Veuillez autoriser les pop-ups et réessayer</span>';
+                        }
+                    }
+                }
                 
                 // Restaurer l'affichage après impression
                 setTimeout(() => {
                     if (downloadSection) downloadSection.style.display = 'block';
                     if (slackBadge) slackBadge.style.display = 'block';
-                }, 1000);
+                    
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = '📥 Télécharger PDF';
+                    }
+                }, 2000);
+                
             }, 500);
-                        
-                        // Fallback : ouvrir dans un nouvel onglet
-                        const printWindow = window.open('', '_blank');
+        }
                         if (printWindow) {
                             printWindow.document.write(document.documentElement.outerHTML);
                             printWindow.document.close();
