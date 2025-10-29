@@ -907,16 +907,15 @@ export default function handler(req, res) {
                 if (hasDiscount && normalizedData.coupon && totalsContainer) {
                     console.log('💰 Application de la remise:', normalizedData.coupon);
                     const discountAmount = basePrice - finalPrice;
-                    const discountHtml = \`
-                        <div class="total-row">
-                            <span>Sous-total TTC</span>
-                            <span>\${formatFcfa(basePrice)}</span>
-                        </div>
-                        <div class="total-row" style="color: #dc3545;">
-                            <span>Remise (\${normalizedData.coupon.code} - \${normalizedData.coupon.percent}%)</span>
-                            <span>-\${formatFcfa(discountAmount)}</span>
-                        </div>
-                    \`;
+                    const discountHtml = 
+                        '<div class="total-row">' +
+                            '<span>Sous-total TTC</span>' +
+                            '<span>' + formatFcfa(basePrice) + '</span>' +
+                        '</div>' +
+                        '<div class="total-row" style="color: #dc3545;">' +
+                            '<span>Remise (' + normalizedData.coupon.code + ' - ' + normalizedData.coupon.percent + '%)</span>' +
+                            '<span>-' + formatFcfa(discountAmount) + '</span>' +
+                        '</div>';
                     
                     // Insérer avant le total final
                     const finalTotalDiv = totalsContainer.querySelector('.total-final');
@@ -958,7 +957,7 @@ export default function handler(req, res) {
         }
         
         // Fonction pour télécharger la facture en PDF
-        function downloadInvoice() {
+        window.downloadInvoice = function() {
             console.log('🔥 Téléchargement PDF demandé');
             
             const statusMessage = document.getElementById('status-message');
