@@ -958,7 +958,7 @@ export default function handler(req, res) {
         }
         
         // Fonction pour télécharger la facture en PDF
-        async function downloadInvoice() {
+        function downloadInvoice() {
             console.log('🔥 Téléchargement PDF demandé');
             
             const statusMessage = document.getElementById('status-message');
@@ -972,317 +972,37 @@ export default function handler(req, res) {
             
             // Afficher un message de statut
             if (statusMessage) {
-                statusMessage.innerHTML = '<span style="color: #ffc107;">📄 Génération du PDF format A4...</span>';
+                statusMessage.innerHTML = '<span style="color: #ffc107;">📄 Préparation du téléchargement PDF...</span>';
             }
             
             try {
-                // Charger jsPDF dynamiquement si pas déjà chargé
-                if (!window.jspdf) {
-                    console.log('📦 Chargement de jsPDF...');
-                    await loadJsPDF();
-                }
+                // Masquer les éléments non nécessaires pour l'impression
+                const downloadSection = document.querySelector('.download-section');
+                const slackBadge = document.getElementById('slack-badge');
                 
-                if (!window.jspdf) {
-                    throw new Error('Impossible de charger jsPDF');
-                }
+                if (downloadSection) downloadSection.style.display = 'none';
+                if (slackBadge) slackBadge.style.display = 'none';
                 
-                const { jsPDF } = window.jspdf;
-                
-                // Créer le PDF A4 avec du contenu textuel optimisé
-                const pdf = new jsPDF({
-                    orientation: 'portrait',
-                    unit: 'mm',
-                    format: 'a4',
-                    compress: true
-                });
-                
-                // Données de la facture depuis les éléments HTML
-                const invoiceNumber = document.getElementById('invoice-number')?.textContent || 'FACTURE';
-                const clientName = document.getElementById('client-name')?.textContent || '${clientName}';
-                const clientEmail = document.getElementById('client-email')?.textContent || '${clientEmail}';
-                const clientPhone = document.getElementById('client-phone')?.textContent || '${clientPhone}';
-                const serviceName = document.getElementById('service-name')?.textContent || '${clientService}';
-                const serviceDelay = document.getElementById('service-delay')?.textContent || 'Standard';
-                const finalTotal = document.getElementById('final-total')?.textContent || '${formattedPrice}';
-                const paymentMethod = document.getElementById('payment-method')?.textContent || '${clientPayment}';
-                const invoiceDate = document.getElementById('invoice-date')?.textContent || '${invoiceDate}';
-                const validityDate = document.getElementById('validity-date')?.textContent || '${validityDate}';
-                const invoiceTime = document.getElementById('invoice-time')?.textContent || '${invoiceTime}';
-                
-                // Dimensions A4 et marges
-                const pageWidth = 210;
-                const pageHeight = 297;
-                const margin = 15;
-                const contentWidth = pageWidth - (margin * 2);
-                
-                // Position Y courante
-                let currentY = margin;
-                
-                // Couleurs
-                const primaryColor = [10, 15, 44]; // #0A0F2C
-                const secondaryColor = [40, 167, 69]; // #28a745
-                const textColor = [51, 51, 51]; // #333333
-                const grayColor = [102, 102, 102]; // #666666
-                
-                // Fonction pour ajouter du texte avec retour à la ligne automatique
-                function addText(text, x, y, options = {}) {
-                    const fontSize = options.fontSize || 10;
-                    const maxWidth = options.maxWidth || contentWidth;
-                    const lineHeight = options.lineHeight || fontSize * 0.4;
-                    
-                    pdf.setFontSize(fontSize);
-                    if (options.color) pdf.setTextColor(...options.color);
-                    if (options.style) pdf.setFont('helvetica', options.style);
-                    
-                    const lines = pdf.splitTextToSize(text, maxWidth);
-                    pdf.text(lines, x, y);
-                    
-                    return y + (lines.length * lineHeight);
-                }
-                
-                // En-tête de la facture
-                pdf.setFillColor(...primaryColor);
-                pdf.rect(0, 0, pageWidth, 25, 'F');
-                
-                // Logo et nom de l'entreprise (en blanc sur fond bleu)
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(20);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text('ENIXIS CORP', margin, 15);
-                
-                pdf.setFontSize(10);
-                pdf.setFont('helvetica', 'normal');
-                pdf.text('Solutions IA & Optimisation Business', margin, 20);
-                
-                // Numéro de facture (à droite)
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'bold');
-                const invoiceText = invoiceNumber;
-                const invoiceWidth = pdf.getTextWidth(invoiceText);
-                pdf.text(invoiceText, pageWidth - margin - invoiceWidth, 15);
-                
-                currentY = 35;
-                
-                // Informations de l'entreprise
-                pdf.setTextColor(...textColor);
-                pdf.setFontSize(10);
-                pdf.setFont('helvetica', 'normal');
-                
-                currentY = addText('ENIXIS CORP', margin, currentY, { fontSize: 12, style: 'bold', color: primaryColor });
-                currentY = addText('Email: contacteccorp@gmail.com', margin, currentY + 2);
-                currentY = addText('Téléphone: +228 97 57 23 46', margin, currentY + 2);
-                currentY = addText('Site web: https://enixis-corp.vercel.app', margin, currentY + 2);
-                
-                // Dates (à droite)
-                const dateX = pageWidth - margin - 60;
-                let dateY = 35;
-                dateY = addText(\`Date: \${invoiceDate}\`, dateX, dateY, { fontSize: 9 });
-                dateY = addText(\`Validité: \${validityDate}\`, dateX, dateY + 2, { fontSize: 9 });
-                dateY = addText(\`Heure: \${invoiceTime}\`, dateX, dateY + 2, { fontSize: 9 });
-                
-                currentY += 15;
-                
-                // Ligne de séparation
-                pdf.setDrawColor(...grayColor);
-                pdf.line(margin, currentY, pageWidth - margin, currentY);
-                currentY += 10;
-                
-                // Section client et service (deux colonnes)
-                const colWidth = (contentWidth - 10) / 2;
-                
-                // Informations client
-                pdf.setFillColor(248, 249, 250);
-                pdf.rect(margin, currentY, colWidth, 35, 'F');
-                pdf.setDrawColor(...primaryColor);
-                pdf.rect(margin, currentY, colWidth, 35);
-                
-                let clientY = currentY + 5;
-                clientY = addText('📋 INFORMATIONS CLIENT', margin + 5, clientY, { fontSize: 11, style: 'bold', color: primaryColor });
-                clientY = addText(\`Nom: \${clientName}\`, margin + 5, clientY + 5, { fontSize: 10 });
-                clientY = addText(\`Email: \${clientEmail}\`, margin + 5, clientY + 3, { fontSize: 10 });
-                clientY = addText(\`Téléphone: \${clientPhone}\`, margin + 5, clientY + 3, { fontSize: 10 });
-                
-                // Informations service
-                const serviceX = margin + colWidth + 10;
-                pdf.setFillColor(248, 249, 250);
-                pdf.rect(serviceX, currentY, colWidth, 35, 'F');
-                pdf.setDrawColor(...primaryColor);
-                pdf.rect(serviceX, currentY, colWidth, 35);
-                
-                let serviceY = currentY + 5;
-                serviceY = addText('🎯 PRESTATION DEMANDÉE', serviceX + 5, serviceY, { fontSize: 11, style: 'bold', color: primaryColor });
-                serviceY = addText(\`Service: \${serviceName}\`, serviceX + 5, serviceY + 5, { fontSize: 10, maxWidth: colWidth - 10 });
-                serviceY = addText(\`Délai: \${serviceDelay}\`, serviceX + 5, serviceY + 3, { fontSize: 10 });
-                
-                currentY += 45;
-                
-                // Tableau des prestations
-                const tableY = currentY;
-                const rowHeight = 8;
-                const colWidths = [60, 25, 15, 15, 35, 35]; // Largeurs des colonnes
-                const headers = ['DESCRIPTION', 'DATE', 'QTÉ', 'UNITÉ', 'PRIX UNITAIRE', 'MONTANT'];
-                
-                // En-tête du tableau
-                pdf.setFillColor(30, 58, 138);
-                pdf.rect(margin, tableY, contentWidth, rowHeight, 'F');
-                
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                
-                let colX = margin;
-                headers.forEach((header, i) => {
-                    pdf.text(header, colX + 2, tableY + 5.5);
-                    colX += colWidths[i];
-                });
-                
-                // Ligne de données
-                const dataY = tableY + rowHeight;
-                pdf.setFillColor(255, 255, 255);
-                pdf.rect(margin, dataY, contentWidth, rowHeight, 'F');
-                pdf.setDrawColor(...grayColor);
-                pdf.rect(margin, dataY, contentWidth, rowHeight);
-                
-                pdf.setTextColor(...textColor);
-                pdf.setFont('helvetica', 'normal');
-                
-                const rowData = [
-                    \`→ \${serviceName}\`,
-                    invoiceDate,
-                    '1,00',
-                    'pcs',
-                    finalTotal,
-                    finalTotal
-                ];
-                
-                colX = margin;
-                rowData.forEach((data, i) => {
-                    const maxColWidth = colWidths[i] - 4;
-                    const lines = pdf.splitTextToSize(data, maxColWidth);
-                    pdf.text(lines, colX + 2, dataY + 5.5);
-                    colX += colWidths[i];
-                });
-                
-                currentY = dataY + rowHeight + 10;
-                
-                // Section totaux
-                const totalX = pageWidth - margin - 80;
-                
-                // Total final
-                pdf.setFillColor(...secondaryColor);
-                pdf.rect(totalX - 5, currentY + 2, 85, 12, 'F');
-                pdf.setTextColor(255, 255, 255);
-                pdf.setFont('helvetica', 'bold');
-                currentY = addText(\`TOTAL TTC: \${finalTotal}\`, totalX, currentY + 9, { fontSize: 12, color: [255, 255, 255] });
-                
-                currentY += 20;
-                
-                // Informations de paiement
-                pdf.setFillColor(232, 245, 232);
-                pdf.rect(margin, currentY, contentWidth, 25, 'F');
-                pdf.setDrawColor(...secondaryColor);
-                pdf.rect(margin, currentY, contentWidth, 25);
-                
-                pdf.setTextColor(...textColor);
-                pdf.setFont('helvetica', 'bold');
-                currentY = addText('💳 INFORMATIONS DE PAIEMENT', margin + 5, currentY + 7, { fontSize: 11, color: secondaryColor });
-                
-                pdf.setFont('helvetica', 'normal');
-                currentY = addText(\`Méthode: \${paymentMethod}\`, margin + 5, currentY + 5, { fontSize: 10 });
-                currentY = addText(\`Statut: ✅ Payé le \${invoiceDate} à \${invoiceTime}\`, margin + 5, currentY + 3, { fontSize: 10, color: secondaryColor });
-                currentY = addText('Transaction: 🔒 Sécurisée et validée', margin + 5, currentY + 3, { fontSize: 10 });
-                
-                currentY += 30;
-                
-                // Footer
-                pdf.setTextColor(...grayColor);
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'normal');
-                
-                currentY = addText('🎉 Merci pour votre commande !', margin, currentY, { fontSize: 11, style: 'bold', color: secondaryColor });
-                currentY = addText('Cette facture a été générée automatiquement. Nous commencerons le travail selon le délai convenu.', margin, currentY + 5, { fontSize: 9 });
-                currentY = addText('Contact: contacteccorp@gmail.com | +228 97 57 23 46', margin, currentY + 5, { fontSize: 9 });
-                currentY = addText('✨ N\'hésitez pas à explorer nos autres services sur notre site !', margin, currentY + 5, { fontSize: 9, color: secondaryColor });
-                
-                // Métadonnées du PDF
-                pdf.setProperties({
-                    title: \`\${invoiceNumber} - Enixis Corp\`,
-                    subject: 'Facture Enixis Corp - Solutions IA & Optimisation Business',
-                    author: 'Enixis Corp',
-                    creator: 'Enixis Corp - Solutions IA & Optimisation Business',
-                    producer: 'Enixis Corp PDF Generator',
-                    keywords: \`facture, enixis corp, ia, optimisation, business, \${serviceName}\`
-                });
-                
-                // Téléchargement automatique avec nom de fichier optimisé
-                const fileName = \`\${invoiceNumber.replace(/\\s+/g, '_')}_EnixisCorp.pdf\`;
-                pdf.save(fileName);
-                
-                console.log(\`✅ PDF A4 textuel téléchargé avec succès: \${fileName}\`);
-                
-                // Message de succès
-                if (statusMessage) {
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ PDF téléchargé avec succès ! Format A4 optimisé pour impression</span>';
-                }
-                
-                if (downloadBtn) {
-                    downloadBtn.textContent = '✅ PDF Téléchargé !';
-                    downloadBtn.style.background = '#28a745';
-                }
-                
-                // Restaurer le bouton après 3 secondes
+                // Déclencher l'impression (qui permettra de sauvegarder en PDF)
                 setTimeout(() => {
-                    if (downloadBtn) {
-                        downloadBtn.disabled = false;
-                        downloadBtn.textContent = '📥 Télécharger PDF';
-                        downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-                    }
-                }, 3000);
-                
-            } catch (error) {
-                console.error('❌ Erreur génération PDF:', error);
-                
-                if (statusMessage) {
-                    statusMessage.innerHTML = \`<span style="color: #dc3545;">❌ Erreur: \${error.message}</span>\`;
-                }
-                
-                if (downloadBtn) {
-                    downloadBtn.textContent = '❌ Erreur - Réessayer';
-                    downloadBtn.style.background = '#dc3545';
-                    downloadBtn.disabled = false;
-                }
-                
-                // Restaurer le bouton après 3 secondes
-                setTimeout(() => {
-                    if (downloadBtn) {
-                        downloadBtn.textContent = '📥 Télécharger PDF';
-                        downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
-                    }
-                }, 3000);
-            }
-        }
-        
-        // Fonction pour charger jsPDF dynamiquement
-        function loadJsPDF() {
-            return new Promise((resolve, reject) => {
-                if (window.jspdf) {
-                    resolve();
-                    return;
-                }
-                
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                script.onload = () => {
-                    console.log('✅ jsPDF chargé avec succès');
-                    resolve();
-                };
-                script.onerror = () => {
-                    console.error('❌ Erreur chargement jsPDF');
-                    reject(new Error('Impossible de charger jsPDF'));
-                };
-                document.head.appendChild(script);
-            });
-        }
+                    try {
+                        window.print();
+                        console.log('✅ Boîte d\'impression ouverte');
+                        
+                        if (statusMessage) {
+                            statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                        }
+                        
+                        if (downloadBtn) {
+                            downloadBtn.textContent = '✅ Impression lancée !';
+                            downloadBtn.style.background = '#28a745';
+                        }
+                        
+                    } catch (printError) {
+                        console.error('❌ Erreur impression:', printError);
+                        
+                        // Fallback : ouvrir dans un nouvel onglet pour impression
+                        const printWindow = window.open('', '_blank');
                         if (printWindow) {
                             printWindow.document.write(document.documentElement.outerHTML);
                             printWindow.document.close();
@@ -1302,18 +1022,30 @@ export default function handler(req, res) {
                         slackBadge.style.display = 'block';
                     }
                     
-                    downloadBtn.disabled = false;
-                    downloadBtn.textContent = '📥 Télécharger PDF';
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = '📥 Télécharger PDF';
+                        downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    }
                     
                     // Message de confirmation
-                    statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                    if (statusMessage) {
+                        statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                    }
                 }, 2000);
                 
             } catch (error) {
                 console.error('❌ Erreur génération PDF:', error);
-                statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
-                downloadBtn.disabled = false;
-                downloadBtn.textContent = '📥 Télécharger PDF';
+                
+                if (statusMessage) {
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
+                }
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = '📥 Télécharger PDF';
+                    downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                }
                 
                 // Restaurer l'affichage en cas d'erreur
                 const downloadSection = document.querySelector('.download-section');
@@ -1322,6 +1054,8 @@ export default function handler(req, res) {
                 if (slackBadge) slackBadge.style.display = 'block';
             }
         }
+
+
         
         // Initialisation simple
         window.addEventListener('load', function() {
