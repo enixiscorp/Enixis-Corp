@@ -956,103 +956,96 @@ export default function handler(req, res) {
             }
         }
         
-        // Fonction pour télécharger la facture en PDF
-        window.downloadInvoice = function() {
-            console.log('🔥 Téléchargement PDF demandé');
+        // Fonction simple et robuste pour télécharger la facture en PDF
+        function downloadInvoice() {
+            console.log('PDF Download requested');
             
-            const statusMessage = document.getElementById('status-message');
-            const downloadBtn = document.getElementById('download-btn');
+            var statusMessage = document.getElementById('status-message');
+            var downloadBtn = document.getElementById('download-btn');
             
-            // Désactiver le bouton pendant le traitement
             if (downloadBtn) {
                 downloadBtn.disabled = true;
-                downloadBtn.textContent = '⏳ Génération PDF...';
+                downloadBtn.textContent = 'Génération PDF...';
             }
             
-            // Afficher un message de statut
             if (statusMessage) {
-                statusMessage.innerHTML = '<span style="color: #ffc107;">📄 Préparation du téléchargement PDF...</span>';
+                statusMessage.innerHTML = '<span style="color: #ffc107;">Préparation du téléchargement PDF...</span>';
             }
             
             try {
-                // Masquer les éléments non nécessaires pour l'impression
-                const downloadSection = document.querySelector('.download-section');
-                const slackBadge = document.getElementById('slack-badge');
+                var downloadSection = document.querySelector('.download-section');
+                var slackBadge = document.getElementById('slack-badge');
                 
                 if (downloadSection) downloadSection.style.display = 'none';
                 if (slackBadge) slackBadge.style.display = 'none';
                 
-                // Déclencher l'impression (qui permettra de sauvegarder en PDF)
-                setTimeout(() => {
+                setTimeout(function() {
                     try {
                         window.print();
-                        console.log('✅ Boîte d\'impression ouverte');
+                        console.log('Print dialog opened');
                         
                         if (statusMessage) {
-                            statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                            statusMessage.innerHTML = '<span style="color: #28a745;">Boîte d\\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
                         }
                         
                         if (downloadBtn) {
-                            downloadBtn.textContent = '✅ Impression lancée !';
+                            downloadBtn.textContent = 'Impression lancée !';
                             downloadBtn.style.background = '#28a745';
                         }
                         
                     } catch (printError) {
-                        console.error('❌ Erreur impression:', printError);
+                        console.error('Print error:', printError);
                         
-                        // Fallback : ouvrir dans un nouvel onglet pour impression
-                        const printWindow = window.open('', '_blank');
+                        var printWindow = window.open('', '_blank');
                         if (printWindow) {
                             printWindow.document.write(document.documentElement.outerHTML);
                             printWindow.document.close();
                             printWindow.print();
-                            console.log('✅ Fallback : impression dans nouvel onglet');
+                            console.log('Fallback: print in new tab');
                         } else {
-                            throw new Error('Impossible d\'ouvrir la fenêtre d\'impression');
+                            throw new Error('Cannot open print window');
                         }
                     }
                 }, 500);
                 
-                // Restaurer l'affichage après l'impression
-                setTimeout(() => {
-                    console.log('🔄 Restauration de l\'affichage');
+                setTimeout(function() {
+                    console.log('Restoring display');
                     if (downloadSection) downloadSection.style.display = 'block';
-                    if (slackBadge && (invoiceData || document.querySelector('[data-test-mode]'))) {
-                        slackBadge.style.display = 'block';
-                    }
+                    if (slackBadge) slackBadge.style.display = 'block';
                     
                     if (downloadBtn) {
                         downloadBtn.disabled = false;
-                        downloadBtn.textContent = '📥 Télécharger PDF';
+                        downloadBtn.textContent = 'Télécharger PDF';
                         downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
                     }
                     
-                    // Message de confirmation
                     if (statusMessage) {
-                        statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                        statusMessage.innerHTML = '<span style="color: #28a745;">Boîte d\\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
                     }
                 }, 2000);
                 
             } catch (error) {
-                console.error('❌ Erreur génération PDF:', error);
+                console.error('PDF generation error:', error);
                 
                 if (statusMessage) {
-                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">Erreur : ' + error.message + '</span>';
                 }
                 
                 if (downloadBtn) {
                     downloadBtn.disabled = false;
-                    downloadBtn.textContent = '📥 Télécharger PDF';
+                    downloadBtn.textContent = 'Télécharger PDF';
                     downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
                 }
                 
-                // Restaurer l'affichage en cas d'erreur
-                const downloadSection = document.querySelector('.download-section');
-                const slackBadge = document.getElementById('slack-badge');
+                var downloadSection = document.querySelector('.download-section');
+                var slackBadge = document.getElementById('slack-badge');
                 if (downloadSection) downloadSection.style.display = 'block';
                 if (slackBadge) slackBadge.style.display = 'block';
             }
         }
+        
+        // S'assurer que la fonction est accessible globalement
+        window.downloadInvoice = downloadInvoice;
 
 
         

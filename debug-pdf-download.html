@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐛 Debug PDF Download - Enixis Corp</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .debug-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .debug-header {
+            background: linear-gradient(135deg, #0A0F2C, #1a237e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .debug-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .debug-content {
+            padding: 40px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 5px solid #28a745;
+        }
+        
+        .test-section h3 {
+            color: #0A0F2C;
+            margin-top: 0;
+            font-size: 18px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 500;
+            border: 1px solid;
+        }
+        
+        .success { 
+            background: #d4edda; 
+            color: #155724; 
+            border-color: #c3e6cb; 
+        }
+        
+        .error { 
+            background: #f8d7da; 
+            color: #721c24; 
+            border-color: #f5c6cb; 
+        }
+        
+        .info { 
+            background: #d1ecf1; 
+            color: #0c5460; 
+            border-color: #bee5eb; 
+        }
+        
+        .warning { 
+            background: #fff3cd; 
+            color: #856404; 
+            border-color: #ffeaa7; 
+        }
+        
+        .diagnostic-list {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+        
+        .diagnostic-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .diagnostic-list li {
+            margin: 8px 0;
+            padding: 5px 0;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .invoice-preview {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        @media print {
+            body { background: white !important; }
+            .debug-container { box-shadow: none !important; }
+            .debug-header { background: #0A0F2C !important; }
+            .test-section { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <div class="debug-header">
+            <h1>🐛 Debug PDF Download</h1>
+            <p>Diagnostic et test de la fonction de téléchargement PDF</p>
+        </div>
+        
+        <div class="debug-content">
+            <!-- Test de la fonction -->
+            <div class="test-section">
+                <h3>🧪 Test de la fonction downloadInvoice</h3>
+                <p>Testez la fonction de téléchargement PDF corrigée :</p>
+                
+                <button class="btn" onclick="testDownloadFunction()" id="test-btn">
+                    🔍 Diagnostiquer la fonction
+                </button>
+                
+                <button class="btn" onclick="downloadInvoice()" id="download-test-btn">
+                    📥 Tester Téléchargement PDF
+                </button>
+                
+                <div id="test-status" class="status info" style="display: none;">
+                    Statut du test...
+                </div>
+                
+                <div id="status-message" style="margin-top: 15px; font-size: 14px;">
+                    <p style="color: #666; font-size: 12px; margin: 5px 0;">
+                        💡 Astuce: Utilisez Ctrl+P (Windows) ou Cmd+P (Mac) puis "Enregistrer au format PDF"
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Diagnostics -->
+            <div class="test-section">
+                <h3>🔍 Diagnostics automatiques</h3>
+                <div class="diagnostic-list">
+                    <ul id="diagnostics">
+                        <li>🔄 Chargement des diagnostics...</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Code de la fonction -->
+            <div class="test-section">
+                <h3>💻 Code de la fonction corrigée</h3>
+                <div class="code-block" id="function-code">
+                    <pre>function downloadInvoice() {
+    console.log('PDF Download requested');
+    
+    var statusMessage = document.getElementById('status-message');
+    var downloadBtn = document.getElementById('download-btn');
+    
+    if (downloadBtn) {
+        downloadBtn.disabled = true;
+        downloadBtn.textContent = 'Génération PDF...';
+    }
+    
+    try {
+        var downloadSection = document.querySelector('.download-section');
+        var slackBadge = document.getElementById('slack-badge');
+        
+        if (downloadSection) downloadSection.style.display = 'none';
+        if (slackBadge) slackBadge.style.display = 'none';
+        
+        setTimeout(function() {
+            window.print();
+        }, 500);
+        
+    } catch (error) {
+        console.error('PDF generation error:', error);
+    }
+}</pre>
+                </div>
+            </div>
+            
+            <!-- Liens de test -->
+            <div class="test-section">
+                <h3>🔗 Tests avec l'API réelle</h3>
+                <p>Testez avec de vraies données de facture :</p>
+                
+                <a href="/api/invoice?invoice=DEBUG_20251029_01&name=Test%20Debug&email=debug@enixis-corp.com&phone=%2B228123456789&service=Test%20Debug%20Service&price=25000&delivery=urgent&payment=Test%20Payment" 
+                   class="btn btn-secondary" target="_blank">
+                    🔗 Test Facture Debug
+                </a>
+                
+                <a href="/api/invoice?invoice=ENIXIS_20251029_46&name=Edem%20Cyrille%20SOSSOUVI&email=edemcyrille%40gmail.com&phone=%2B22893369070&service=%F0%9F%94%97%20Int%C3%A9gration%20et%20Automatisations%20ERP%2FIA&price=500000&delivery=urgent&payment=USDT%20(TRC-20)" 
+                   class="btn btn-secondary" target="_blank">
+                   🔗 Facture Réelle (Problématique)
+                </a>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="test-section">
+                <h3>📋 Instructions de test</h3>
+                <ol>
+                    <li><strong>Diagnostic automatique :</strong> Cliquez sur "Diagnostiquer la fonction" pour vérifier l'état</li>
+                    <li><strong>Test local :</strong> Cliquez sur "Tester Téléchargement PDF" pour tester ici</li>
+                    <li><strong>Test API :</strong> Cliquez sur "Test Facture Debug" pour tester avec l'API</li>
+                    <li><strong>Sur la page de facture :</strong> Cliquez sur "📥 Télécharger PDF"</li>
+                    <li><strong>Dans la boîte d'impression :</strong> Choisissez "Enregistrer au format PDF"</li>
+                </ol>
+            </div>
+            
+            <!-- Aperçu facture simulé -->
+            <div class="invoice-preview">
+                <h4>📄 Aperçu Facture (pour test d'impression)</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+                    <div>
+                        <strong>ENIXIS CORP</strong><br>
+                        contacteccorp@gmail.com<br>
+                        +228 97 57 23 46
+                    </div>
+                    <div style="text-align: right;">
+                        <span style="background: #dc3545; color: white; padding: 5px 10px; border-radius: 15px;">
+                            DEBUG_20251029_01
+                        </span><br>
+                        <small>Date: 29/10/2025</small>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0;">
+                    <strong>Client:</strong> Test Debug<br>
+                    <strong>Email:</strong> debug@enixis-corp.com<br>
+                    <strong>Service:</strong> Test Debug Service<br>
+                    <strong>Prix:</strong> 25 000 F CFA
+                </div>
+                
+                <div style="text-align: right; margin-top: 20px;">
+                    <strong style="font-size: 18px; color: #28a745;">Total: 25 000 F CFA</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fonction de téléchargement PDF corrigée (identique à celle de l'API)
+        function downloadInvoice() {
+            console.log('PDF Download requested');
+            
+            var statusMessage = document.getElementById('status-message');
+            var downloadBtn = document.getElementById('download-test-btn');
+            
+            if (downloadBtn) {
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = 'Génération PDF...';
+            }
+            
+            if (statusMessage) {
+                statusMessage.innerHTML = '<span style="color: #ffc107;">📄 Préparation du téléchargement PDF...</span>';
+            }
+            
+            try {
+                setTimeout(function() {
+                    try {
+                        window.print();
+                        console.log('Print dialog opened');
+                        
+                        if (statusMessage) {
+                            statusMessage.innerHTML = '<span style="color: #28a745;">✅ Boîte d\\'impression ouverte ! Choisissez "Enregistrer au format PDF"</span>';
+                        }
+                        
+                        if (downloadBtn) {
+                            downloadBtn.textContent = '✅ Impression lancée !';
+                            downloadBtn.style.background = '#28a745';
+                        }
+                        
+                    } catch (printError) {
+                        console.error('Print error:', printError);
+                        
+                        var printWindow = window.open('', '_blank');
+                        if (printWindow) {
+                            printWindow.document.write(document.documentElement.outerHTML);
+                            printWindow.document.close();
+                            printWindow.print();
+                            console.log('Fallback: print in new tab');
+                        } else {
+                            throw new Error('Cannot open print window');
+                        }
+                    }
+                }, 500);
+                
+                setTimeout(function() {
+                    if (downloadBtn) {
+                        downloadBtn.disabled = false;
+                        downloadBtn.textContent = '📥 Tester Téléchargement PDF';
+                        downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                console.error('PDF generation error:', error);
+                
+                if (statusMessage) {
+                    statusMessage.innerHTML = '<span style="color: #dc3545;">❌ Erreur : ' + error.message + '</span>';
+                }
+                
+                if (downloadBtn) {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = '📥 Tester Téléchargement PDF';
+                    downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
+                }
+            }
+        }
+        
+        // S'assurer que la fonction est accessible globalement
+        window.downloadInvoice = downloadInvoice;
+        
+        function testDownloadFunction() {
+            var diagnostics = document.getElementById('diagnostics');
+            var statusDiv = document.getElementById('test-status');
+            
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'status info';
+            statusDiv.innerHTML = '🔍 Diagnostic en cours...';
+            
+            var results = [];
+            
+            // Test 1: Vérifier si downloadInvoice existe
+            if (typeof window.downloadInvoice === 'function') {
+                results.push('✅ Fonction downloadInvoice définie globalement');
+            } else {
+                results.push('❌ Fonction downloadInvoice non définie');
+            }
+            
+            // Test 2: Vérifier si window.print existe
+            if (typeof window.print === 'function') {
+                results.push('✅ Fonction window.print disponible');
+            } else {
+                results.push('❌ Fonction window.print non disponible');
+            }
+            
+            // Test 3: Vérifier les éléments DOM
+            var downloadBtn = document.getElementById('download-test-btn');
+            if (downloadBtn) {
+                results.push('✅ Bouton de téléchargement trouvé');
+            } else {
+                results.push('❌ Bouton de téléchargement non trouvé');
+            }
+            
+            var statusMessage = document.getElementById('status-message');
+            if (statusMessage) {
+                results.push('✅ Élément status-message trouvé');
+            } else {
+                results.push('❌ Élément status-message non trouvé');
+            }
+            
+            // Test 4: Vérifier la syntaxe JavaScript
+            try {
+                eval('function testSyntax() { return true; }');
+                results.push('✅ Syntaxe JavaScript valide');
+            } catch (e) {
+                results.push('❌ Erreur de syntaxe JavaScript: ' + e.message);
+            }
+            
+            // Test 5: Vérifier les erreurs dans la console
+            var hasErrors = false;
+            var originalError = console.error;
+            console.error = function() {
+                hasErrors = true;
+                originalError.apply(console, arguments);
+            };
+            
+            setTimeout(function() {
+                console.error = originalError;
+                
+                if (!hasErrors) {
+                    results.push('✅ Aucune erreur JavaScript détectée');
+                } else {
+                    results.push('⚠️ Erreurs JavaScript détectées (voir console)');
+                }
+                
+                diagnostics.innerHTML = results.map(function(r) { 
+                    return '<li>' + r + '</li>'; 
+                }).join('');
+                
+                var allGood = results.every(function(r) { 
+                    return r.startsWith('✅'); 
+                });
+                
+                if (allGood) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = '✅ Tous les tests sont passés ! La fonction devrait fonctionner parfaitement.';
+                } else {
+                    statusDiv.className = 'status warning';
+                    statusDiv.innerHTML = '⚠️ Certains tests ont échoué. Vérifiez les diagnostics ci-dessus.';
+                }
+            }, 100);
+        }
+        
+        // Diagnostic automatique au chargement
+        window.addEventListener('load', function() {
+            console.log('🔍 Page de debug chargée');
+            setTimeout(testDownloadFunction, 1000);
+        });
+        
+        // Gestion des erreurs globales
+        window.addEventListener('error', function(e) {
+            console.error('Erreur globale détectée:', e.message, 'à la ligne', e.lineno);
+            var statusDiv = document.getElementById('test-status');
+            if (statusDiv) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Erreur JavaScript détectée: ' + e.message + ' (ligne ' + e.lineno + ')';
+            }
+        });
+    </script>
+</body>
+</html>
