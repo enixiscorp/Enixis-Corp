@@ -1054,37 +1054,36 @@ async function sendWhatsAppNotification(orderData) {
   }
 }
 
-// Fonction sendPaymentNotification supprimée - remplacée par sendPaymentValidationWithInvoice
-
-// Fonction pour envoyer la notification de commande en cours avec boutons interactifs
-async function sendOrderInProgressNotification(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
+// Fonction pour envoyer la validation de paiement avec facture PDF
+async function sendPaymentValidationWithInvoice(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
   const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
   
   const slackText = `
-🔄 COMMANDE EN COURS - Enixis Corp
+✅ PAIEMENT VALIDÉ - Enixis Corp
 
-📄 Numéro de commande: ${invoiceNumber}
-💳 Méthode de paiement: ${paymentMethod}
+💳 Méthode: ${paymentMethod}
 💰 Montant: ${formatFcfa(orderData.finalPrice)}
+📄 Facture: ${invoiceNumber}
 
-👤 RÉCAPITULATIF CLIENT:
+👤 Client:
 • Nom: ${orderData.name}
 • Email: ${orderData.email}
 • Téléphone: ${orderData.phone}
 
-📦 RÉCAPITULATIF COMMANDE:
+📦 Commande:
 • Prestation: ${orderData.serviceLabel}
 • Délai: ${orderData.delivery || 'Non spécifié'}
 ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${orderData.details.length > 120 ? '...' : ''}` : ''}
 
-⏰ Commande créée le: ${new Date().toLocaleString('fr-FR')}
-📧 Facture envoyée à: ${companyEmail}
+⏰ ${new Date().toLocaleString('fr-FR')}
 
-⚠️ Utilisez les boutons ci-dessous pour gérer cette commande:
+✅ PAIEMENT CONFIRMÉ - Commencez le travail selon le délai convenu.
+📎 Facture PDF accessible via le bouton ci-dessous.
+📧 Facture également envoyée par email à ${companyEmail}
   `.trim();
 
   try {
-    // Créer l'URL de la facture
+    // Créer l'URL de la facture avec toutes les données du formulaire
     const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
     
     console.log('🔍 URL facture générée:', invoiceUrl);
@@ -1093,9 +1092,9 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       text: slackText,
       attachments: [
         {
-          color: '#ff9500',
-          title: `🔄 COMMANDE EN COURS - ${invoiceNumber}`,
-          text: `Récapitulatif général avec actions de gestion`,
+          color: 'good',
+          title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
+          text: `Facture PDF disponible - Cliquez pour ouvrir et télécharger`,
           fields: [
             {
               title: 'Client',
@@ -1106,54 +1105,8 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
               title: 'Commande',
               value: `${orderData.serviceLabel}\n${formatFcfa(orderData.finalPrice)}\n${paymentMethod}`,
               short: true
-            },
-            {
-              title: 'Délai',
-              value: orderData.delivery || 'Standard',
-              short: true
-            },
-            {
-              title: 'Status Actuel',
-              value: '⏳ En attente de confirmation paiement',
-              short: true
             }
           ],
-          actions: [
-            {
-              type: 'button',
-              text: '⏳ PAIEMENT EN ATTENTE',
-              style: 'danger',
-              name: 'confirm_payment',
-              value: invoiceNumber,
-              confirm: {
-                title: 'Confirmer le paiement',
-                text: `Confirmer que le paiement de ${formatFcfa(orderData.finalPrice)} a été reçu pour la commande ${invoiceNumber} ?`,
-                ok_text: 'Oui, confirmer',
-                dismiss_text: 'Annuler'
-              }
-            },
-            {
-              type: 'button',
-              text: '⏳ COMMANDE EN COURS',
-              style: 'danger',
-              name: 'finalize_order',
-              value: invoiceNumber,
-              confirm: {
-                title: 'Finaliser la commande',
-                text: `Marquer la commande ${invoiceNumber} comme terminée et livrée ?`,
-                ok_text: 'Oui, finaliser',
-                dismiss_text: 'Annuler'
-              }
-            }
-          ],
-          footer: 'Enixis Corp - Gestion de Commande',
-          ts: Math.floor(Date.now() / 1000)
-        },
-        // Attachment pour la facture PDF
-        {
-          color: 'good',
-          title: '📄 Facture PDF - Téléchargeable',
-          text: `📄 Facture ${invoiceNumber} - Cliquez pour ouvrir et télécharger`,
           actions: [
             {
               type: 'button',
@@ -1164,7 +1117,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
               url: invoiceUrl
             }
           ],
-          footer: `Facture ${invoiceNumber} - Téléchargeable`,
+          footer: `Facture ${invoiceNumber} - Paiement validé`,
           ts: Math.floor(Date.now() / 1000)
         }
       ]
@@ -1173,18 +1126,27 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
     console.log('✅ Bouton PDF ajouté avec URL:', invoiceUrl);
     
     await submitToSlack(payload);
-    console.log('✅ Notification Slack envoyée avec bouton PDF');
-  } catch (error) {
-    console.error('❌ Erreur envoi notification commande:', error);
+    console.log('✅ Notification de validation avec facture PDF envoyée');
     
-    // Fallback sans boutons
+    // Envoyer aussi par email à l'équipe
+    try {
+      await sendInvoiceByEmail(orderData, paymentMethod, invoiceBase64, invoiceNumber);
+      console.log('✅ Facture envoyée par email à l\'équipe');
+    } catch (emailError) {
+      console.error('❌ Erreur envoi email:', emailError);
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur envoi notification validation:', error);
+    
+    // Fallback sans bouton PDF
     try {
       const fallbackPayload = {
         text: slackText,
         attachments: [{
-          color: '#ff9500',
-          title: `🔄 COMMANDE EN COURS - ${invoiceNumber}`,
-          text: `Récapitulatif général (boutons non disponibles)`,
+          color: 'good',
+          title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
+          text: `Facture générée (bouton PDF non disponible)`,
           fields: [
             {
               title: 'Client',
@@ -1201,12 +1163,14 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       };
       
       await submitToSlack(fallbackPayload);
-      console.log('✅ Notification commande envoyée (sans boutons)');
+      console.log('✅ Notification validation envoyée (sans bouton PDF)');
     } catch (fallbackError) {
       console.error('❌ Erreur fallback notification:', fallbackError);
     }
   }
 }
+
+
 
 // Fonction pour générer la facture en arrière-plan sans l'afficher
 async function generateInvoiceInBackground(orderData, paymentMethod) {
@@ -3045,8 +3009,8 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
     // Générer un numéro de facture
     const invoiceNumber = generateInvoiceNumber();
     
-    // Envoyer directement la notification Slack avec le lien vers la facture
-    await sendOrderInProgressNotification(paymentMethod, orderData, null, invoiceNumber);
+    // Envoyer la notification de validation de paiement avec facture PDF
+    await sendPaymentValidationWithInvoice(paymentMethod, orderData, null, invoiceNumber);
     
     // Afficher un message de confirmation simple à l'utilisateur
     showPaymentConfirmation(orderData, paymentMethod, invoiceNumber);

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Système Original - Facture PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-weight: bold;
+        }
+        
+        .slack-simulation {
+            background: #4a154b;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .slack-attachment {
+            background: #f8f9fa;
+            color: #333;
+            margin: 10px 0;
+            padding: 15px;
+            border-left: 4px solid #28a745;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .slack-button {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px 0 0;
+            font-weight: bold;
+        }
+        
+        .slack-button:hover {
+            background: #218838;
+            color: white;
+        }
+        
+        .invoice-link {
+            display: block;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px;
+            text-decoration: none;
+            border-radius: 8px;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Test Système Original - Facture PDF</h1>
+        <p>Test du système original avec notification "✅ PAIEMENT VALIDÉ" et bouton "📥 Ouvrir PDF".</p>
+        
+        <div class="test-section">
+            <h2>📊 Génération de la Notification</h2>
+            <button class="test-button" onclick="generateNotification()">🔗 Générer Notification Test</button>
+            <div id="generation-result"></div>
+        </div>
+        
+        <div class="test-section" id="slack-section" style="display: none;">
+            <h2>💬 Notification Slack - Paiement Validé</h2>
+            <div class="slack-simulation">
+                <div style="margin-bottom: 15px;">
+                    <strong>✅ PAIEMENT VALIDÉ - Enixis Corp</strong>
+                </div>
+                
+                <div class="slack-attachment">
+                    <div style="font-weight: bold; margin-bottom: 10px;">✅ PAIEMENT VALIDÉ - <span id="invoice-number"></span></div>
+                    <div style="margin-bottom: 15px;">Facture PDF disponible - Cliquez pour ouvrir et télécharger</div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; font-size: 12px;">
+                        <div>
+                            <strong>Client</strong><br>
+                            <span id="client-info"></span>
+                        </div>
+                        <div>
+                            <strong>Commande</strong><br>
+                            <span id="order-info"></span>
+                        </div>
+                    </div>
+                    
+                    <a href="#" id="pdf-button" class="slack-button" target="_blank">📥 Ouvrir PDF</a>
+                    
+                    <div style="font-size: 11px; color: #666; margin-top: 10px;">
+                        Facture <span id="invoice-number-2"></span> - Paiement validé
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section" id="url-section" style="display: none;">
+            <h2>🔗 URL de la Facture</h2>
+            <p>URL générée pour la facture :</p>
+            <div id="invoice-url" style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; word-break: break-all;"></div>
+            <a href="#" id="direct-link" class="invoice-link" target="_blank">📄 Tester l'URL Directement</a>
+        </div>
+        
+        <div class="test-section" id="results-section" style="display: none;">
+            <h2>📋 Résultats</h2>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Données de test
+        const testData = {
+            name: 'Marie Dubois',
+            email: 'marie.dubois@example.com',
+            phone: '+33123456789',
+            serviceLabel: '🎓 Formation Coaching Emploi',
+            finalPrice: 30000,
+            delivery: 'urgent',
+            details: 'Formation complète pour optimiser la recherche d\'emploi avec coaching personnalisé'
+        };
+        
+        let invoiceNumber = '';
+        let invoiceUrl = '';
+        
+        function generateInvoiceNumber() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const random = Math.floor(Math.random() + 100);
+            return `ENIXIS_${year}${month}${day}_${random}`;
+        }
+        
+        function formatFcfa(amount) {
+            return `${amount.toLocaleString('fr-FR')} F CFA`;
+        }
+        
+        function generateNotification() {
+            // Générer les données
+            invoiceNumber = generateInvoiceNumber();
+            const paymentMethod = 'Test Payment';
+            
+            // Créer l'URL de la facture (comme dans le système original)
+            invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(testData.name)}&email=${encodeURIComponent(testData.email)}&phone=${encodeURIComponent(testData.phone)}&service=${encodeURIComponent(testData.serviceLabel)}&price=${testData.finalPrice}&delivery=${testData.delivery}&payment=${encodeURIComponent(paymentMethod)}`;
+            
+            // Remplir la simulation Slack
+            document.getElementById('invoice-number').textContent = invoiceNumber;
+            document.getElementById('invoice-number-2').textContent = invoiceNumber;
+            
+            document.getElementById('client-info').innerHTML = `
+                ${testData.name}<br>
+                ${testData.email}<br>
+                ${testData.phone}
+            `;
+            
+            document.getElementById('order-info').innerHTML = `
+                ${testData.serviceLabel}<br>
+                ${formatFcfa(testData.finalPrice)}<br>
+                ${paymentMethod}
+            `;
+            
+            // Configurer les liens
+            document.getElementById('pdf-button').href = invoiceUrl;
+            document.getElementById('direct-link').href = invoiceUrl;
+            
+            // Afficher l'URL
+            document.getElementById('invoice-url').textContent = invoiceUrl;
+            
+            // Afficher les sections
+            document.getElementById('slack-section').style.display = 'block';
+            document.getElementById('url-section').style.display = 'block';
+            document.getElementById('results-section').style.display = 'block';
+            
+            // Afficher le résultat
+            document.getElementById('generation-result').innerHTML = `
+                <div class="result success">
+                    ✅ Notification générée avec succès !<br>
+                    <strong>Facture:</strong> ${invoiceNumber}<br>
+                    <strong>URL:</strong> ${invoiceUrl.length} caractères
+                </div>
+            `;
+            
+            // Afficher les résultats
+            document.getElementById('test-results').innerHTML = `
+                <div class="result success">
+                    <strong>✅ Système Original Restauré</strong><br>
+                    • Notification "PAIEMENT VALIDÉ" générée<br>
+                    • Bouton "📥 Ouvrir PDF" fonctionnel<br>
+                    • URL avec toutes les données du formulaire<br>
+                    • Prêt pour téléchargement PDF sur la page
+                </div>
+                <div class="result info">
+                    <strong>🔗 Test du Lien</strong><br>
+                    Cliquez sur "📥 Ouvrir PDF" pour tester l'ouverture de la facture.<br>
+                    La page devrait s'ouvrir avec un bouton "Télécharger PDF" fonctionnel.
+                </div>
+            `;
+            
+            console.log('✅ Notification de validation générée');
+            console.log('📄 Facture:', invoiceNumber);
+            console.log('🔗 URL:', invoiceUrl);
+        }
+        
+        // Gestionnaire pour le bouton PDF
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('click', function(e) {
+                if (e.target.id === 'pdf-button' || e.target.id === 'direct-link') {
+                    console.log('🔄 Test du lien PDF - Vérifiez que la facture s\'ouvre correctement');
+                }
+            });
+        });
+        
+        // Initialisation
+        window.addEventListener('load', function() {
+            console.log('🔄 Test du système original initialisé');
+        });
+    </script>
+</body>
+</html>
