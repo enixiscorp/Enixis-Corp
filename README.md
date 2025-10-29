@@ -1,65 +1,56 @@
 # Enixis Corp – Site web
 
-[![Deploy Status](https://github.com/handock-max/Enixis-Corp/workflows/Deploy%20to%20GitHub%20Pages%20(with%20env.js)/badge.svg)](https://github.com/handock-max/Enixis-Corp/actions)
-[![Website](https://img.shields.io/website?url=https%3A%2F%2Fhandock-max.github.io%2FEnixis-Corp%2F)](https://handock-max.github.io/Enixis-Corp/)
+[![Deploy Status](https://img.shields.io/badge/status-production-brightgreen)](https://enixis-corp.vercel.app/)
+[![Website](https://img.shields.io/website?url=https%3A%2F%2Fenixis-corp.vercel.app%2F)](https://enixis-corp.vercel.app/)
 
 Site web professionnel pour Enixis Corp - Solutions IA, analyse de données et optimisation business.
 
+🌐 **Site en production** : [https://enixis-corp.vercel.app/](https://enixis-corp.vercel.app/)
+
 ## 🚀 Fonctionnalités
 
-- ✅ Site vitrine responsive et moderne
-- ✅ Formulaire de demande avec calcul de prix dynamique
-- ✅ Intégration Slack sécurisée via proxy API
-- ✅ Validation en temps réel des formulaires
-- ✅ Optimisations SEO et performance
-- ✅ Déploiement automatisé GitHub Actions
+- ✅ **Site vitrine** : Présentation des services et projets
+- ✅ **Système de commande** : Formulaire avec estimation de prix automatique
+- ✅ **Paiements intégrés** : Flooz, Mixx by Yas, Cryptomonnaies (USDT, BTC)
+- ✅ **Notifications Slack** : Avec boutons interactifs pour suivi des commandes
+- ✅ **Génération PDF** : Factures automatiques avec téléchargement
+- ✅ **Design responsive** : Optimisé mobile, tablette et desktop
+- ✅ **Témoignages dynamiques** : Système par catégorie avec rotation automatique
+- ✅ **Optimisations SEO** : Meta tags, sitemap, robots.txt
+- ✅ **Performance** : Chargement optimisé, images compressées
 
-## Soumission de demande (Slack)
+## 🛠️ Technologies
 
-- La page `demande.html` collecte les informations du client et propose une sélection de prestations avec prix indicatif dynamique.
-- À la soumission, le front envoie un `POST` JSON vers l'endpoint `/api/slack` avec la forme:
-  `{ "text": "...message formaté..." }`.
-- Pour ne pas exposer le webhook Slack, créez un proxy serveur qui lit le secret `SLACK_WEBHOOK_URL` dans les variables du dépôt.
+- **Frontend** : HTML5, CSS3, JavaScript vanilla
+- **Backend** : Vercel Functions (Node.js)
+- **Intégrations** : Slack API, EmailJS, Crypto wallets
+- **Déploiement** : Vercel avec CI/CD automatique
 
-### Exemple de proxy minimal (Node / Express)
+## 📱 Utilisation
 
-```js
-import express from 'express';
-import fetch from 'node-fetch';
+### Pages principales
+- **Accueil** : `index.html` - Présentation des services et témoignages
+- **Demande** : `demande.html` - Formulaire de commande avec paiement
 
-const app = express();
-app.use(express.json());
+### Processus de commande
+1. **Sélection du service** : Choix parmi les prestations disponibles
+2. **Estimation automatique** : Calcul du prix selon le délai et options
+3. **Informations client** : Saisie des coordonnées
+4. **Paiement sécurisé** : Flooz, Mixx by Yas ou cryptomonnaies
+5. **Notification Slack** : Envoi automatique à l'équipe avec boutons interactifs
+6. **Facture PDF** : Génération et téléchargement automatique
 
-app.post('/api/slack', async (req, res) => {
-  const { text } = req.body || {};
-  if (!text) return res.status(400).json({ error: 'text_required' });
-  const url = process.env.SLACK_WEBHOOK_URL; // stocké en secret GitHub
-  const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
-  return res.status(r.ok ? 200 : 500).end();
-});
+## 🔧 Configuration
 
-app.listen(process.env.PORT || 3000);
+### Variables d'environnement requises
+```bash
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+FLOOZ_PHONE=97572346
+MIXX_PHONE=90123456
+USDT_WALLET=TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE
+BTC_WALLET=1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa
+COMPANY_EMAIL=contacteccorp@gmail.com
 ```
 
-### Hébergement (options)
-
-- Option sécurisée (recommandée): proxy `/api/slack` (Cloudflare/Vercel/Netlify).
-- Option rapide (expérimentale): `env.js` public et envoi direct vers Slack.
-
-## Utilisation
-
-- Accueil: `index.html`
-- Soumission: `demande.html` (bouton "Soumettre ma demande" disponible depuis le héro de l'accueil)
-
-## Déploiement Cloudflare Pages via GitHub Actions
-- Alternative GitHub Pages pure (sans proxy): utilisez le workflow `.github/workflows/deploy-pages.yml` qui génère `env.js` depuis `SLACK_WEBHOOK_URL` (secret repo). Le front enverra directement vers Slack (CORS en no-cors, sans lecture de réponse).
-
-- Renseignez les secrets du dépôt:
-  - `CF_API_TOKEN` (Pages: Edit, Cloudflare API Token avec Pages Write)
-  - `CF_ACCOUNT_ID` (votre Account ID Cloudflare)
-  - `CF_PAGES_PROJECT_NAME` (nom du projet Pages)
-- Optionnel: configurez dans Cloudflare Pages > Settings > Variables:
-  - `SLACK_WEBHOOK_URL` (obligatoire pour le proxy)
-  - `ALLOWED_ORIGINS` (ex: `https://handock-max.github.io`)
-  - `SLACK_AUTH_TOKEN` (optionnel, si vous activez l'auth Bearer)
-- Le workflow: `.github/workflows/deploy-cloudflare-pages.yml` (push sur `main` ou déclenchement manuel).
+### Déploiement Vercel
+Le site est automatiquement déployé sur Vercel avec les API Functions intégrées.
