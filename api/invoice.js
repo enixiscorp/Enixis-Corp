@@ -14,7 +14,7 @@ export default function handler(req, res) {
   }
 
   try {
-    const { invoice, data, download, name, email, phone, service, price, delivery, payment } = req.query;
+    const { invoice, data, download, name, email, phone, service, price, delivery, payment, basePrice, couponCode, couponPercent } = req.query;
     
     if (!invoice) {
       return res.status(400).json({ error: 'Invoice number required' });
@@ -63,6 +63,18 @@ export default function handler(req, res) {
       clientDelivery = delivery || 'standard';
       clientPayment = payment ? decodeURIComponent(payment) : 'Paiement validé';
       console.log('✅ Données extraites depuis paramètres URL');
+    }
+    
+    // Gestion des codes promotionnels depuis les paramètres URL
+    let clientBasePrice = basePrice ? parseInt(basePrice) : clientPrice;
+    let clientCoupon = null;
+    
+    if (couponCode && couponPercent) {
+      clientCoupon = {
+        code: decodeURIComponent(couponCode),
+        percent: parseFloat(couponPercent)
+      };
+      console.log('✅ Code promotionnel détecté:', clientCoupon);
     }
     
     // Formater le prix
@@ -650,7 +662,7 @@ export default function handler(req, res) {
                         <td id="item-date">${invoiceDate}</td>
                         <td>1,00</td>
                         <td>pcs</td>
-                        <td id="item-unit-price">${formattedPrice}</td>
+                        <td id="item-unit-price">${clientCoupon ? new Intl.NumberFormat('fr-FR').format(clientBasePrice) + ' F CFA' : formattedPrice}</td>
                         <td id="item-total">${formattedPrice}</td>
                     </tr>
                 </tbody>
@@ -658,6 +670,15 @@ export default function handler(req, res) {
             
             <!-- Total -->
             <div class="invoice-totals">
+                ${clientCoupon ? `
+                <div class="total-row">
+                    <span>Sous-total TTC</span>
+                    <span>${new Intl.NumberFormat('fr-FR').format(clientBasePrice)} F CFA</span>
+                </div>
+                <div class="total-row" style="color: #dc3545; font-weight: 600;">
+                    <span>Remise (${clientCoupon.code} - ${clientCoupon.percent}%)</span>
+                    <span>-${new Intl.NumberFormat('fr-FR').format(clientBasePrice - clientPrice)} F CFA</span>
+                </div>` : ''}
                 <div class="total-final">
                     <div class="total-row">
                         <span><strong>Total TTC</strong></span>
@@ -710,7 +731,10 @@ export default function handler(req, res) {
             service: '${service || ''}',
             price: '${price || ''}',
             delivery: '${delivery || ''}',
-            payment: '${payment || ''}'
+            payment: '${payment || ''}',
+            basePrice: '${basePrice || ''}',
+            couponCode: '${couponCode || ''}',
+            couponPercent: '${couponPercent || ''}'
         };
         
         // Fonction pour formater les montants en F CFA
@@ -767,15 +791,19 @@ export default function handler(req, res) {
                 console.log('👤 Données client extraites:', orderData);
                 
                 // Normaliser les données (avec valeurs par défaut seulement si vraiment vides)
+                // Utiliser les données directes des paramètres URL si disponibles
                 const normalizedData = {
-                    name: orderData.name || 'Nom du client',
-                    email: orderData.email || 'email@client.com',
-                    phone: orderData.phone || '+228 XX XX XX XX',
-                    serviceLabel: orderData.serviceLabel || 'Service demandé',
-                    finalPrice: orderData.finalPrice || 0,
-                    basePrice: orderData.basePrice || orderData.finalPrice || 0,
-                    delivery: orderData.delivery || 'standard',
-                    coupon: orderData.coupon || null
+                    name: orderData.name || directData.name || 'Nom du client',
+                    email: orderData.email || directData.email || 'email@client.com',
+                    phone: orderData.phone || directData.phone || '+228 XX XX XX XX',
+                    serviceLabel: orderData.serviceLabel || directData.service || 'Service demandé',
+                    finalPrice: orderData.finalPrice || parseInt(directData.price) || 0,
+                    basePrice: orderData.basePrice || parseInt(directData.basePrice) || parseInt(directData.price) || 0,
+                    delivery: orderData.delivery || directData.delivery || 'standard',
+                    coupon: orderData.coupon || (directData.couponCode ? {
+                        code: directData.couponCode,
+                        percent: parseFloat(directData.couponPercent) || 0
+                    } : null)
                 };
                 
                 console.log('🔄 Données normalisées:', normalizedData);

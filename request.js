@@ -263,7 +263,7 @@ async function submitToSlack(payload) {
   // Récupérer l'URL du webhook depuis les variables d'environnement
   const webhookUrl = getSlackWebhookUrl();
   console.log('🔍 URL Webhook Slack:', webhookUrl ? 'Configurée' : 'NON CONFIGURÉE');
-  
+
   if (!webhookUrl) {
     console.warn('⚠️ URL Slack webhook non configurée - simulation d\'envoi');
     console.log('📋 Payload qui aurait été envoyé:', JSON.stringify(payload, null, 2));
@@ -502,7 +502,7 @@ function populateServiceOptions() {
 }
 
 // Init - Attendre que le DOM soit chargé
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   populateServiceOptions();
   updatePrice();
   toggleIssueBlock();
@@ -514,7 +514,7 @@ const PAYMENT_CONFIG = {
   // Numéros de téléphone pour les paiements mobiles (depuis env.js)
   FLOOZ_PHONE: (window.env && window.env.FLOOZ_PHONE) ? String(window.env.FLOOZ_PHONE) : '',
   MIXX_PHONE: (window.env && window.env.MIXX_PHONE) ? String(window.env.MIXX_PHONE) : '',
-  
+
   // Adresses crypto TRC-20 (depuis env.js)
   CRYPTO_WALLETS: {
     USDT: (window.env && window.env.USDT_WALLET) ? String(window.env.USDT_WALLET) : '',
@@ -878,9 +878,9 @@ function showCryptoPayment(cryptoType, amount) {
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       addressCopied = true;
-      
+
       // Pas de notification ici - sera envoyée avec la validation de paiement
-      
+
       // Générer et envoyer la facture avec validation de paiement après 3 secondes
       setTimeout(() => {
         hideCryptoPayment();
@@ -894,7 +894,7 @@ function showCryptoPayment(cryptoType, amount) {
   setTimeout(() => {
     if (!addressCopied) {
       // Pas de notification ici - sera envoyée avec la validation de paiement
-      
+
       hideCryptoPayment();
       generateAndSendInvoiceWithValidation(currentOrderData, `${cryptoType} (${network})`);
       // Pas de redirection automatique - attendre le clic utilisateur
@@ -930,7 +930,7 @@ function copyWalletAddress() {
       confirmationMsg.style.background = 'rgba(40, 167, 69, 0.1)';
       confirmationMsg.style.borderRadius = '8px';
       confirmationMsg.style.border = '1px solid rgba(40, 167, 69, 0.3)';
-      
+
       const walletInfo = document.querySelector('.wallet-info');
       if (walletInfo && !walletInfo.querySelector('.copy-confirmation')) {
         confirmationMsg.className = 'copy-confirmation';
@@ -942,7 +942,7 @@ function copyWalletAddress() {
         copyBtn.style.background = '';
         copyBtn.style.color = '';
         copyBtn.style.transform = '';
-        
+
         // Supprimer le message de confirmation
         const existingMsg = walletInfo?.querySelector('.copy-confirmation');
         if (existingMsg) {
@@ -958,7 +958,7 @@ function copyWalletAddress() {
 // Fonction pour envoyer la première notification - Informations client et pays
 async function sendClientInfoNotification(country, amount, orderData) {
   const isTogoPayment = country.includes('🇹🇬');
-  const paymentContext = isTogoPayment ? 
+  const paymentContext = isTogoPayment ?
     'Le client peut choisir entre Flooz, Mixx by Yas ou Crypto.' :
     'Le client va procéder au paiement par cryptomonnaie.';
 
@@ -1016,7 +1016,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 150)}${ord
         ts: Math.floor(Date.now() / 1000)
       }]
     };
-    
+
     await submitToSlack(payload);
     console.log('✅ Notification informations client envoyée');
   } catch (error) {
@@ -1057,12 +1057,19 @@ async function sendWhatsAppNotification(orderData) {
 // Fonction pour envoyer la validation de paiement avec facture PDF
 async function sendPaymentValidationWithInvoice(paymentMethod, orderData, invoiceBase64, invoiceNumber) {
   const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
-  
+
+  // Afficher les informations sur les codes promotionnels s'ils sont appliqués
+  let promoInfo = '';
+  if (orderData.coupon) {
+    const discountAmount = (orderData.basePrice || orderData.finalPrice) - orderData.finalPrice;
+    promoInfo = `\n🎟️ Code promo: ${orderData.coupon.code} (-${orderData.coupon.percent}% = -${formatFcfa(discountAmount)})`;
+  }
+
   const slackText = `
 ✅ PAIEMENT VALIDÉ - Enixis Corp
 
 💳 Méthode: ${paymentMethod}
-💰 Montant: ${formatFcfa(orderData.finalPrice)}
+💰 Montant: ${formatFcfa(orderData.finalPrice)}${promoInfo}
 📄 Facture: ${invoiceNumber}
 
 👤 Client:
@@ -1083,11 +1090,16 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
   `.trim();
 
   try {
-    // Créer l'URL de la facture avec toutes les données du formulaire
-    const invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
-    
+    // Créer l'URL de la facture avec toutes les données du formulaire, y compris les codes promotionnels
+    let invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
+
+    // Ajouter les informations de code promotionnel à l'URL
+    if (orderData.coupon) {
+      invoiceUrl += `&basePrice=${orderData.basePrice || orderData.finalPrice}&couponCode=${encodeURIComponent(orderData.coupon.code)}&couponPercent=${orderData.coupon.percent}`;
+    }
+
     console.log('🔍 URL facture générée:', invoiceUrl);
-    
+
     const payload = {
       text: slackText,
       attachments: [
@@ -1105,16 +1117,35 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
               title: 'Commande',
               value: `${orderData.serviceLabel}\n${formatFcfa(orderData.finalPrice)}\n${paymentMethod}`,
               short: true
+            },
+            {
+              title: 'Status Actuel',
+              value: '⏳ En attente de confirmation',
+              short: false
             }
           ],
           actions: [
             {
               type: 'button',
-              text: '📥 Ouvrir PDF',
+              text: '📥 Télécharger Facture PDF',
               style: 'primary',
-              name: 'open_pdf',
+              name: 'download_invoice',
               value: invoiceNumber,
               url: invoiceUrl
+            },
+            {
+              type: 'button',
+              text: '💳 Confirmer Paiement',
+              style: 'default',
+              name: 'confirm_payment',
+              value: invoiceNumber
+            },
+            {
+              type: 'button',
+              text: '📦 Finaliser Commande',
+              style: 'default',
+              name: 'finalize_order',
+              value: invoiceNumber
             }
           ],
           footer: `Facture ${invoiceNumber} - Paiement validé`,
@@ -1122,12 +1153,12 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
         }
       ]
     };
-    
-    console.log('✅ Bouton PDF ajouté avec URL:', invoiceUrl);
-    
+
+    console.log('✅ Boutons PDF et gestion ajoutés avec URL:', invoiceUrl);
+
     await submitToSlack(payload);
-    console.log('✅ Notification de validation avec facture PDF envoyée');
-    
+    console.log('✅ Notification de validation avec facture PDF et boutons de gestion envoyée');
+
     // Envoyer aussi par email à l'équipe
     try {
       await sendInvoiceByEmail(orderData, paymentMethod, invoiceBase64, invoiceNumber);
@@ -1135,18 +1166,18 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
     } catch (emailError) {
       console.error('❌ Erreur envoi email:', emailError);
     }
-    
+
   } catch (error) {
     console.error('❌ Erreur envoi notification validation:', error);
-    
-    // Fallback sans bouton PDF
+
+    // Fallback sans boutons
     try {
       const fallbackPayload = {
         text: slackText,
         attachments: [{
           color: 'good',
           title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
-          text: `Facture générée (bouton PDF non disponible)`,
+          text: `Facture générée (boutons non disponibles)`,
           fields: [
             {
               title: 'Client',
@@ -1161,9 +1192,9 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
           ]
         }]
       };
-      
+
       await submitToSlack(fallbackPayload);
-      console.log('✅ Notification validation envoyée (sans bouton PDF)');
+      console.log('✅ Notification validation envoyée (sans boutons)');
     } catch (fallbackError) {
       console.error('❌ Erreur fallback notification:', fallbackError);
     }
@@ -1177,10 +1208,10 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
   const invoiceNumber = generateInvoiceNumber();
   const currentDate = new Date().toLocaleDateString('fr-FR');
   const currentDateTime = new Date().toLocaleString('fr-FR');
-  
+
   // Calculer la date de validité selon le délai
   const validityDate = new Date();
-  switch(orderData.delivery) {
+  switch (orderData.delivery) {
     case 'urgent':
       validityDate.setDate(validityDate.getDate() + 1);
       break;
@@ -1197,10 +1228,10 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
       validityDate.setDate(validityDate.getDate() + 14);
   }
   const validityDateStr = validityDate.toLocaleDateString('fr-FR');
-  
+
   // Stocker les données pour le traitement
   window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate, validityDateStr };
-  
+
   // Créer la facture dans un élément caché
   const hiddenContainer = document.createElement('div');
   hiddenContainer.id = 'hidden-invoice-container';
@@ -1213,7 +1244,7 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
     background: white;
     visibility: hidden;
   `;
-  
+
   const invoiceHTML = `
     <div class="invoice-document" id="invoice-document">
       <div class="invoice-header">
@@ -1251,10 +1282,10 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
           <h4>🎯 Prestation Demandée</h4>
           <div class="service-details">
             <p><strong>${orderData.serviceLabel}</strong></p>
-            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
-                      orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
-                      orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
-                      orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
+            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' :
+      orderData.delivery === 'short' ? 'Court terme (3-7j)' :
+        orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' :
+          orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
           </div>
         </div>
       </div>
@@ -1327,10 +1358,10 @@ async function generateInvoiceInBackground(orderData, paymentMethod) {
       </div>
     </div>
   `;
-  
+
   hiddenContainer.innerHTML = invoiceHTML;
   document.body.appendChild(hiddenContainer);
-  
+
   console.log('✅ Facture générée en arrière-plan pour traitement');
 }
 
@@ -1353,7 +1384,7 @@ function showPaymentConfirmation(orderData, paymentMethod, invoiceNumber) {
     z-index: 10000;
     backdrop-filter: blur(5px);
   `;
-  
+
   confirmationPopup.innerHTML = `
     <div class="popup-content" style="
       background: white;
@@ -1419,16 +1450,16 @@ function showPaymentConfirmation(orderData, paymentMethod, invoiceNumber) {
       </button>
     </div>
   `;
-  
+
   // Ajouter au DOM
   document.body.appendChild(confirmationPopup);
   document.body.style.overflow = 'hidden';
-  
+
   // Event listener pour fermer
   document.getElementById('close-confirmation-btn').addEventListener('click', () => {
     confirmationPopup.remove();
     document.body.style.overflow = '';
-    
+
     // Rediriger vers l'accueil avec message de succès
     sessionStorage.setItem('orderCompleted', 'true');
     window.location.href = 'index.html#success';
@@ -1454,9 +1485,9 @@ function showOrderSummaryPopup(orderData, paymentMethod) {
     z-index: 10000;
     backdrop-filter: blur(5px);
   `;
-  
+
   const invoiceNumber = window.currentInvoiceData ? window.currentInvoiceData.invoiceNumber : generateInvoiceNumber();
-  
+
   summaryPopup.innerHTML = `
     <div class="popup-content" style="
       background: white;
@@ -1558,7 +1589,7 @@ function showOrderSummaryPopup(orderData, paymentMethod) {
       </div>
     </div>
   `;
-  
+
   // Ajouter l'animation CSS
   const style = document.createElement('style');
   style.textContent = `
@@ -1592,26 +1623,26 @@ function showOrderSummaryPopup(orderData, paymentMethod) {
     }
   `;
   document.head.appendChild(style);
-  
+
   // Ajouter au DOM
   document.body.appendChild(summaryPopup);
-  
+
   // Empêcher la fermeture du pop-up
   document.body.style.overflow = 'hidden';
-  
+
   // Ajouter l'event listener pour le bouton
   document.getElementById('complete-order-final-btn').addEventListener('click', () => {
     console.log('✅ Utilisateur a finalisé sa commande via le pop-up de synthèse');
-    
+
     // Supprimer le pop-up
     summaryPopup.remove();
     document.body.style.overflow = '';
-    
+
     // Rediriger vers l'accueil avec message de succès
     sessionStorage.setItem('orderCompleted', 'true');
     window.location.href = 'index.html#success';
   });
-  
+
   // Empêcher la fermeture en cliquant à l'extérieur
   summaryPopup.addEventListener('click', (e) => {
     if (e.target === summaryPopup) {
@@ -1640,7 +1671,7 @@ function showBlinkingCompleteButton() {
     z-index: 10000;
     text-align: center;
   `;
-  
+
   buttonContainer.innerHTML = `
     <div style="background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 15px; box-shadow: 0 8px 32px rgba(0,0,0,0.1); backdrop-filter: blur(10px);">
       <p style="margin: 0 0 15px 0; color: #28a745; font-weight: 600; font-size: 16px;">
@@ -1666,9 +1697,9 @@ function showBlinkingCompleteButton() {
       </button>
     </div>
   `;
-  
+
   document.body.appendChild(buttonContainer);
-  
+
   // Ajouter l'animation CSS
   const style = document.createElement('style');
   style.textContent = `
@@ -1701,14 +1732,14 @@ function showBlinkingCompleteButton() {
     }
   `;
   document.head.appendChild(style);
-  
+
   // Ajouter l'event listener
   document.getElementById('complete-order-btn-final').addEventListener('click', () => {
     console.log('✅ Utilisateur a validé sa commande avec le bouton clignotant');
-    
+
     // Supprimer le bouton
     buttonContainer.remove();
-    
+
     // Rediriger vers l'accueil avec message de succès
     sessionStorage.setItem('orderCompleted', 'true');
     window.location.href = 'index.html#success';
@@ -1735,20 +1766,20 @@ async function storeInvoiceInLocalStorage(invoiceNumber, pdfBase64, orderData, p
         delivery: orderData.delivery
       }
     };
-    
+
     // Stocker dans localStorage avec une clé unique
     const storageKey = `enixis_invoice_${invoiceNumber}`;
     localStorage.setItem(storageKey, JSON.stringify(invoiceData));
-    
+
     // Maintenir une liste des factures pour référence
     let invoicesList = JSON.parse(localStorage.getItem('enixis_invoices_list') || '[]');
     if (!invoicesList.includes(invoiceNumber)) {
       invoicesList.push(invoiceNumber);
       localStorage.setItem('enixis_invoices_list', JSON.stringify(invoicesList));
     }
-    
+
     console.log('✅ Facture stockée dans localStorage:', invoiceNumber);
-    
+
     // Nettoyer les anciennes factures (garder seulement les 10 dernières)
     if (invoicesList.length > 10) {
       const oldInvoices = invoicesList.slice(0, invoicesList.length - 10);
@@ -1758,7 +1789,7 @@ async function storeInvoiceInLocalStorage(invoiceNumber, pdfBase64, orderData, p
       invoicesList = invoicesList.slice(-10);
       localStorage.setItem('enixis_invoices_list', JSON.stringify(invoicesList));
     }
-    
+
   } catch (error) {
     console.error('❌ Erreur stockage facture:', error);
   }
@@ -1769,11 +1800,11 @@ function getInvoiceFromLocalStorage(invoiceNumber) {
   try {
     const storageKey = `enixis_invoice_${invoiceNumber}`;
     const invoiceData = localStorage.getItem(storageKey);
-    
+
     if (invoiceData) {
       return JSON.parse(invoiceData);
     }
-    
+
     console.warn('⚠️ Facture non trouvée dans localStorage:', invoiceNumber);
     return null;
   } catch (error) {
@@ -1786,26 +1817,26 @@ function getInvoiceFromLocalStorage(invoiceNumber) {
 function downloadInvoiceFromStorage(invoiceNumber) {
   try {
     const invoiceData = getInvoiceFromLocalStorage(invoiceNumber);
-    
+
     if (!invoiceData) {
       console.error('❌ Facture non trouvée pour téléchargement:', invoiceNumber);
       return false;
     }
-    
+
     // Créer un lien de téléchargement
     const pdfDataUrl = `data:application/pdf;base64,${invoiceData.pdfBase64}`;
     const link = document.createElement('a');
     link.href = pdfDataUrl;
     link.download = `Facture_${invoiceNumber}.pdf`;
-    
+
     // Déclencher le téléchargement
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     console.log('✅ Téléchargement facture déclenché:', invoiceNumber);
     return true;
-    
+
   } catch (error) {
     console.error('❌ Erreur téléchargement facture:', error);
     return false;
@@ -1821,10 +1852,10 @@ async function createPDFDownloadLink(invoiceBase64, invoiceNumber) {
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    
+
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
-    
+
     console.log('✅ Lien de téléchargement PDF créé');
     return url;
   } catch (error) {
@@ -1838,7 +1869,7 @@ async function createTemporaryPDFPage(invoiceBase64, invoiceNumber) {
   try {
     // Créer une page HTML temporaire avec le PDF intégré
     const pdfDataUrl = `data:application/pdf;base64,${invoiceBase64}`;
-    
+
     const htmlContent = `
 <!DOCTYPE html>
 <html lang="fr">
@@ -1892,14 +1923,14 @@ async function createTemporaryPDFPage(invoiceBase64, invoiceNumber) {
     </script>
 </body>
 </html>`;
-    
+
     // Créer un blob avec le contenu HTML
     const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
     const htmlUrl = URL.createObjectURL(htmlBlob);
-    
+
     console.log('✅ Page temporaire PDF créée');
     return htmlUrl;
-    
+
   } catch (error) {
     console.error('❌ Erreur création page PDF:', error);
     return null;
@@ -1911,7 +1942,7 @@ async function createInvoiceDownloadableImage(invoiceBase64, invoiceNumber) {
   try {
     // Convertir le PDF base64 en image pour Slack
     // Note: Slack ne supporte pas les PDF directement, on crée une image
-    
+
     const invoiceElement = document.getElementById('invoice-document');
     if (!invoiceElement) {
       console.log('❌ Élément facture non trouvé pour capture');
@@ -1937,7 +1968,7 @@ async function createInvoiceDownloadableImage(invoiceBase64, invoiceNumber) {
           // Créer une URL temporaire pour l'image
           const imageUrl = URL.createObjectURL(blob);
           console.log('✅ Image facture créée pour téléchargement');
-          
+
           // Dans un environnement réel, vous uploaderiez cette image vers un service
           // Pour l'instant, on retourne l'URL locale
           resolve(imageUrl);
@@ -2024,7 +2055,7 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
 // Fonction pour envoyer la facture par email à l'équipe
 async function sendInvoiceByEmail(orderData, paymentMethod, invoiceBase64, invoiceNumber) {
   const companyEmail = (window.env && window.env.COMPANY_EMAIL) ? window.env.COMPANY_EMAIL : 'contacteccorp@gmail.com';
-  
+
   try {
     // Préparer les données pour l'envoi d'email réel
     const emailSubject = `📄 Nouvelle Facture ${invoiceNumber} - Paiement Validé`;
@@ -2057,10 +2088,10 @@ Système automatisé Enixis Corp
     try {
       await sendRealEmail(companyEmail, emailSubject, emailBody, invoiceBase64, invoiceNumber, orderData);
       console.log('✅ Email envoyé avec succès à:', companyEmail);
-      
+
     } catch (emailError) {
       console.error('❌ Erreur envoi email:', emailError);
-      
+
       // Fallback: ouvrir le client email par défaut
       const mailtoLink = `mailto:${companyEmail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
       if (typeof window !== 'undefined') {
@@ -2068,13 +2099,13 @@ Système automatisé Enixis Corp
         console.log('📧 Client email ouvert en fallback');
       }
     }
-    
+
     // Email envoyé - pas de notification Slack supplémentaire
     console.log('✅ Email envoyé à:', companyEmail);
-    
+
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi email:', error);
-    
+
     // Notification d'erreur sur Slack
     const errorText = `
 ❌ ERREUR ENVOI EMAIL - Enixis Corp
@@ -2086,7 +2117,7 @@ Impossible d'envoyer la facture ${invoiceNumber} par email à ${companyEmail}
 
 ⚠️ Téléchargez la facture depuis Slack et envoyez-la manuellement au client.
     `.trim();
-    
+
     try {
       await submitToSlack({ text: errorText });
     } catch (slackError) {
@@ -2125,10 +2156,10 @@ Détails de ma commande :
 • Montant : ${formatFcfa(currentOrderData?.finalPrice || 0)}
 
 Merci !`);
-  
+
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(whatsappUrl, '_blank');
-  
+
   // Pas de notification Slack pour WhatsApp - seulement les 2 notifications principales
 });
 
@@ -2382,7 +2413,7 @@ function populateCountryList(countries, container, region) {
 }
 
 function filterCountries(searchTerm, countries, container, region) {
-  const filtered = countries.filter(country => 
+  const filtered = countries.filter(country =>
     country.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   populateCountryList(filtered, container, region);
@@ -2391,14 +2422,14 @@ function filterCountries(searchTerm, countries, container, region) {
 function selectCountry(countryName, region) {
   hideCountrySelection();
   const countryLabel = `${region === 'africa' ? '🌍' : '🌎'} ${countryName}`;
-  
+
   // Stocker le pays sélectionné et envoyer la notification de sélection
   if (currentOrderData) {
     currentOrderData.selectedCountry = countryLabel;
     // Envoyer immédiatement la notification de sélection de pays
     sendClientInfoNotification(countryLabel, currentOrderData.finalPrice, currentOrderData);
   }
-  
+
   showPaymentOptions('crypto'); // Seule option crypto pour les autres pays
 }
 
@@ -2456,7 +2487,7 @@ document.addEventListener('keydown', (e) => {
       }
       return; // Ne pas traiter les autres pop-ups
     }
-    
+
     if (invoicePopup?.style.display === 'flex') {
       // Rediriger vers l'accueil au lieu de fermer
       window.location.href = 'index.html';
@@ -2510,10 +2541,10 @@ function showInvoice(orderData, paymentMethod) {
   const invoiceNumber = generateInvoiceNumber();
   const currentDate = new Date().toLocaleDateString('fr-FR');
   const currentDateTime = new Date().toLocaleString('fr-FR');
-  
+
   // Calculer la date de validité selon le délai
   const validityDate = new Date();
-  switch(orderData.delivery) {
+  switch (orderData.delivery) {
     case 'urgent':
       validityDate.setDate(validityDate.getDate() + 1); // 24h
       break;
@@ -2530,10 +2561,10 @@ function showInvoice(orderData, paymentMethod) {
       validityDate.setDate(validityDate.getDate() + 14); // 2 semaines par défaut
   }
   const validityDateStr = validityDate.toLocaleDateString('fr-FR');
-  
+
   // Stocker les données pour le téléchargement
   window.currentInvoiceData = { orderData, paymentMethod, invoiceNumber, currentDate, validityDateStr };
-  
+
   const invoiceHTML = `
     <div class="invoice-document" id="invoice-document">
       <div class="invoice-header">
@@ -2571,10 +2602,10 @@ function showInvoice(orderData, paymentMethod) {
           <h4>🎯 Prestation Demandée</h4>
           <div class="service-details">
             <p><strong>${orderData.serviceLabel}</strong></p>
-            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
-                      orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
-                      orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
-                      orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
+            <p>Délai: ${orderData.delivery === 'urgent' ? 'Urgent (24h)' :
+      orderData.delivery === 'short' ? 'Court terme (3-7j)' :
+        orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' :
+          orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard'}</p>
           </div>
         </div>
       </div>
@@ -2660,11 +2691,11 @@ function showInvoice(orderData, paymentMethod) {
       </div>
     </div>
   `;
-  
+
   invoiceContent.innerHTML = invoiceHTML;
   invoicePopup.style.display = 'flex';
   document.body.style.overflow = 'hidden';
-  
+
   // Ajouter l'événement click au bouton PDF après l'insertion du HTML
   setTimeout(() => {
     const downloadBtn = document.getElementById('download-pdf-btn');
@@ -2673,12 +2704,12 @@ function showInvoice(orderData, paymentMethod) {
         downloadBtn.disabled = true;
         downloadBtn.textContent = '⏳ Génération PDF...';
         downloadBtn.style.background = '#6c757d';
-        
+
         try {
           await downloadInvoiceAsPDF();
           downloadBtn.textContent = '✅ PDF Téléchargé !';
           downloadBtn.style.background = '#28a745';
-          
+
           setTimeout(() => {
             downloadBtn.disabled = false;
             downloadBtn.textContent = '📥 Télécharger PDF';
@@ -2689,7 +2720,7 @@ function showInvoice(orderData, paymentMethod) {
           downloadBtn.textContent = '❌ Erreur - Réessayer';
           downloadBtn.style.background = '#dc3545';
           downloadBtn.disabled = false;
-          
+
           setTimeout(() => {
             downloadBtn.textContent = '📥 Télécharger PDF';
             downloadBtn.style.background = 'linear-gradient(135deg, #28a745, #20c997)';
@@ -2703,7 +2734,7 @@ function showInvoice(orderData, paymentMethod) {
 async function downloadInvoiceAsPDF() {
   const invoiceElement = document.getElementById('invoice-document');
   const invoiceData = window.currentInvoiceData;
-  
+
   if (!invoiceElement || !invoiceData) {
     console.error('❌ Erreur lors de la génération du PDF');
     throw new Error('Données de facture manquantes');
@@ -2711,14 +2742,14 @@ async function downloadInvoiceAsPDF() {
 
   try {
     console.log('🔄 Génération du PDF A4 optimisé...');
-    
+
     // Vérifier que jsPDF est disponible
     if (!window.jspdf) {
       throw new Error('Bibliothèque jsPDF non disponible');
     }
-    
+
     const { jsPDF } = window.jspdf;
-    
+
     // Créer le PDF A4 avec du contenu textuel optimisé
     const pdf = new jsPDF({
       orientation: 'portrait',
@@ -2726,149 +2757,149 @@ async function downloadInvoiceAsPDF() {
       format: 'a4',
       compress: true
     });
-    
+
     // Dimensions A4 et marges
     const pageWidth = 210;
     const pageHeight = 297;
     const margin = 15;
     const contentWidth = pageWidth - (margin * 2);
-    
+
     // Position Y courante
     let currentY = margin;
-    
+
     // Couleurs
     const primaryColor = [10, 15, 44]; // #0A0F2C
     const secondaryColor = [40, 167, 69]; // #28a745
     const textColor = [51, 51, 51]; // #333333
     const grayColor = [102, 102, 102]; // #666666
-    
+
     // Fonction pour ajouter du texte avec retour à la ligne automatique
     function addText(text, x, y, options = {}) {
       const fontSize = options.fontSize || 10;
       const maxWidth = options.maxWidth || contentWidth;
       const lineHeight = options.lineHeight || fontSize * 0.4;
-      
+
       pdf.setFontSize(fontSize);
       if (options.color) pdf.setTextColor(...options.color);
       if (options.style) pdf.setFont('helvetica', options.style);
-      
+
       const lines = pdf.splitTextToSize(text, maxWidth);
       pdf.text(lines, x, y);
-      
+
       return y + (lines.length * lineHeight);
     }
-    
+
     // En-tête de la facture
     pdf.setFillColor(...primaryColor);
     pdf.rect(0, 0, pageWidth, 25, 'F');
-    
+
     // Logo et nom de l'entreprise (en blanc sur fond bleu)
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
     pdf.text('ENIXIS CORP', margin, 15);
-    
+
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
     pdf.text('Solutions IA & Optimisation Business', margin, 20);
-    
+
     // Numéro de facture (à droite)
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     const invoiceText = `FACTURE ${invoiceData.invoiceNumber}`;
     const invoiceWidth = pdf.getTextWidth(invoiceText);
     pdf.text(invoiceText, pageWidth - margin - invoiceWidth, 15);
-    
+
     currentY = 35;
-    
+
     // Informations de l'entreprise
     pdf.setTextColor(...textColor);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'normal');
-    
+
     currentY = addText('ENIXIS CORP', margin, currentY, { fontSize: 12, style: 'bold', color: primaryColor });
     currentY = addText('Email: contacteccorp@gmail.com', margin, currentY + 2);
     currentY = addText('Téléphone: +228 97 57 23 46', margin, currentY + 2);
     currentY = addText('Site web: https://enixis-corp.vercel.app', margin, currentY + 2);
-    
+
     // Dates (à droite)
     const dateX = pageWidth - margin - 60;
     let dateY = 35;
     dateY = addText(`Date: ${invoiceData.currentDate}`, dateX, dateY, { fontSize: 9 });
     dateY = addText(`Validité: ${invoiceData.validityDateStr}`, dateX, dateY + 2, { fontSize: 9 });
     dateY = addText(`Heure: ${new Date().toLocaleTimeString('fr-FR')}`, dateX, dateY + 2, { fontSize: 9 });
-    
+
     currentY += 15;
-    
+
     // Ligne de séparation
     pdf.setDrawColor(...grayColor);
     pdf.line(margin, currentY, pageWidth - margin, currentY);
     currentY += 10;
-    
+
     // Section client et service (deux colonnes)
     const colWidth = (contentWidth - 10) / 2;
-    
+
     // Informations client
     pdf.setFillColor(248, 249, 250);
     pdf.rect(margin, currentY, colWidth, 35, 'F');
     pdf.setDrawColor(...primaryColor);
     pdf.rect(margin, currentY, colWidth, 35);
-    
+
     let clientY = currentY + 5;
     clientY = addText('📋 INFORMATIONS CLIENT', margin + 5, clientY, { fontSize: 11, style: 'bold', color: primaryColor });
     clientY = addText(`Nom: ${invoiceData.orderData.name}`, margin + 5, clientY + 5, { fontSize: 10 });
     clientY = addText(`Email: ${invoiceData.orderData.email}`, margin + 5, clientY + 3, { fontSize: 10 });
     clientY = addText(`Téléphone: ${invoiceData.orderData.phone}`, margin + 5, clientY + 3, { fontSize: 10 });
-    
+
     // Informations service
     const serviceX = margin + colWidth + 10;
     pdf.setFillColor(248, 249, 250);
     pdf.rect(serviceX, currentY, colWidth, 35, 'F');
     pdf.setDrawColor(...primaryColor);
     pdf.rect(serviceX, currentY, colWidth, 35);
-    
+
     let serviceY = currentY + 5;
     serviceY = addText('🎯 PRESTATION DEMANDÉE', serviceX + 5, serviceY, { fontSize: 11, style: 'bold', color: primaryColor });
     serviceY = addText(`Service: ${invoiceData.orderData.serviceLabel}`, serviceX + 5, serviceY + 5, { fontSize: 10, maxWidth: colWidth - 10 });
-    
-    const delayText = invoiceData.orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
-                     invoiceData.orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
-                     invoiceData.orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
-                     invoiceData.orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
+
+    const delayText = invoiceData.orderData.delivery === 'urgent' ? 'Urgent (24h)' :
+      invoiceData.orderData.delivery === 'short' ? 'Court terme (3-7j)' :
+        invoiceData.orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' :
+          invoiceData.orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
     serviceY = addText(`Délai: ${delayText}`, serviceX + 5, serviceY + 3, { fontSize: 10 });
-    
+
     currentY += 45;
-    
+
     // Tableau des prestations
     const tableY = currentY;
     const rowHeight = 8;
     const colWidths = [60, 25, 15, 15, 35, 35]; // Largeurs des colonnes
     const headers = ['DESCRIPTION', 'DATE', 'QTÉ', 'UNITÉ', 'PRIX UNITAIRE', 'MONTANT'];
-    
+
     // En-tête du tableau
     pdf.setFillColor(30, 58, 138);
     pdf.rect(margin, tableY, contentWidth, rowHeight, 'F');
-    
+
     pdf.setTextColor(255, 255, 255);
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');
-    
+
     let colX = margin;
     headers.forEach((header, i) => {
       pdf.text(header, colX + 2, tableY + 5.5);
       colX += colWidths[i];
     });
-    
+
     // Ligne de données
     const dataY = tableY + rowHeight;
     pdf.setFillColor(255, 255, 255);
     pdf.rect(margin, dataY, contentWidth, rowHeight, 'F');
     pdf.setDrawColor(...grayColor);
     pdf.rect(margin, dataY, contentWidth, rowHeight);
-    
+
     pdf.setTextColor(...textColor);
     pdf.setFont('helvetica', 'normal');
-    
+
     const rowData = [
       `→ ${invoiceData.orderData.serviceLabel}`,
       invoiceData.currentDate,
@@ -2877,7 +2908,7 @@ async function downloadInvoiceAsPDF() {
       formatFcfa(invoiceData.orderData.basePrice || invoiceData.orderData.finalPrice),
       formatFcfa(invoiceData.orderData.finalPrice)
     ];
-    
+
     colX = margin;
     rowData.forEach((data, i) => {
       const maxColWidth = colWidths[i] - 4;
@@ -2885,54 +2916,54 @@ async function downloadInvoiceAsPDF() {
       pdf.text(lines, colX + 2, dataY + 5.5);
       colX += colWidths[i];
     });
-    
+
     currentY = dataY + rowHeight + 10;
-    
+
     // Section totaux
     const totalX = pageWidth - margin - 80;
-    
+
     // Si remise appliquée
     if (invoiceData.orderData.coupon) {
       currentY = addText(`Sous-total TTC: ${formatFcfa(invoiceData.orderData.basePrice)}`, totalX, currentY, { fontSize: 10 });
       currentY = addText(`Remise (${invoiceData.orderData.coupon.code} - ${invoiceData.orderData.coupon.percent}%): -${formatFcfa((invoiceData.orderData.basePrice || invoiceData.orderData.finalPrice) - invoiceData.orderData.finalPrice)}`, totalX, currentY + 3, { fontSize: 10, color: [220, 53, 69] });
     }
-    
+
     // Total final
     pdf.setFillColor(...secondaryColor);
     pdf.rect(totalX - 5, currentY + 2, 85, 12, 'F');
     pdf.setTextColor(255, 255, 255);
     pdf.setFont('helvetica', 'bold');
     currentY = addText(`TOTAL TTC: ${formatFcfa(invoiceData.orderData.finalPrice)}`, totalX, currentY + 9, { fontSize: 12, color: [255, 255, 255] });
-    
+
     currentY += 20;
-    
+
     // Informations de paiement
     pdf.setFillColor(232, 245, 232);
     pdf.rect(margin, currentY, contentWidth, 25, 'F');
     pdf.setDrawColor(...secondaryColor);
     pdf.rect(margin, currentY, contentWidth, 25);
-    
+
     pdf.setTextColor(...textColor);
     pdf.setFont('helvetica', 'bold');
     currentY = addText('💳 INFORMATIONS DE PAIEMENT', margin + 5, currentY + 7, { fontSize: 11, color: secondaryColor });
-    
+
     pdf.setFont('helvetica', 'normal');
     currentY = addText(`Méthode: ${invoiceData.paymentMethod}`, margin + 5, currentY + 5, { fontSize: 10 });
     currentY = addText(`Statut: ✅ Payé le ${new Date().toLocaleString('fr-FR')}`, margin + 5, currentY + 3, { fontSize: 10, color: secondaryColor });
     currentY = addText('Transaction: 🔒 Sécurisée et validée', margin + 5, currentY + 3, { fontSize: 10 });
-    
+
     currentY += 30;
-    
+
     // Footer
     pdf.setTextColor(...grayColor);
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'normal');
-    
+
     currentY = addText('🎉 Merci pour votre commande !', margin, currentY, { fontSize: 11, style: 'bold', color: secondaryColor });
     currentY = addText('Cette facture a été générée automatiquement. Nous commencerons le travail selon le délai convenu.', margin, currentY + 5, { fontSize: 9 });
     currentY = addText('Contact: contacteccorp@gmail.com | +228 97 57 23 46', margin, currentY + 5, { fontSize: 9 });
     currentY = addText('✨ N\'hésitez pas à explorer nos autres services sur notre site !', margin, currentY + 5, { fontSize: 9, color: secondaryColor });
-    
+
     // Métadonnées du PDF
     pdf.setProperties({
       title: `Facture ${invoiceData.invoiceNumber} - Enixis Corp`,
@@ -2942,16 +2973,16 @@ async function downloadInvoiceAsPDF() {
       producer: 'Enixis Corp PDF Generator',
       keywords: 'facture, enixis corp, ia, optimisation, business, ' + invoiceData.orderData.serviceLabel
     });
-    
+
     // Téléchargement automatique avec nom de fichier optimisé
     const fileName = `Facture_${invoiceData.invoiceNumber}_EnixisCorp.pdf`;
     pdf.save(fileName);
-    
+
     console.log(`✅ PDF A4 textuel téléchargé avec succès: ${fileName}`);
     console.log('📄 Contenu: Format A4 optimisé avec texte sélectionnable et imprimable');
-    
+
     return true;
-    
+
   } catch (error) {
     console.error('❌ Erreur génération PDF:', error);
     console.error('📋 Détails:', {
@@ -2960,7 +2991,7 @@ async function downloadInvoiceAsPDF() {
       hasJsPDF: !!window.jspdf,
       errorMessage: error.message
     });
-    
+
     // Relancer l'erreur pour que le bouton puisse l'afficher
     throw error;
   }
@@ -2976,14 +3007,14 @@ const completeOrderBtn = document.getElementById('complete-order-btn');
 completeOrderBtn?.addEventListener('click', () => {
   // L'utilisateur valide manuellement sa commande
   console.log('✅ Utilisateur a validé sa commande manuellement');
-  
+
   // Rediriger vers la page d'accueil avec un message de succès
   sessionStorage.setItem('orderCompleted', 'true');
   window.location.href = 'index.html#success';
 });
 
 // Empêcher la fermeture accidentelle - l'utilisateur doit cliquer sur le bouton
-invoicePopup?.addEventListener('click', (e) => { 
+invoicePopup?.addEventListener('click', (e) => {
   if (e.target === invoicePopup) {
     // Ne pas fermer automatiquement - afficher un message
     const completeBtn = document.getElementById('complete-order-btn');
@@ -2991,7 +3022,7 @@ invoicePopup?.addEventListener('click', (e) => {
       completeBtn.style.animation = 'pulse 1s ease-in-out 3';
       completeBtn.style.background = '#28a745';
       completeBtn.style.transform = 'scale(1.05)';
-      
+
       setTimeout(() => {
         completeBtn.style.animation = '';
         completeBtn.style.transform = '';
@@ -3005,21 +3036,21 @@ async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   try {
     // Ne plus afficher de pop-up de facture à l'utilisateur
     // La facture sera accessible uniquement via Slack
-    
+
     // Générer un numéro de facture
     const invoiceNumber = generateInvoiceNumber();
-    
+
     // Envoyer la notification de validation de paiement avec facture PDF
     await sendPaymentValidationWithInvoice(paymentMethod, orderData, null, invoiceNumber);
-    
+
     // Afficher un message de confirmation simple à l'utilisateur
     showPaymentConfirmation(orderData, paymentMethod, invoiceNumber);
 
     console.log('✅ Notification Slack envoyée avec lien vers la facture personnalisée');
-    
+
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de la notification:', error);
-    
+
     // Afficher quand même la confirmation à l'utilisateur
     showPaymentConfirmation(orderData, paymentMethod, 'ERREUR_' + Date.now());
   }
@@ -3036,12 +3067,12 @@ window.getInvoiceFromLocalStorage = getInvoiceFromLocalStorage;
 // Fonction pour mettre à jour le statut d'un bouton (simulation)
 function updateSlackButtonStatus(buttonName, invoiceNumber, newStatus) {
   console.log(`🔄 Mise à jour statut bouton: ${buttonName} pour ${invoiceNumber} -> ${newStatus}`);
-  
+
   // Dans un environnement réel avec webhook Slack, cette fonction :
   // 1. Recevrait les événements de clic de bouton depuis Slack
   // 2. Mettrait à jour le message original avec les nouveaux statuts
   // 3. Changerait les couleurs des boutons (orange -> vert)
-  
+
   const statusUpdates = {
     'confirm_payment': {
       text: '✅ PAIEMENT CONFIRMÉ',
@@ -3049,12 +3080,12 @@ function updateSlackButtonStatus(buttonName, invoiceNumber, newStatus) {
       color: 'good'
     },
     'finalize_order': {
-      text: '✅ COMMANDE FINALISÉE', 
+      text: '✅ COMMANDE FINALISÉE',
       style: 'primary', // Vert dans Slack
       color: 'good'
     }
   };
-  
+
   return statusUpdates[buttonName] || null;
 }
 
@@ -3062,9 +3093,9 @@ function updateSlackButtonStatus(buttonName, invoiceNumber, newStatus) {
 function createUpdatedSlackMessage(originalPayload, buttonUpdates) {
   // Cette fonction serait utilisée par un webhook pour mettre à jour
   // le message original avec les nouveaux statuts des boutons
-  
+
   const updatedPayload = { ...originalPayload };
-  
+
   if (updatedPayload.attachments && updatedPayload.attachments[0]) {
     // Mettre à jour les boutons avec les nouveaux statuts
     if (updatedPayload.attachments[0].actions) {
@@ -3079,14 +3110,14 @@ function createUpdatedSlackMessage(originalPayload, buttonUpdates) {
         return action;
       });
     }
-    
+
     // Mettre à jour la couleur de l'attachment si tous les boutons sont confirmés
     const allConfirmed = Object.keys(buttonUpdates).length >= 2;
     if (allConfirmed) {
       updatedPayload.attachments[0].color = 'good';
     }
   }
-  
+
   return updatedPayload;
 }
 
