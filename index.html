@@ -6,28 +6,34 @@
   <title>Enixis Corp – IA, Data & Optimisation Business</title>
   <meta name="description" content="Enixis Corp accompagne les entreprises avec l'IA, l'analyse de données et l'optimisation de processus. Formations, coaching emploi, marketing, dashboards et plus.">
   <meta name="theme-color" content="#0A0F2C">
-  <link rel="canonical" href="https://handock-max.github.io/Enixis-Corp/">
+  <link rel="canonical" href="https://enixis-corp.vercel.app/">
   <meta property="og:title" content="Enixis Corp – IA, Data & Optimisation Business">
   <meta property="og:description" content="Solutions IA, analyse de données et optimisation business. Formations, dashboards, branding et conseils.">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://handock-max.github.io/Enixis-Corp/">
-  <meta property="og:image" content="">
+  <meta property="og:url" content="https://enixis-corp.vercel.app/">
+  <meta property="og:image" content="https://enixis-corp.vercel.app/images/acceuil_enixis%20corp%20pro.png">
+  <meta property="og:image:width" content="995">
+  <meta property="og:image:height" content="490">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Enixis Corp – IA, Data & Optimisation Business">
+  <meta name="twitter:description" content="Solutions IA, analyse de données et optimisation business. Formations, dashboards, branding et conseils.">
+  <meta name="twitter:image" content="https://enixis-corp.vercel.app/images/acceuil_enixis%20corp%20pro.png">
+  <meta name="msapplication-TileImage" content="images/favikon_enixis corp.png">
+  <meta name="msapplication-TileColor" content="#0A0F2C">
   <link rel="stylesheet" href="style.css">
   
-  <!-- FAVICON: Décommentez les lignes ci-dessous et placez vos fichiers dans images/ -->
-  <!-- <link rel="icon" href="images/favicon.ico" sizes="any"> -->
-  <!-- <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png"> -->
-  <!-- <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png"> -->
-  <!-- <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png"> -->
-  <!-- <link rel="mask-icon" href="images/safari-pinned-tab.svg" color="#0A0F2C"> -->
-  <!-- <link rel="manifest" href="images/site.webmanifest"> -->
-  <!-- Conseil: utilisez des PNG/WebP légers (< 20KB) et un .ico multi-tailles. -->
+  <!-- FAVICON -->
+  <link rel="icon" href="images/favikon_enixis corp.png" sizes="any">
+  <link rel="icon" type="image/png" href="images/favikon_enixis corp.png">
+  <link rel="apple-touch-icon" href="images/favikon_enixis corp.png">
+  <link rel="shortcut icon" href="favicon.ico">
 </head>
 <body>
   <a class="skip-link" href="#home">Aller au contenu</a>
 
   <header class="site-header" role="banner">
     <div class="container header-inner">
+      <img src="images/enixis corp_logo.png" alt="Logo Enixis Corp" class="logo" width="48" height="48">
       <a href="#home" class="brand" aria-label="Enixis Corp – Accueil">Enixis <span>Corp</span></a>
 
       <button class="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Ouvrir le menu">
@@ -57,12 +63,16 @@
           <div class="actions">
             <a class="btn primary" href="#services">Découvrir nos services</a>
             <a class="btn ghost" href="#contact">Nous contacter</a>
+            <a class="btn primary" href="demande.html" aria-label="Soumettre ma demande">Soumettre ma demande</a>
           </div>
         </div>
         <div class="hero-visual" aria-hidden="true" data-animate="fade-in">
           <!-- IMAGE HÉRO: placez ici une image décorative large (ex: 1600x900px, .webp) en background si souhaité.
                Conseil: < 300KB pour de bonnes performances. Exemple: un visuel abstrait bleu/rouge.
                Vous pouvez remplacer .grid-visual par une <img> si besoin. -->
+          <div class="hero-image-container">
+            <img src="images/enixis_bannière_accueil.png" alt="Enixis Corp - Solutions IA et Optimisation Business" loading="lazy">
+          </div>
           <div class="orb orb-1"></div>
           <div class="orb orb-2"></div>
           <div class="grid-visual"></div>
@@ -117,37 +127,46 @@
              - Utilisez de préférence .webp, < 50KB, fond transparent si possible
              - Dimensions suggérées: largeur 220–320px, hauteur 80–140px
              - Gardez des alt descriptifs (ex: "Logo Clean Team Service") -->
-        <div class="cards three" role="list">
+        <div class="carousel-container">
+          <div class="carousel-wrapper">
+            <div class="carousel-track" id="partners-carousel">
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: insérez une image 1200x800px (.webp) ici -->
             <!-- <img src="images/clean-team-service.webp" alt="Clean Team Service" width="1200" height="800" loading="lazy"> -->
-            <!-- LOGO PARTENAIRE (à décommenter quand prêt) -->
-            <!-- <img src="images/clean-team-service-logo.webp" alt="Logo Clean Team Service" width="260" height="100" loading="lazy"> -->
+            <!-- LOGO PARTENAIRE -->
+            <img src="images/clean team service_logo.png" alt="Logo Clean Team Service" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="clean-team">
             <h3 class="card-title">Clean Team Service</h3>
-            <p>Accompagnement performance et process pour une croissance durable et mesurable.</p>
+            <p class="card-preview">Nous avons sollicité Enixis Corp pour l'optimisation de nos procédures internes...</p>
+            <button class="btn-see-more" data-partner="clean-team">Voir plus...</button>
           </article>
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: 1200x800px .webp -->
             <!-- <img src="images/dadavi-ma-nounou.webp" alt="Dadavi Ma Nounou" width="1200" height="800" loading="lazy"> -->
-            <!-- LOGO PARTENAIRE (à décommenter quand prêt) -->
-            <!-- <img src="images/dadavi-ma-nounou-logo.webp" alt="Logo Dadavi Ma Nounou" width="260" height="100" loading="lazy"> -->
+            <!-- LOGO PARTENAIRE -->
+            <img src="images/dadavi ma nounou_logo.png" alt="Logo Dadavi Ma Nounou" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="dadavi">
             <h3 class="card-title">Dadavi Ma Nounou</h3>
-            <p>Structuration des opérations et outils pour une meilleure qualité de service.</p>
+            <p class="card-preview">Enixis Corp nous a accompagné dans l'amélioration de notre organisation interne...</p>
+            <button class="btn-see-more" data-partner="dadavi">Voir plus...</button>
           </article>
           <article class="card" role="listitem" data-animate="rise">
             <!-- IMAGE PROJET: 1200x800px .webp -->
             <!-- <img src="images/engage-toi.webp" alt="Engage-Toi" width="1200" height="800" loading="lazy"> -->
-            <!-- LOGO PARTENAIRE (à décommenter quand prêt) -->
-            <!-- <img src="images/engage-toi-logo.webp" alt="Logo Engage-Toi" width="260" height="100" loading="lazy"> -->
+            <!-- LOGO PARTENAIRE -->
+            <img src="images/engage-toi_logo.png" alt="Logo Engage-Toi" class="partner-logo clickable-logo" width="80" height="80" loading="lazy" data-partner="engage-toi">
             <h3 class="card-title">Engage-Toi</h3>
-            <p>Optimisation de l'expérience utilisateur et reporting d'impact simplifié.</p>
+            <p class="card-preview">Enixis Corp valorise la culture africaine auprès des jeunes à travers des quiz interactifs...</p>
+            <button class="btn-see-more" data-partner="engage-toi">Voir plus...</button>
           </article>
+            </div>
+          </div>
+          <button class="carousel-btn carousel-prev" id="partners-prev" aria-label="Partenaire précédent">‹</button>
+          <button class="carousel-btn carousel-next" id="partners-next" aria-label="Partenaire suivant">›</button>
         </div>
         <!-- AJOUTER UN NOUVEAU PARTENAIRE (modèle prêt à copier)
              <article class="card" role="listitem" data-animate="rise">
                <!-- LOGO PARTENAIRE -->
                <!-- <img src="images/nom-partenaire-logo.webp" alt="Logo Nom du partenaire" width="260" height="100" loading="lazy"> -->
-               <h3 class="card-title">Nom du partenaire</h3>
+             <!--h3 class="card-title">Nom du partenaire</h3>
                <p>Brève description de la collaboration ou de la valeur apportée.</p>
              </article>
         -->
@@ -157,15 +176,38 @@
     <section id="testimonials" class="section" aria-labelledby="testimonials-title">
       <div class="container">
         <h2 id="testimonials-title" class="section-title">Témoignages</h2>
-        <div class="testimonials" role="list">
-          <figure class="testimonial" role="listitem" data-animate="fade-up">
-            <blockquote>« Enixis Corp nous a aidés à optimiser nos processus et augmenter nos ventes de 30%. »</blockquote>
-            <figcaption>— Alice K.</figcaption>
-          </figure>
-          <figure class="testimonial" role="listitem" data-animate="fade-up">
-            <blockquote>« Une expertise en IA et analyse de données qui fait la différence ! »</blockquote>
-            <figcaption>— Jean P.</figcaption>
-          </figure>
+        <div class="dynamic-testimonials-container">
+          <!-- Affichage de la catégorie actuelle -->
+          <div class="current-category">
+            <h3 id="current-category-title" class="category-title">✍️ Création de CV sur mesure</h3>
+          </div>
+          
+          <!-- Conteneur pour le témoignage actuel -->
+          <div class="testimonial-display">
+            <div class="testimonial-slider">
+              <figure class="testimonial active" id="current-testimonial">
+                <blockquote id="testimonial-quote">« Mon CV est désormais plus professionnel et facile à cerner. »</blockquote>
+                <figcaption id="testimonial-author">— Nolane TCHANGAI ⭐⭐⭐⭐⭐</figcaption>
+              </figure>
+            </div>
+          </div>
+          
+          <!-- Indicateurs de progression -->
+          <div class="testimonial-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div class="testimonial-counter">
+              <span id="current-testimonial-index">1</span> / <span id="total-testimonials">8</span>
+            </div>
+          </div>
+          
+          <!-- Contrôles -->
+          <div class="testimonial-controls">
+            <button class="control-btn" id="testimonials-prev" aria-label="Témoignage précédent">‹</button>
+            <button class="control-btn pause-btn" id="testimonials-pause" aria-label="Pause/Lecture">⏸️</button>
+            <button class="control-btn" id="testimonials-next" aria-label="Témoignage suivant">›</button>
+          </div>
         </div>
       </div>
     </section>
@@ -176,10 +218,23 @@
       <div class="container contact">
         <div class="contact-copy" data-animate="fade-up">
           <h2 id="contact-title" class="section-title">Contactez-nous</h2>
-          <p>Gmail : <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a><br>
-             Téléphone : <a href="tel:+22897572346">+228 97 57 23 46</a><br>
-             WhatsApp : <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97 57 23 46</a>
-          </p>
+          <div class="contact-info">
+            <div class="contact-item">
+              <span class="contact-icon">📧</span>
+              <span class="contact-label">Gmail :</span>
+              <a href="mailto:contacteccorp@gmail.com">contacteccorp@gmail.com</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">📞</span>
+              <span class="contact-label">Téléphone :</span>
+              <a href="tel:+22897572346">+228 97 57 23 46</a>
+            </div>
+            <div class="contact-item">
+              <span class="contact-icon">💬</span>
+              <span class="contact-label">WhatsApp :</span>
+              <a href="https://wa.me/22897572346" target="_blank" rel="noopener">+228 97 57 23 46</a>
+            </div>
+          </div>
         </div>
         <form class="contact-form" data-animate="fade-in" aria-label="Formulaire de contact" onsubmit="return false;">
           <!-- CONSEIL IMAGE FORM HEADER (optionnel): bannière 1200x300px .webp, < 150KB -->
@@ -212,8 +267,8 @@
             <textarea id="preview" rows="4" readonly></textarea>
           </div>
           <div class="actions">
-            <button class="btn primary" type="submit">Copier et ouvrir</button>
-            <button class="btn ghost" type="button" id="copy-only">Copier seulement</button>
+            <button class="btn primary" type="submit">Envoyer</button>
+            <button class="btn cancel" type="button" id="cancel-form">Annuler</button>
           </div>
           <p class="form-note" aria-live="polite"></p>
         </form>
@@ -228,6 +283,20 @@
   </footer>
 
   <button class="to-top" aria-label="Revenir en haut">↑</button>
+
+  <!-- Pop-ups des partenaires -->
+  <div id="partner-popup" class="popup-overlay" style="display: none;">
+    <div class="popup-content">
+      <button class="popup-close" aria-label="Fermer">&times;</button>
+      <div class="popup-header">
+        <img id="popup-logo" src="" alt="" class="popup-logo">
+        <h3 id="popup-title"></h3>
+      </div>
+      <div class="popup-body">
+        <p id="popup-text"></p>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js" defer></script>
 </body>
