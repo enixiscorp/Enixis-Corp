@@ -1113,96 +1113,161 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       console.log('✅ PDF Data URL créé, taille:', pdfSizeKB, 'KB');
     }
 
+    // Utiliser le format Block Kit moderne de Slack
     const payload = {
-      text: slackText + pdfAttachmentText,
-      attachments: [
+      text: slackText,
+      blocks: [
         {
-          color: 'good',
-          title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
-          text: invoiceBase64 ? 
-            `📄 Facture PDF générée et prête au téléchargement` : 
-            `Facture disponible en ligne`,
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
+            emoji: true
+          }
+        },
+        {
+          type: "section",
           fields: [
             {
-              title: 'Client',
-              value: `${orderData.name}\n${orderData.email}\n${orderData.phone}`,
-              short: true
+              type: "mrkdwn",
+              text: `*Client:*\n${orderData.name}\n${orderData.email}\n${orderData.phone}`
             },
             {
-              title: 'Commande',
-              value: `${orderData.serviceLabel}\n${formatFcfa(orderData.finalPrice)}\n${paymentMethod}`,
-              short: true
-            },
-            {
-              title: 'Status Actuel',
-              value: '⏳ En attente de confirmation',
-              short: false
+              type: "mrkdwn",
+              text: `*Commande:*\n${orderData.serviceLabel}\n${formatFcfa(orderData.finalPrice)}\n${paymentMethod}`
             }
-          ],
-          actions: [
+          ]
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*Status:* ⏳ En attente de confirmation`
+          }
+        },
+        {
+          type: "divider"
+        },
+        {
+          type: "actions",
+          elements: [
             {
-              type: 'button',
-              text: '📄 Voir Facture Web',
-              style: 'primary',
-              name: 'view_invoice',
-              value: invoiceNumber,
-              url: invoiceUrl
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "📄 Voir Facture Web",
+                emoji: true
+              },
+              style: "primary",
+              url: invoiceUrl,
+              action_id: "view_invoice"
             },
             {
-              type: 'button',
-              text: '💳 Confirmer Paiement',
-              style: 'default',
-              name: 'confirm_payment',
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "💳 Confirmer Paiement",
+                emoji: true
+              },
+              action_id: "confirm_payment",
               value: invoiceNumber
             },
             {
-              type: 'button',
-              text: '📦 Finaliser Commande',
-              style: 'default',
-              name: 'finalize_order',
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "📦 Finaliser Commande",
+                emoji: true
+              },
+              action_id: "finalize_order",
               value: invoiceNumber
             }
-          ],
-          footer: `Facture ${invoiceNumber} - Paiement validé`,
-          ts: Math.floor(Date.now() / 1000)
+          ]
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `Facture ${invoiceNumber} - Paiement validé le ${new Date().toLocaleString('fr-FR')}`
+            }
+          ]
         }
       ]
     };
 
-    // Si on a le PDF, ajouter un deuxième message avec le lien de téléchargement direct
+    // Envoyer le message principal
+    await submitToSlack(payload);
+    console.log('✅ Message principal envoyé avec boutons');
+    
+    // Si on a le PDF, envoyer un deuxième message avec le lien de téléchargement direct
     if (invoiceBase64) {
       const pdfDataUrl = `data:application/pdf;base64,${invoiceBase64}`;
+      const pdfSizeKB = Math.round((invoiceBase64.length * 0.75) / 1024);
       
-      // Envoyer d'abord le message principal
-      await submitToSlack(payload);
-      console.log('✅ Message principal envoyé');
-      
-      // Puis envoyer un message de suivi avec le lien PDF
+      // Message de suivi avec le lien PDF en format Block Kit
       const pdfPayload = {
-        text: `📥 *TÉLÉCHARGEMENT DIRECT PDF - ${invoiceNumber}*\n\n` +
-          `🖥️ *Sur ordinateur :*\n` +
-          `1. Cliquez sur ce lien : <${pdfDataUrl}|Télécharger Facture_${invoiceNumber}.pdf>\n` +
-          `2. Le PDF s'ouvrira dans votre navigateur\n` +
-          `3. Faites Ctrl+S (ou Cmd+S sur Mac) pour enregistrer\n\n` +
-          `📱 *Sur téléphone :*\n` +
-          `1. Ouvrez le lien ci-dessus dans votre navigateur\n` +
-          `2. Le PDF s'affichera automatiquement\n` +
-          `3. Utilisez le bouton de partage pour enregistrer\n\n` +
-          `💡 *Alternative :* Utilisez le bouton "📄 Voir Facture Web" ci-dessus pour ouvrir la facture dans une page web et l'imprimer en PDF.`,
-        attachments: [{
-          color: '#0A0F2C',
-          text: `Taille du fichier : ${Math.round((invoiceBase64.length * 0.75) / 1024)} KB`,
-          footer: 'Enixis Corp - Facture PDF'
-        }]
+        text: `📥 Téléchargement PDF - ${invoiceNumber}`,
+        blocks: [
+          {
+            type: "header",
+            text: {
+              type: "plain_text",
+              text: `📥 FACTURE PDF - ${invoiceNumber}`,
+              emoji: true
+            }
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `*Taille:* ${pdfSizeKB} KB\n*Format:* PDF (A4)\n*Client:* ${orderData.name}`
+            }
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `🖥️ *Sur ordinateur:*\n1. Cliquez sur le bouton ci-dessous\n2. Le PDF s'ouvrira dans votre navigateur\n3. Faites Ctrl+S (Cmd+S sur Mac) pour enregistrer`
+            }
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `📱 *Sur téléphone:*\n1. Cliquez sur le bouton ci-dessous\n2. Le PDF s'affichera automatiquement\n3. Utilisez le bouton de partage pour enregistrer`
+            }
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button",
+                text: {
+                  type: "plain_text",
+                  text: "📥 Télécharger PDF",
+                  emoji: true
+                },
+                style: "primary",
+                url: pdfDataUrl,
+                action_id: "download_pdf"
+              }
+            ]
+          },
+          {
+            type: "context",
+            elements: [
+              {
+                type: "mrkdwn",
+                text: `💡 Alternative: Utilisez le bouton "📄 Voir Facture Web" du message précédent`
+              }
+            ]
+          }
+        ]
       };
       
       await submitToSlack(pdfPayload);
       console.log('✅ Message PDF de suivi envoyé');
-      
-    } else {
-      // Pas de PDF, envoyer juste le message principal
-      await submitToSlack(payload);
-      console.log('✅ Message envoyé (sans PDF)');
     }
 
     // Envoyer aussi par email à l'équipe
@@ -2063,13 +2128,28 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
     emailjs.init(emailjsConfig.publicKey);
     console.log('✅ EmailJS initialisé avec succès');
 
+    // Créer l'URL de la facture web
+    const invoiceWebUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name)}&email=${encodeURIComponent(orderData.email)}&phone=${encodeURIComponent(orderData.phone)}&service=${encodeURIComponent(orderData.serviceLabel)}&price=${orderData.finalPrice}&delivery=${orderData.delivery || 'standard'}&payment=Validé`;
+
+    // Ajouter le lien de téléchargement PDF au corps de l'email
+    const emailBodyWithPDF = body + `\n\n` +
+      `📥 TÉLÉCHARGER LA FACTURE PDF:\n` +
+      `${invoiceWebUrl}\n\n` +
+      `Instructions:\n` +
+      `1. Cliquez sur le lien ci-dessus\n` +
+      `2. La facture s'ouvrira dans votre navigateur\n` +
+      `3. Utilisez Ctrl+P (ou Cmd+P) puis "Enregistrer en PDF"\n` +
+      `4. Envoyez le PDF au client par email\n\n` +
+      `Note: La facture est également disponible dans Slack avec un bouton de téléchargement direct.`;
+
     // Préparer les données pour le template
     const templateParams = {
       to_email: toEmail,
       to_name: 'Équipe Enixis Corp',
       subject: subject,
-      message: body,
+      message: emailBodyWithPDF,
       invoice_number: invoiceNumber,
+      invoice_url: invoiceWebUrl,
       client_name: orderData.name,
       client_email: orderData.email,
       client_phone: orderData.phone,
@@ -2077,7 +2157,8 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
       amount: formatFcfa(orderData.finalPrice),
       payment_method: 'Validé',
       date: new Date().toLocaleString('fr-FR'),
-      from_name: 'Système Enixis Corp'
+      from_name: 'Système Enixis Corp',
+      pdf_size: pdfBase64 ? `${Math.round((pdfBase64.length * 0.75) / 1024)} KB` : 'N/A'
     };
 
     console.log('📧 Envoi email avec params:', templateParams);
@@ -2089,7 +2170,7 @@ async function sendRealEmail(toEmail, subject, body, pdfBase64, invoiceNumber, o
       templateParams
     );
 
-    console.log('✅ Email envoyé via EmailJS:', response);
+    console.log('✅ Email envoyé via EmailJS avec lien facture:', response);
     return response;
 
   } catch (error) {
