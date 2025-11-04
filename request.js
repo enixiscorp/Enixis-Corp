@@ -1090,15 +1090,22 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
   `.trim();
 
   try {
-    // Créer l'URL de la facture avec toutes les données du formulaire, y compris les codes promotionnels
-    let invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
-
-    // Ajouter les informations de code promotionnel à l'URL
-    if (orderData.coupon) {
-      invoiceUrl += `&basePrice=${orderData.basePrice || orderData.finalPrice}&couponCode=${encodeURIComponent(orderData.coupon.code)}&couponPercent=${orderData.coupon.percent}`;
+    // Créer le Data URL du PDF pour téléchargement direct
+    let invoiceUrl;
+    
+    if (invoiceBase64) {
+      // Si on a le PDF en base64, créer un Data URL
+      invoiceUrl = `data:application/pdf;base64,${invoiceBase64}`;
+      console.log('✅ PDF Data URL créé, taille:', invoiceBase64.length, 'caractères');
+    } else {
+      // Fallback: URL vers la page web (ancien système)
+      invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
+      
+      if (orderData.coupon) {
+        invoiceUrl += `&basePrice=${orderData.basePrice || orderData.finalPrice}&couponCode=${encodeURIComponent(orderData.coupon.code)}&couponPercent=${orderData.coupon.percent}`;
+      }
+      console.log('⚠️ Fallback: URL page web utilisée');
     }
-
-    console.log('🔍 URL facture générée:', invoiceUrl);
 
     const payload = {
       text: slackText,
@@ -1106,7 +1113,9 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
         {
           color: 'good',
           title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
-          text: `Facture PDF disponible - Cliquez pour ouvrir et télécharger`,
+          text: invoiceBase64 ? 
+            `📄 Facture PDF prête - Cliquez sur le bouton pour télécharger directement` : 
+            `Facture PDF disponible - Cliquez pour ouvrir et télécharger`,
           fields: [
             {
               title: 'Client',
@@ -1154,7 +1163,7 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    console.log('✅ Boutons PDF et gestion ajoutés avec URL:', invoiceUrl);
+    console.log('✅ Payload Slack préparé avec', invoiceBase64 ? 'PDF Data URL' : 'URL page web');
 
     await submitToSlack(payload);
     console.log('✅ Notification de validation avec facture PDF et boutons de gestion envoyée');
@@ -3031,22 +3040,276 @@ invoicePopup?.addEventListener('click', (e) => {
   }
 });
 
+// Fonction pour générer un PDF avec jsPDF
+async function generatePDFWithJsPDF(orderData, paymentMethod, invoiceNumber) {
+  return new Promise((resolve, reject) => {
+    try {
+      // Attendre que jsPDF soit chargé
+      if (typeof window.jspdf === 'undefined') {
+        console.error('❌ jsPDF non chargé');
+        reject(new Error('jsPDF non disponible'));
+        return;
+      }
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+
+      // Calculer les dates
+      const currentDate = new Date();
+      const invoiceDate = currentDate.toLocaleDateString('fr-FR');
+      const invoiceTime = currentDate.toLocaleTimeString('fr-FR');
+      
+      const validityDate = new Date();
+      switch (orderData.delivery) {
+        case 'urgent': validityDate.setDate(validityDate.getDate() + 1); break;
+        case 'short': validityDate.setDate(validityDate.getDate() + 7); break;
+        case 'medium': validityDate.setDate(validityDate.getDate() + 28); break;
+        case 'long': validityDate.setMonth(validityDate.getMonth() + 6); break;
+        default: validityDate.setDate(validityDate.getDate() + 14);
+      }
+      const validityDateStr = validityDate.toLocaleDateString('fr-FR');
+
+      // Délai formaté
+      const deliveryText = orderData.delivery === 'urgent' ? 'Urgent (24h)' : 
+                          orderData.delivery === 'short' ? 'Court terme (3-7j)' : 
+                          orderData.delivery === 'medium' ? 'Moyen terme (2-4 sem.)' : 
+                          orderData.delivery === 'long' ? 'Long terme (1-6 mois)' : 'Standard';
+
+      // Couleurs
+      const primaryColor = [10, 15, 44]; // #0A0F2C
+      const greenColor = [40, 167, 69]; // #28a745
+      const grayColor = [102, 102, 102]; // #666
+
+      let yPos = 20;
+
+      // === HEADER ===
+      doc.setFillColor(...primaryColor);
+      doc.rect(0, 0, 210, 40, 'F');
+      
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(24);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ENIXIS CORP', 20, 20);
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('contacteccorp@gmail.com', 20, 27);
+      doc.text('+228 97 57 23 46', 20, 32);
+      doc.text('https://enixis-corp.vercel.app', 20, 37);
+
+      // Numéro de facture (à droite)
+      doc.setFillColor(220, 53, 69);
+      doc.roundedRect(140, 15, 55, 10, 3, 3, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(invoiceNumber, 167.5, 21.5, { align: 'center' });
+
+      doc.setTextColor(...grayColor);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Date: ${invoiceDate}`, 195, 28, { align: 'right' });
+      doc.text(`Validité: ${validityDateStr}`, 195, 33, { align: 'right' });
+      doc.text(`Heure: ${invoiceTime}`, 195, 38, { align: 'right' });
+
+      yPos = 50;
+
+      // === INFORMATIONS CLIENT ET SERVICE ===
+      doc.setFillColor(248, 249, 250);
+      doc.rect(15, yPos, 85, 35, 'F');
+      doc.rect(110, yPos, 85, 35, 'F');
+
+      // Bordure gauche bleue
+      doc.setFillColor(...primaryColor);
+      doc.rect(15, yPos, 2, 35, 'F');
+      doc.rect(110, yPos, 2, 35, 'F');
+
+      // Client
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('📋 Informations Client', 20, yPos + 7);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(orderData.name, 20, yPos + 15);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.text(orderData.email, 20, yPos + 21);
+      doc.text(orderData.phone, 20, yPos + 27);
+
+      // Service
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('🎯 Prestation Demandée', 115, yPos + 7);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      const serviceLines = doc.splitTextToSize(orderData.serviceLabel, 75);
+      doc.text(serviceLines, 115, yPos + 15);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Délai: ${deliveryText}`, 115, yPos + 15 + (serviceLines.length * 5));
+
+      yPos += 45;
+
+      // === TABLEAU ===
+      doc.setFillColor(30, 58, 138);
+      doc.rect(15, yPos, 180, 10, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DESCRIPTION', 20, yPos + 7);
+      doc.text('DATE', 90, yPos + 7);
+      doc.text('QTÉ', 120, yPos + 7);
+      doc.text('PRIX UNIT.', 140, yPos + 7);
+      doc.text('MONTANT', 175, yPos + 7, { align: 'right' });
+
+      yPos += 10;
+
+      // Ligne du tableau
+      doc.setFillColor(255, 255, 255);
+      doc.rect(15, yPos, 180, 12, 'F');
+      doc.setDrawColor(224, 224, 224);
+      doc.line(15, yPos + 12, 195, yPos + 12);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(orderData.serviceLabel, 65);
+      doc.text(descLines, 20, yPos + 7);
+      doc.text(invoiceDate, 90, yPos + 7);
+      doc.text('1,00', 120, yPos + 7);
+      doc.text(formatFcfa(orderData.basePrice || orderData.finalPrice), 140, yPos + 7);
+      doc.text(formatFcfa(orderData.finalPrice), 190, yPos + 7, { align: 'right' });
+
+      yPos += 20;
+
+      // === TOTAUX ===
+      const totalsX = 120;
+      
+      // Si code promo
+      if (orderData.coupon) {
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Sous-total TTC', totalsX, yPos);
+        doc.text(formatFcfa(orderData.basePrice || orderData.finalPrice), 190, yPos, { align: 'right' });
+        yPos += 7;
+
+        doc.setTextColor(220, 53, 69);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Remise (${orderData.coupon.code} - ${orderData.coupon.percent}%)`, totalsX, yPos);
+        doc.text(`-${formatFcfa((orderData.basePrice || orderData.finalPrice) - orderData.finalPrice)}`, 190, yPos, { align: 'right' });
+        yPos += 10;
+      }
+
+      // Total final
+      doc.setFillColor(248, 249, 250);
+      doc.rect(totalsX - 5, yPos - 5, 75, 12, 'F');
+      doc.setDrawColor(...primaryColor);
+      doc.setLineWidth(0.5);
+      doc.rect(totalsX - 5, yPos - 5, 75, 12);
+
+      doc.setTextColor(...primaryColor);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total TTC', totalsX, yPos + 3);
+      doc.text(formatFcfa(orderData.finalPrice), 190, yPos + 3, { align: 'right' });
+
+      yPos += 20;
+
+      // === INFORMATIONS DE PAIEMENT ===
+      doc.setFillColor(232, 245, 232);
+      doc.rect(15, yPos, 180, 30, 'F');
+      doc.setFillColor(...greenColor);
+      doc.rect(15, yPos, 2, 30, 'F');
+
+      doc.setTextColor(...greenColor);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('💳 Informations de Paiement', 20, yPos + 7);
+
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Méthode de paiement: ${paymentMethod}`, 20, yPos + 15);
+      
+      doc.setTextColor(...greenColor);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`✅ Payé le ${invoiceDate} à ${invoiceTime}`, 20, yPos + 21);
+      
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      doc.text('🔒 Transaction sécurisée et validée', 20, yPos + 27);
+
+      // === FOOTER ===
+      yPos = 260;
+      doc.setDrawColor(224, 224, 224);
+      doc.line(15, yPos, 195, yPos);
+
+      doc.setTextColor(...grayColor);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('🎉 Merci pour votre commande !', 105, yPos + 7, { align: 'center' });
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text('Cette facture a été générée automatiquement et envoyée à notre équipe.', 105, yPos + 13, { align: 'center' });
+      doc.text('Nous commencerons le travail selon le délai convenu.', 105, yPos + 18, { align: 'center' });
+      doc.text('Contact: contacteccorp@gmail.com | +228 97 57 23 46', 105, yPos + 23, { align: 'center' });
+
+      // Convertir en base64
+      const pdfBase64 = doc.output('datauristring').split(',')[1];
+      
+      console.log('✅ PDF généré avec jsPDF');
+      resolve(pdfBase64);
+
+    } catch (error) {
+      console.error('❌ Erreur génération PDF:', error);
+      reject(error);
+    }
+  });
+}
+
 // Fonction principale pour générer et envoyer la facture avec validation de paiement
 async function generateAndSendInvoiceWithValidation(orderData, paymentMethod) {
   try {
-    // Ne plus afficher de pop-up de facture à l'utilisateur
-    // La facture sera accessible uniquement via Slack
-
     // Générer un numéro de facture
     const invoiceNumber = generateInvoiceNumber();
 
-    // Envoyer la notification de validation de paiement avec facture PDF
-    await sendPaymentValidationWithInvoice(paymentMethod, orderData, null, invoiceNumber);
+    console.log('🔄 Génération du PDF depuis HTML avec design complet...');
+    
+    let pdfBase64;
+    
+    // Essayer d'abord avec la nouvelle méthode HTML (design complet)
+    if (typeof window.generateInvoicePDFFromHTML === 'function') {
+      try {
+        pdfBase64 = await window.generateInvoicePDFFromHTML(orderData, paymentMethod, invoiceNumber);
+        console.log('✅ PDF généré avec html2canvas (design complet), taille:', pdfBase64.length, 'caractères');
+      } catch (htmlError) {
+        console.warn('⚠️ Erreur avec html2canvas, fallback vers jsPDF simple:', htmlError);
+        // Fallback vers la méthode jsPDF simple
+        pdfBase64 = await generatePDFWithJsPDF(orderData, paymentMethod, invoiceNumber);
+        console.log('✅ PDF généré avec jsPDF (fallback), taille:', pdfBase64.length, 'caractères');
+      }
+    } else {
+      // Si la fonction n'est pas disponible, utiliser jsPDF simple
+      console.warn('⚠️ generateInvoicePDFFromHTML non disponible, utilisation de jsPDF simple');
+      pdfBase64 = await generatePDFWithJsPDF(orderData, paymentMethod, invoiceNumber);
+      console.log('✅ PDF généré avec jsPDF, taille:', pdfBase64.length, 'caractères');
+    }
+
+    // Envoyer la notification de validation de paiement avec le PDF en Data URL
+    await sendPaymentValidationWithInvoice(paymentMethod, orderData, pdfBase64, invoiceNumber);
 
     // Afficher un message de confirmation simple à l'utilisateur
     showPaymentConfirmation(orderData, paymentMethod, invoiceNumber);
 
-    console.log('✅ Notification Slack envoyée avec lien vers la facture personnalisée');
+    console.log('✅ Notification Slack envoyée avec PDF téléchargeable');
 
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de la notification:', error);
