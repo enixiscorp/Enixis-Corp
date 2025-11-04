@@ -1090,32 +1090,38 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
   `.trim();
 
   try {
-    // Créer le Data URL du PDF pour téléchargement direct
-    let invoiceUrl;
+    // Créer l'URL de la facture
+    let invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
     
+    if (orderData.coupon) {
+      invoiceUrl += `&basePrice=${orderData.basePrice || orderData.finalPrice}&couponCode=${encodeURIComponent(orderData.coupon.code)}&couponPercent=${orderData.coupon.percent}`;
+    }
+
+    // Préparer le message avec le PDF en pièce jointe si disponible
+    let pdfAttachmentText = '';
     if (invoiceBase64) {
-      // Si on a le PDF en base64, créer un Data URL
-      invoiceUrl = `data:application/pdf;base64,${invoiceBase64}`;
-      console.log('✅ PDF Data URL créé, taille:', invoiceBase64.length, 'caractères');
-    } else {
-      // Fallback: URL vers la page web (ancien système)
-      invoiceUrl = `https://enixis-corp.vercel.app/api/invoice?invoice=${invoiceNumber}&name=${encodeURIComponent(orderData.name || '')}&email=${encodeURIComponent(orderData.email || '')}&phone=${encodeURIComponent(orderData.phone || '')}&service=${encodeURIComponent(orderData.serviceLabel || '')}&price=${orderData.finalPrice || 0}&delivery=${orderData.delivery || 'standard'}&payment=${encodeURIComponent(paymentMethod)}`;
+      // Créer un lien de téléchargement direct avec le PDF encodé
+      const pdfDataUrl = `data:application/pdf;base64,${invoiceBase64}`;
+      const pdfSizeKB = Math.round((invoiceBase64.length * 0.75) / 1024);
       
-      if (orderData.coupon) {
-        invoiceUrl += `&basePrice=${orderData.basePrice || orderData.finalPrice}&couponCode=${encodeURIComponent(orderData.coupon.code)}&couponPercent=${orderData.coupon.percent}`;
-      }
-      console.log('⚠️ Fallback: URL page web utilisée');
+      pdfAttachmentText = `\n\n📎 *FACTURE PDF DISPONIBLE* (${pdfSizeKB} KB)\n` +
+        `Pour télécharger sur ordinateur : Cliquez sur le bouton ci-dessous\n` +
+        `Pour télécharger sur mobile : Copiez ce lien et ouvrez-le dans votre navigateur :\n` +
+        `\`\`\`${pdfDataUrl.substring(0, 200)}...\`\`\`\n` +
+        `_(Lien complet disponible dans le bouton)_`;
+      
+      console.log('✅ PDF Data URL créé, taille:', pdfSizeKB, 'KB');
     }
 
     const payload = {
-      text: slackText,
+      text: slackText + pdfAttachmentText,
       attachments: [
         {
           color: 'good',
           title: `✅ PAIEMENT VALIDÉ - ${invoiceNumber}`,
           text: invoiceBase64 ? 
-            `📄 Facture PDF prête - Cliquez sur le bouton pour télécharger directement` : 
-            `Facture PDF disponible - Cliquez pour ouvrir et télécharger`,
+            `📄 Facture PDF générée et prête au téléchargement` : 
+            `Facture disponible en ligne`,
           fields: [
             {
               title: 'Client',
@@ -1136,9 +1142,9 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
           actions: [
             {
               type: 'button',
-              text: '📥 Télécharger Facture PDF',
+              text: '📄 Voir Facture Web',
               style: 'primary',
-              name: 'download_invoice',
+              name: 'view_invoice',
               value: invoiceNumber,
               url: invoiceUrl
             },
@@ -1163,10 +1169,41 @@ ${orderData.details ? `• Détails: ${orderData.details.substring(0, 120)}${ord
       ]
     };
 
-    console.log('✅ Payload Slack préparé avec', invoiceBase64 ? 'PDF Data URL' : 'URL page web');
-
-    await submitToSlack(payload);
-    console.log('✅ Notification de validation avec facture PDF et boutons de gestion envoyée');
+    // Si on a le PDF, ajouter un deuxième message avec le lien de téléchargement direct
+    if (invoiceBase64) {
+      const pdfDataUrl = `data:application/pdf;base64,${invoiceBase64}`;
+      
+      // Envoyer d'abord le message principal
+      await submitToSlack(payload);
+      console.log('✅ Message principal envoyé');
+      
+      // Puis envoyer un message de suivi avec le lien PDF
+      const pdfPayload = {
+        text: `📥 *TÉLÉCHARGEMENT DIRECT PDF - ${invoiceNumber}*\n\n` +
+          `🖥️ *Sur ordinateur :*\n` +
+          `1. Cliquez sur ce lien : <${pdfDataUrl}|Télécharger Facture_${invoiceNumber}.pdf>\n` +
+          `2. Le PDF s'ouvrira dans votre navigateur\n` +
+          `3. Faites Ctrl+S (ou Cmd+S sur Mac) pour enregistrer\n\n` +
+          `📱 *Sur téléphone :*\n` +
+          `1. Ouvrez le lien ci-dessus dans votre navigateur\n` +
+          `2. Le PDF s'affichera automatiquement\n` +
+          `3. Utilisez le bouton de partage pour enregistrer\n\n` +
+          `💡 *Alternative :* Utilisez le bouton "📄 Voir Facture Web" ci-dessus pour ouvrir la facture dans une page web et l'imprimer en PDF.`,
+        attachments: [{
+          color: '#0A0F2C',
+          text: `Taille du fichier : ${Math.round((invoiceBase64.length * 0.75) / 1024)} KB`,
+          footer: 'Enixis Corp - Facture PDF'
+        }]
+      };
+      
+      await submitToSlack(pdfPayload);
+      console.log('✅ Message PDF de suivi envoyé');
+      
+    } else {
+      // Pas de PDF, envoyer juste le message principal
+      await submitToSlack(payload);
+      console.log('✅ Message envoyé (sans PDF)');
+    }
 
     // Envoyer aussi par email à l'équipe
     try {
